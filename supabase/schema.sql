@@ -40,6 +40,8 @@ create table if not exists component_jobs (
   safety_critical    boolean not null default false,
   signed_off_by      text,                        -- named engineer (required to close a safety-critical job)
   head_count         int not null default 1,      -- builders on this component (feeds record count)
+  partnership_open   boolean not null default false, -- SME open to diaspora equity partnership
+  stake_range        text,                            -- e.g. '10-25%'
   created_at         timestamptz not null default now()
 );
 
@@ -47,7 +49,8 @@ create table if not exists component_jobs (
 -- Three-tier: mentorship / in-kind / capital, kept as distinct lanes.
 create table if not exists diaspora_leads (
   id           uuid primary key default gen_random_uuid(),
-  lane         text not null,                    -- mentor | inkind | capital
+  lane         text not null,                    -- mentor | inkind | capital | partner
+  target_sme   text,                             -- for partner lane: which SME/component class
   full_name    text not null,
   email        text not null,
   location     text,
@@ -89,13 +92,13 @@ insert into builds (id, name, location, status) values
   ('00000000-0000-0000-0000-000000000001', 'NAWEDOAM — Build 1', 'Nigeria', 'active')
 on conflict (id) do nothing;
 
-insert into component_jobs (build_id, name, detail, category, owner_org, stage, safety_critical, head_count) values
-  ('00000000-0000-0000-0000-000000000001', 'Donor chassis',         'Kei-class vehicle, prepped and reinforced',        'chassis',    'Automotive workshop',    'fabricating', true,  5),
-  ('00000000-0000-0000-0000-000000000001', 'Body / facade panels',  'Folded cybertruck-style sheet-metal panels',       'body',       'Sheet-metal SME',        'fabricating', false, 6),
-  ('00000000-0000-0000-0000-000000000001', 'Kitchen box shell',     'Six welded panels, no booleans',                   'kitchen',    'Sheet-metal SME',        'done',        false, 4),
-  ('00000000-0000-0000-0000-000000000001', 'Gas locker + plumbing', '12.5kg LPG cylinder, sealed, vented',              'gas',        'Certified gas fitter',   'qa',          true,  3),
-  ('00000000-0000-0000-0000-000000000001', 'House electrical',      '24V bank, accessories only, separate from traction','electrical', 'Solar / inverter SME',   'fabricating', false, 4),
-  ('00000000-0000-0000-0000-000000000001', 'Cook line + oven',      'Red-glass hob, SUGGAR burners, LPG oven',          'kitchen',    'Stainless kitchen SME',  'done',        false, 5),
-  ('00000000-0000-0000-0000-000000000001', 'Extraction / hood',     'Roof-ducted stack over the cook line',             'kitchen',    'Ventilation SME',        'queued',      false, 3),
-  ('00000000-0000-0000-0000-000000000001', 'Ankara livery wrap',    'Wax-print graphics, both box sides',               'livery',     'Print / graphics SME',   'done',        false, 2)
+insert into component_jobs (build_id, name, detail, category, owner_org, stage, safety_critical, head_count, partnership_open, stake_range) values
+  ('00000000-0000-0000-0000-000000000001', 'Donor chassis',         'Kei-class vehicle, prepped and reinforced',        'chassis',    'Automotive workshop',    'fabricating', true,  5, true,  '10-25%'),
+  ('00000000-0000-0000-0000-000000000001', 'Body / facade panels',  'Folded cybertruck-style sheet-metal panels',       'body',       'Sheet-metal SME',        'fabricating', false, 6, true,  '10-30%'),
+  ('00000000-0000-0000-0000-000000000001', 'Kitchen box shell',     'Six welded panels, no booleans',                   'kitchen',    'Sheet-metal SME',        'done',        false, 4, false, null),
+  ('00000000-0000-0000-0000-000000000001', 'Gas locker + plumbing', '12.5kg LPG cylinder, sealed, vented',              'gas',        'Certified gas fitter',   'qa',          true,  3, true,  '15-35%'),
+  ('00000000-0000-0000-0000-000000000001', 'House electrical',      '24V bank, accessories only, separate from traction','electrical', 'Solar / inverter SME',   'fabricating', false, 4, true,  '10-25%'),
+  ('00000000-0000-0000-0000-000000000001', 'Cook line + oven',      'Red-glass hob, SUGGAR burners, LPG oven',          'kitchen',    'Stainless kitchen SME',  'done',        false, 5, true,  '10-20%'),
+  ('00000000-0000-0000-0000-000000000001', 'Extraction / hood',     'Roof-ducted stack over the cook line',             'kitchen',    'Ventilation SME',        'queued',      false, 3, false, null),
+  ('00000000-0000-0000-0000-000000000001', 'Ankara livery wrap',    'Wax-print graphics, both box sides',               'livery',     'Print / graphics SME',   'done',        false, 2, true,  '5-15%')
 on conflict do nothing;

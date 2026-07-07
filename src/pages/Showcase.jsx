@@ -69,6 +69,7 @@ export default function Showcase() {
                 <div className="co">{c.detail}<br />{c.owner_org}</div>
                 {badge(c.stage)}
                 {c.safety_critical && <span className="badge b-safety">Safety sign-off</span>}
+                {c.partnership_open && <span className="badge b-fab" style={{marginLeft:6}}>Partner: {c.stake_range}</span>}
               </div>
             ))}
           </div>
