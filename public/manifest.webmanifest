@@ -1,0 +1,13 @@
+{
+  "name": "Forge-A-Truck-Thon",
+  "short_name": "ForgeATruck",
+  "description": "Nigerian distributed-manufacturing build of NAWEDOAM — a dual-energy street-food minitruck.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0C0A09",
+  "theme_color": "#0C0A09",
+  "icons": [
+    { "src": "/forge_Logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/forge_Logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ]
+}
