@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchJobs } from '../lib/supabase'
 import { GALLERY } from '../lib/assets'
-import KeiretsuHero from '../components/KeiretsuHero.jsx'
+import KeiretsuHero from '../components/keiretsu/KeiretsuHero.jsx'
+import HeroSection from "../components/hero/HeroSection";
 
 function badge(stage) {
   if (stage === 'done') return <span className="badge b-done">Done</span>
@@ -22,7 +23,7 @@ export default function Showcase() {
 
   return (
     <>
-      <div className="hero">
+        <HeroSection />
         <div className="hero-canvas-slot"><KeiretsuHero /></div>
         <div className="hero-content">
           <div className="wrap">
