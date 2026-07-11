@@ -8,13 +8,13 @@ export const SITE = {
 
   hero: {
     title: [
-      "ONE TRUCK.",
-      "THOUSANDS OF BUILDERS.",
-      "ONE MANUFACTURING FUTURE."
+      "BUILD /",
+      "VEHICLES. /",
+      "TOGETHER."
     ],
 
     subtitle:
-      "Forge A Truck Thon connects Nigerian SMEs, engineers, universities, students and investors to collaboratively design, manufacture and commercialize vehicles built in Africa."
+      "Forge coordinates Nigerian SMEs, engineers, universities, students, fabricators, diaspora, industry, investors and government to collaboratively manufacture vehicles."
   }
 }
 

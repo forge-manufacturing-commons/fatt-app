@@ -1,18 +1,38 @@
-const CACHE = 'fatt-v1'
-self.addEventListener('install', e => { self.skipWaiting() })
-self.addEventListener('activate', e => { e.waitUntil(clients.claim()) })
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.open(CACHE).then(async cache => {
-      const hit = await cache.match(e.request)
-      if (hit) return hit
+const CACHE = 'fatt-v2'
+
+self.addEventListener('install', event => {
+  event.waitUntil(self.skipWaiting())
+})
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))
+      await clients.claim()
+    })()
+  )
+})
+
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return
+
+  event.respondWith(
+    (async () => {
       try {
-        const res = await fetch(e.request)
-        if (e.request.method === 'GET' && res.status === 200) cache.put(e.request, res.clone())
-        return res
-      } catch (err) {
-        return hit || Response.error()
+        const response = await fetch(event.request)
+
+        if (response && response.status === 200) {
+          const cache = await caches.open(CACHE)
+          cache.put(event.request, response.clone())
+        }
+
+        return response
+      } catch (error) {
+        const cached = await caches.match(event.request)
+        if (cached) return cached
+        throw error
       }
-    })
+    })()
   )
 })

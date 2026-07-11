@@ -1,0 +1,317 @@
+/*==========================================================
+  FORGE BUTTON SYSTEM v1.0
+  Precision. Confidence. Motion.
+==========================================================*/
+
+/*==========================================================
+  BASE BUTTON
+==========================================================*/
+
+.btn{
+
+    --btn-color:var(--forge-cyan);
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:14px;
+
+    position:relative;
+
+    overflow:hidden;
+
+    cursor:pointer;
+
+    user-select:none;
+
+    border:none;
+
+    outline:none;
+
+    text-decoration:none;
+
+    padding:18px 34px;
+
+    border-radius:16px;
+
+    background:var(--forge-panel);
+
+    color:white;
+
+    font-size:.95rem;
+
+    font-weight:800;
+
+    letter-spacing:.14em;
+
+    text-transform:uppercase;
+
+    transition:
+        transform .35s,
+        box-shadow .35s,
+        background .35s;
+
+}
+
+/*==========================================================
+  SCAN LINE
+==========================================================*/
+
+.btn::before{
+
+    content:"";
+
+    position:absolute;
+
+    left:-120%;
+
+    top:0;
+
+    width:60%;
+
+    height:100%;
+
+    background:linear-gradient(
+
+        90deg,
+
+        transparent,
+
+        rgba(255,255,255,.35),
+
+        transparent
+
+    );
+
+    transform:skewX(-20deg);
+
+    transition:left .75s;
+
+}
+
+/*==========================================================
+  BOTTOM BAR
+==========================================================*/
+
+.btn::after{
+
+    content:"";
+
+    position:absolute;
+
+    left:0;
+
+    bottom:0;
+
+    width:0;
+
+    height:3px;
+
+    background:var(--btn-color);
+
+    transition:width .35s;
+
+}
+
+/*==========================================================
+  HOVER
+==========================================================*/
+
+.btn:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:
+
+        0 16px 40px rgba(0,0,0,.35);
+
+}
+
+.btn:hover::before{
+
+    left:150%;
+
+}
+
+.btn:hover::after{
+
+    width:100%;
+
+}
+
+/*==========================================================
+  ACTIVE
+==========================================================*/
+
+.btn:active{
+
+    transform:translateY(-1px) scale(.98);
+
+}
+
+/*==========================================================
+  PRIMARY
+==========================================================*/
+
+.btn-primary{
+
+    background:
+
+        linear-gradient(
+
+            135deg,
+
+            var(--forge-cyan),
+
+            #0AAE95
+
+        );
+
+    color:#04110F;
+
+    --btn-color:var(--forge-gold);
+
+}
+
+.btn-primary:hover{
+
+    box-shadow:
+
+        0 0 0 1px rgba(21,201,172,.2),
+
+        0 18px 45px rgba(21,201,172,.25);
+
+}
+
+/*==========================================================
+  SECONDARY
+==========================================================*/
+
+.btn-secondary{
+
+    background:
+
+        linear-gradient(
+
+            135deg,
+
+            var(--forge-pink),
+
+            #C8144C
+
+        );
+
+    color:white;
+
+    --btn-color:var(--forge-gold);
+
+}
+
+.btn-secondary:hover{
+
+    box-shadow:
+
+        0 18px 45px rgba(255,30,99,.28);
+
+}
+
+/*==========================================================
+  OUTLINE
+==========================================================*/
+
+.btn-outline{
+
+    background:transparent;
+
+    border:1px solid rgba(255,255,255,.12);
+
+    color:white;
+
+    --btn-color:var(--forge-cyan);
+
+}
+
+.btn-outline:hover{
+
+    border-color:var(--forge-cyan);
+
+    background:rgba(21,201,172,.06);
+
+}
+
+/*==========================================================
+  GHOST
+==========================================================*/
+
+.btn-ghost{
+
+    background:none;
+
+    color:var(--forge-cyan);
+
+    padding-inline:0;
+
+}
+
+.btn-ghost::after{
+
+    height:2px;
+
+}
+
+/*==========================================================
+  ICON
+==========================================================*/
+
+.btn svg{
+
+    transition:transform .35s;
+
+}
+
+.btn:hover svg{
+
+    transform:translateX(5px);
+
+}
+
+/*==========================================================
+  GROUP
+==========================================================*/
+
+.btn-group{
+
+    display:flex;
+
+    gap:20px;
+
+    flex-wrap:wrap;
+
+}
+
+/*==========================================================
+  SMALL
+==========================================================*/
+
+.btn-sm{
+
+    padding:12px 22px;
+
+    font-size:.82rem;
+
+}
+
+/*==========================================================
+  LARGE
+==========================================================*/
+
+.btn-lg{
+
+    padding:22px 42px;
+
+    font-size:1rem;
+
+}

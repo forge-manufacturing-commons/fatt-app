@@ -1,0 +1,57 @@
+/*=====================================================
+ FORGE DESIGN TOKENS
+======================================================*/
+
+:root{
+
+  /* Brand */
+
+  --forge-black:#07090B;
+  --forge-surface:#0E1116;
+  --forge-panel:#151A21;
+
+  --forge-white:#FFFFFF;
+
+  --forge-cyan:#15C9AC;
+  --forge-pink:#FF1E63;
+  --forge-gold:#FFB020;
+
+  /* Typography */
+
+  --text-primary:#F7F8FA;
+  --text-secondary:#C5CAD3;
+  --text-muted:#8D939D;
+
+  /* Borders */
+
+  --border:rgba(255,255,255,.08);
+
+  /* Blueprint */
+
+  --grid-major:rgba(255,255,255,.05);
+  --grid-minor:rgba(255,255,255,.02);
+
+  /* Shadows */
+
+  --shadow-sm:
+      0 10px 24px rgba(0,0,0,.22);
+
+  --shadow-md:
+      0 20px 60px rgba(0,0,0,.32);
+
+  --shadow-lg:
+      0 40px 120px rgba(0,0,0,.45);
+
+  /* Radius */
+
+  --radius-sm:12px;
+  --radius-md:18px;
+  --radius-lg:28px;
+
+  /* Animation */
+
+  --fast:.2s;
+  --normal:.35s;
+  --slow:.6s;
+
+}

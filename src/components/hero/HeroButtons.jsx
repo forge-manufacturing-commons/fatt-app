@@ -1,21 +1,15 @@
 export default function HeroButtons({ navigate }) {
   return (
     <div className="hero-buttons">
-
-      <button
-        className="btn btn-pink"
-        onClick={() => navigate("/join")}
-      >
-        Join the Build →
+      <button className="forge-button" onClick={() => navigate("/join")}>
+        Join the build →
       </button>
-
-      <button
-        className="btn btn-line"
-        onClick={() => navigate("/board")}
-      >
-        Explore Platform
+      <button className="forge-button secondary" onClick={() => {
+        const el = document.querySelector(".pipe-os");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}>
+        See how Forge works
       </button>
-
     </div>
   );
 }

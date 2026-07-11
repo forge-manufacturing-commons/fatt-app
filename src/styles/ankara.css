@@ -1,0 +1,73 @@
+/*=========================================
+ FORGE GEOMETRY ENGINE
+=========================================*/
+
+.forge-ankara{
+
+    position:absolute;
+
+    inset:0;
+
+    pointer-events:none;
+
+    opacity:.06;
+
+    background:
+
+        repeating-linear-gradient(
+            45deg,
+            transparent 0,
+            transparent 24px,
+            rgba(255,30,99,.35) 25px,
+            transparent 26px
+        ),
+
+        repeating-linear-gradient(
+            -45deg,
+            transparent 0,
+            transparent 24px,
+            rgba(21,201,172,.28) 25px,
+            transparent 26px
+        );
+
+    background-size:180px 180px;
+
+    animation:forgePattern 20s linear infinite;
+
+}
+
+@keyframes forgePattern{
+
+    from{
+
+        background-position:0 0;
+
+    }
+
+    to{
+
+        background-position:180px 180px;
+
+    }
+
+}
+
+.hero-ankara{
+
+    position:absolute;
+
+    width:560px;
+
+    height:560px;
+
+    top:-120px;
+
+    right:-140px;
+
+    opacity:.12;
+
+    transform:rotate(22deg);
+
+    pointer-events:none;
+
+}

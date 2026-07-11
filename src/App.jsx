@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
 import { isConfigured } from './lib/supabase'
 import { LOGO } from './lib/assets'
-import Ambient from './components/Ambient.jsx'
+import { ForgeActivityProvider } from './lib/ForgeActivityEngine.jsx'
 import Showcase from './pages/Showcase.jsx'
 import Board from './pages/Board.jsx'
 import Join from './pages/Join.jsx'
@@ -30,8 +30,8 @@ export default function App() {
   }
 
   return (
+    <ForgeActivityProvider>
     <>
-      <Ambient />
       {!isConfigured && (
         <div className="demo-banner">Demo mode — seed data. Add Supabase keys in .env to go live.</div>
       )}
@@ -67,5 +67,6 @@ export default function App() {
         </div>
       </footer>
     </>
+    </ForgeActivityProvider>
   )
 }

@@ -1,0 +1,92 @@
+/* ============================================================
+   FORGE MANUFACTURING COMMAND CENTER — darker command room.
+   Section-scoped palette (brief §4): near-black, deep glass,
+   forge gold, emerald activity, heat, information cyan.
+   ============================================================ */
+.cc-section{
+  --cc-black:#060606; --cc-glass:#08131A; --cc-gold:#D4AF37;
+  --cc-emerald:#00D26A; --cc-heat:#F7931A; --cc-cyan:#41E2FF;
+  background:
+    radial-gradient(1100px 600px at 50% 30%, rgba(65,226,255,.05), transparent 60%),
+    var(--cc-black);
+  border-bottom:3px solid var(--rule);
+  padding:96px 0;
+  position:relative;
+}
+.cc-section::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(rgba(65,226,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(65,226,255,.035) 1px, transparent 1px);
+  background-size:56px 56px;
+}
+.cc-section .section-title .cyan{color:var(--cc-cyan)}
+
+/* ---------- stage: plate plane + intelligence panel ---------- */
+.cc-stage{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:28px;align-items:start;margin-top:46px;position:relative}
+.cc-plane{position:relative;aspect-ratio:1/1;width:100%}
+.cc-plate{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;user-select:none;
+  filter:drop-shadow(0 30px 60px rgba(0,0,0,.6)) drop-shadow(0 0 40px rgba(212,175,55,.08))}
+
+/* ---------- network lines + particles ---------- */
+.cc-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cc-line{fill:none;stroke:var(--cc-gold);stroke-width:.28;stroke-linecap:round;opacity:.65;
+  vector-effect:non-scaling-stroke;stroke-width:1.6px}
+.cc-particle{fill:var(--cc-cyan);filter:drop-shadow(0 0 4px var(--cc-cyan))}
+
+/* ---------- hub nodes ---------- */
+.cc-node{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;background:transparent;
+  border:0;padding:0;display:flex;align-items:center;justify-content:center}
+.cc-node-core{position:absolute;width:11px;height:11px;border-radius:50%;background:var(--cc-emerald);
+  box-shadow:0 0 10px var(--cc-emerald)}
+.cc-node-ring{position:absolute;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(0,210,106,.55);
+  animation:ccPulse 2.6s ease-out infinite}
+.cc-node-label{position:absolute;top:calc(100% - 2px);font-size:9px;font-weight:900;letter-spacing:.12em;
+  color:rgba(243,233,210,.75);text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 4px #000}
+@keyframes ccPulse{0%{transform:scale(.6);opacity:.9}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+.cc-node:hover .cc-node-core,.cc-node:focus-visible .cc-node-core{background:var(--cc-cyan);box-shadow:0 0 14px var(--cc-cyan)}
+.cc-node:focus-visible{outline:2px solid var(--cc-cyan);outline-offset:6px;border-radius:50%}
+.cc-node-active .cc-node-core{background:var(--cc-cyan);box-shadow:0 0 16px var(--cc-cyan)}
+.cc-node-active .cc-node-label{color:var(--cc-cyan)}
+/* featured — Effurun/Warri, the Forge Alpha fabrication hub */
+.cc-node-featured .cc-node-core{width:15px;height:15px;background:var(--cc-gold);box-shadow:0 0 16px var(--cc-gold)}
+.cc-node-featured .cc-node-ring{border-color:rgba(212,175,55,.7);width:30px;height:30px}
+.cc-node-featured .cc-node-label{color:var(--cc-gold)}
+
+/* ---------- hub intelligence panel ---------- */
+.cc-panel{background:linear-gradient(160deg, rgba(8,19,26,.92), rgba(6,6,6,.94));
+  border:1px solid rgba(65,226,255,.18);border-left:3px solid var(--cc-cyan);
+  padding:26px;backdrop-filter:blur(8px);min-height:340px}
+.cc-panel-featured{border-left-color:var(--cc-gold);border-color:rgba(212,175,55,.3)}
+.cc-panel-name{font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--cream);text-transform:uppercase}
+.cc-panel-role{font-size:11px;font-weight:900;letter-spacing:.16em;color:var(--cc-gold);text-transform:uppercase;margin:6px 0 20px}
+.cc-panel-kicker{font-size:10px;font-weight:900;letter-spacing:.18em;color:rgba(243,233,210,.5);text-transform:uppercase;margin:16px 0 8px}
+.cc-panel-list{list-style:none;margin:0;padding:0}
+.cc-panel-list li{font-size:13px;color:rgba(243,233,210,.88);padding:4px 0;border-bottom:1px solid rgba(65,226,255,.08)}
+.cc-panel-status{margin-top:20px;font-size:11px;font-weight:900;letter-spacing:.12em;color:var(--cc-emerald)}
+.cc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cc-emerald);
+  box-shadow:0 0 8px var(--cc-emerald);margin-right:8px;vertical-align:middle}
+.cc-panel-seed{margin-top:14px;font-size:10.5px;color:rgba(243,233,210,.45);font-style:italic;line-height:1.5}
+
+/* ---------- network stats ---------- */
+.cc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border:1px solid rgba(65,226,255,.18);margin-top:38px;position:relative;background:rgba(8,19,26,.6)}
+.cc-stat{padding:24px 22px;border-right:1px solid rgba(65,226,255,.12)}
+.cc-stat:last-of-type{border-right:0}
+.cc-stat-value{font-size:40px;font-weight:900;letter-spacing:-.03em;line-height:.9;color:var(--cc-cyan)}
+.cc-stat-label{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:rgba(243,233,210,.55);margin-top:8px}
+.cc-stats-note{grid-column:1/-1;font-size:10.5px;color:rgba(243,233,210,.4);font-style:italic;padding:10px 22px;border-top:1px solid rgba(65,226,255,.1)}
+
+/* ---------- responsive: mobile = plate central, panel below ---------- */
+@media(max-width:900px){
+  .cc-stage{grid-template-columns:1fr}
+  .cc-panel{min-height:0}
+  .cc-node{width:30px;height:30px}
+  .cc-node-label{display:none}
+  .cc-node-active .cc-node-label,.cc-node-featured .cc-node-label{display:block}
+  .cc-stat{border-bottom:1px solid rgba(65,226,255,.12)}
+}
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .cc-node-ring{animation:none;opacity:.5}
+  .cc-particle{display:none}
+}
