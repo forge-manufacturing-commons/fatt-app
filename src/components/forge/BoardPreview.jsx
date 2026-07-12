@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { fetchJobs } from "../../lib/supabase";
 import { useForgeActivity } from "../../lib/ForgeActivityEngine.jsx";
+import { HumanGlyph } from "../../humans/HumanGlyphLibrary.jsx";
 
 // ============================================================
 // 06 / BUILD BOARD — the manufacturing heartbeat of Forge.
@@ -23,32 +24,33 @@ const EVIDENCE = {
        owner:"Automotive workshop",   ownerRole:"SME",
        signoff:"Engr. Adebayo",       signoffRole:"Reviewer",
        waitingOn:["FRM drawing revision"], nextTo:"Assembly bay",
-       progress:78 },
+       progress:78,
+       humanRole:"WELDER", humanVariant:"F" },
   2: { code:"BDY-002", location:"Aba",             rev:"REV.02",
        owner:"Sheet-metal SME",       ownerRole:"Fabricator",
        signoff:"Awaiting review",     signoffRole:"Reviewer",
        waitingOn:["Panel dimensions confirmed"], nextTo:"Chassis mount",
-       progress:52 },
+       progress:52, humanRole:"WELDER", humanVariant:"M" },
   3: { code:"KTB-003", location:"Nnewi",           rev:"REV.05",
        owner:"Sheet-metal SME",       ownerRole:"Fabricator",
        signoff:"Engr. Okonkwo",       signoffRole:"University reviewer",
        waitingOn:[], nextTo:"Service module fit-up",
-       progress:100 },
+       progress:100, humanRole:"ENGINEER", humanVariant:"F" },
   4: { code:"GAS-004", location:"Port Harcourt",   rev:"REV.03",
        owner:"Certified gas fitter",  ownerRole:"SME",
        signoff:"Named engineer required", signoffRole:"Safety",
        waitingOn:["SON certification check"], nextTo:"Installation",
-       progress:88 },
+       progress:88, humanRole:"INSPECTOR", humanVariant:"M" },
   5: { code:"ELC-005", location:"Lagos",           rev:"REV.02",
        owner:"Solar / inverter SME",  ownerRole:"SME",
        signoff:"Diaspora technical review", signoffRole:"Reviewer",
        waitingOn:["Load calculation"], nextTo:"Systems integration",
-       progress:64 },
+       progress:64, humanRole:"ENGINEER", humanVariant:"M" },
   6: { code:"CKL-006", location:"Nnewi",           rev:"REV.03",
        owner:"Stainless kitchen SME", ownerRole:"Fabricator",
        signoff:"Verified — accepted", signoffRole:"Reviewer",
        waitingOn:[], nextTo:"Service module install",
-       progress:100 },
+       progress:100, humanRole:"INSPECTOR", humanVariant:"F" },
   7: { code:"EXT-007", location:"Awaiting workshop", rev:"REV.01",
        owner:"Ventilation SME",       ownerRole:"SME",
        signoff:"Not yet assigned",    signoffRole:"—",
@@ -200,14 +202,25 @@ export default function BoardPreview() {
                   </div>
 
                   {/* col 5 — human sign-off */}
-                  <div className="board-col">
-                    <div className="board-col-signoff">{ev.signoff}</div>
-                    <div className="forge-technical" style={{ opacity: .6 }}>{ev.signoffRole}</div>
+                  <div className="board-col board-col-human">
+                    {ev.humanRole && (
+                      <HumanGlyph
+                        role={ev.humanRole}
+                        variant={ev.humanVariant}
+                        size={32}
+                        animate={isPulse}
+                        className="board-col-human-glyph"
+                      />
+                    )}
+                    <div className="board-col-human-body">
+                      <div className="board-col-signoff">{ev.signoff}</div>
+                      <div className="forge-technical" style={{ opacity: .6 }}>{ev.signoffRole}</div>
                     {ev.waitingOn && ev.waitingOn.length > 0 && (
                       <div className="board-col-waiting forge-human" style={{ fontSize: 11, marginTop: 6, opacity: .55 }}>
                         Waiting on: {ev.waitingOn.join(", ")}
                       </div>
                     )}
+                    </div>
                   </div>
 
                   {/* col 6 — next destination */}

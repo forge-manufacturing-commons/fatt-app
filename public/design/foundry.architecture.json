@@ -1,0 +1,187 @@
+{
+  "project": {
+    "name": "Forge Foundry",
+    "code": "FGF",
+    "version": "1.0.0",
+    "root_collection": "FORGE_FOUNDRY"
+  },
+  "naming": {
+    "separator": "_",
+    "sequence_padding": 4,
+    "variant_padding": 2,
+    "tokens": {
+      "project": "FGF",
+      "collection": "{index}_{name}",
+      "camera": "CAM_{family}_{shot}_{lens_mm}MM_{variant}_{seq}",
+      "light": "LGT_{rig}_{role}_{variant}_{seq}",
+      "material": "MAT_{family}_{surface}_{variant}_{seq}",
+      "human": "HMN_{role}_{identity}_{pose}_{variant}_{seq}",
+      "vehicle": "VEH_{family}_{model}_{variant}_{state}_{seq}",
+      "nigeria": "NGA_{family}_{asset}_{variant}_{seq}",
+      "workshop": "WKS_{family}_{asset}_{variant}_{seq}",
+      "geometry": "GEO_{family}_{asset}_{variant}_{seq}",
+      "particle": "VFX_{family}_{asset}_{variant}_{seq}",
+      "export": "EXP_{target}_{asset}_{variant}_{seq}",
+      "archive": "ARC_{family}_{asset}_{variant}_{seq}"
+    },
+    "enums": {
+      "identity": [
+        "AFR"
+      ],
+      "state": [
+        "NEUTRAL",
+        "ACTIVE",
+        "WIP",
+        "FINAL"
+      ]
+    }
+  },
+  "collections": [
+    {
+      "index": "00",
+      "name": "REFERENCE",
+      "label": "Reference",
+      "description": "Reference boards, scans, measured drawings, and source imagery."
+    },
+    {
+      "index": "01",
+      "name": "CAMERAS",
+      "label": "Cameras",
+      "description": "Reusable camera families, markers, and shot collections."
+    },
+    {
+      "index": "02",
+      "name": "LIGHTING",
+      "label": "Lighting",
+      "description": "Switchable lighting rigs and shared light assets."
+    },
+    {
+      "index": "03",
+      "name": "HUMANS",
+      "label": "Humans",
+      "description": "Rigged human assets, pose variants, and human libraries."
+    },
+    {
+      "index": "04",
+      "name": "VEHICLES",
+      "label": "Vehicles",
+      "description": "Vehicle assemblies, parts, and reusable variants."
+    },
+    {
+      "index": "05",
+      "name": "NIGERIA",
+      "label": "Nigeria",
+      "description": "Nigeria billet, map assets, regional geometry, and data-linked visuals."
+    },
+    {
+      "index": "06",
+      "name": "WORKSHOP",
+      "label": "Workshop",
+      "description": "Workshop props, bays, fixtures, and industrial staging assets."
+    },
+    {
+      "index": "07",
+      "name": "TYPOGRAPHY",
+      "label": "Typography",
+      "description": "Type systems, text assets, labels, and technical callouts."
+    },
+    {
+      "index": "08",
+      "name": "GEOMETRY",
+      "label": "Geometry",
+      "description": "Shared geometry blocks, construction helpers, and reusable meshes."
+    },
+    {
+      "index": "09",
+      "name": "PARTICLES",
+      "label": "Particles",
+      "description": "Particles, atmosphere, sparks, dust, and simulation assets."
+    },
+    {
+      "index": "10",
+      "name": "EXPORT",
+      "label": "Export",
+      "description": "Export staging, publish sets, and target-specific output collections."
+    },
+    {
+      "index": "11",
+      "name": "ARCHIVE",
+      "label": "Archive",
+      "description": "Deprecated, superseded, or historical assets retained for traceability."
+    }
+  ],
+  "subcollections": {
+    "default": [
+      {
+        "suffix": "LIB",
+        "label": "Library"
+      },
+      {
+        "suffix": "SRC",
+        "label": "Source"
+      },
+      {
+        "suffix": "WRK",
+        "label": "Work"
+      },
+      {
+        "suffix": "OUT",
+        "label": "Output"
+      }
+    ],
+    "01_CAMERAS": [
+      {
+        "suffix": "LIB",
+        "label": "Library"
+      },
+      {
+        "suffix": "SETS",
+        "label": "Shot Sets"
+      },
+      {
+        "suffix": "MRK",
+        "label": "Markers"
+      },
+      {
+        "suffix": "OUT",
+        "label": "Output"
+      }
+    ],
+    "02_LIGHTING": [
+      {
+        "suffix": "LIB",
+        "label": "Library"
+      },
+      {
+        "suffix": "RIGS",
+        "label": "Rigs"
+      },
+      {
+        "suffix": "SHARED",
+        "label": "Shared"
+      },
+      {
+        "suffix": "OUT",
+        "label": "Output"
+      }
+    ],
+    "10_EXPORT": [
+      {
+        "suffix": "STAGING",
+        "label": "Staging"
+      },
+      {
+        "suffix": "QUEUE",
+        "label": "Queue"
+      },
+      {
+        "suffix": "PUBLISH",
+        "label": "Publish"
+      },
+      {
+        "suffix": "QC",
+        "label": "QC"
+      }
+    ]
+  }
+}

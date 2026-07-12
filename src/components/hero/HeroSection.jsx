@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useForgeActivity } from "../../lib/ForgeActivityEngine.jsx";
 import FactoryAtmosphere from "../forge/FactoryAtmosphere";
+import { HumanTag } from "../../humans/HumanGlyphLibrary.jsx";
 
 // ============================================================
 // HERO — ENTER THE FORGE
@@ -116,10 +117,16 @@ export default function HeroSection() {
               <div className="hero-activity-line">
                 {phase === "quiet" ? "Watching for the next build signal…" : `${event.location} — ${event.action}`}
               </div>
-              {phase !== "quiet" && event?.signoff && (
-                <div className="hero-activity-signoff">
-                  <span className="forge-technical" style={{opacity:.6}}>SIGN-OFF</span>
-                  <span> · {event.signoff}</span>
+              {phase !== "quiet" && event?.humanRole && (
+                <div className="hero-activity-human">
+                  <HumanTag
+                    role={event.humanRole}
+                    variant={event.humanVariant}
+                    name={event.humanName}
+                    workshop={event.workshop}
+                    task={event.action}
+                    size={34}
+                  />
                 </div>
               )}
             </div>

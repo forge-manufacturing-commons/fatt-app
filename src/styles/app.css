@@ -1256,3 +1256,60 @@ footer b{color:var(--cream)}
   .cc-node.cc-status-expanding .cc-node-core,
   .cc-node.cc-status-standby .cc-node-core{animation:none}
 }
+
+/* ============================================================
+   PASS VI — HUMAN LAYER PLACEMENT
+   Wiring the Forge Human Language into the three surfaces where
+   named people belong: hero activity band, Build Board sign-off,
+   Command Center hub panel roster.
+   ============================================================ */
+
+/* Hero — human tag replaces the sign-off text line */
+.hero-activity-human{
+  grid-column:1 / -1;
+  margin-top:10px;padding-top:12px;
+  border-top:1px dashed rgba(212,175,55,.18);
+}
+.hero-activity-human .forge-humantag{max-width:520px}
+
+/* Build Board — sign-off cell becomes glyph + name block */
+.board-col-human{
+  display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
+}
+.board-col-human-glyph{
+  border:1px solid rgba(212,175,55,.28);
+  background:radial-gradient(circle at 50% 40%, rgba(212,175,55,.05), transparent 65%);
+  padding:2px;flex-shrink:0;
+}
+.board-col-human-body{min-width:0;overflow-wrap:break-word}
+@media(max-width:960px){
+  .board-col-human{grid-template-columns:auto 1fr}
+}
+
+/* Command Center — people roster inside hub panel */
+.cc-panel-people{
+  display:flex;flex-wrap:wrap;gap:10px 12px;
+  margin:8px 0 16px;
+}
+.cc-panel-person{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  min-width:52px;
+}
+.cc-panel-person .forge-glyph{
+  border:1px solid rgba(212,175,55,.22);
+  background:radial-gradient(circle at 50% 40%, rgba(212,175,55,.05), transparent 65%);
+  padding:2px;
+}
+.cc-panel-person-name{
+  font-family:var(--forge-mono);font-size:9.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(243,233,210,.65);text-align:center;line-height:1;
+  max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* Glyph visibility guarantee — inside dark panels, ensure stroke reads */
+.cc-panel .forge-glyph .glyph-stroke,
+.board-col-human .forge-glyph .glyph-stroke,
+.hero-activity-human .forge-glyph .glyph-stroke{
+  stroke:rgba(243,233,210,.92);
+}

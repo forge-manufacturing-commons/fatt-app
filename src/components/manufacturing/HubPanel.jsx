@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { HumanGlyph } from "../../humans/HumanGlyphLibrary.jsx";
 
 // Hub intelligence surface — updates from the active hub.
 // Reveals the hub's status truthfully (fabricating / verifying /
@@ -13,6 +14,23 @@ const STATUS_LABEL = {
   expanding:   "EXPANDING · ONBOARDING",
   coordinating:"COORDINATION HUB",
   sleeping:    "DORMANT · JOINING NEXT CYCLE",
+};
+
+// Illustrative human roster per hub — mirrors ForgeActivityEngine
+// naming so an activity event at Warri visibly corresponds to a person
+// already visible on the Warri hub panel. Named human presence is
+// integral, not decorative.
+const PEOPLE_BY_HUB = {
+  warri:  [{ role:"WELDER",    variant:"F", name:"Adaeze Okoro" }, { role:"WELDER",    variant:"M", name:"Godwin Ejime" }, { role:"INSPECTOR", variant:"F", name:"Blessing Otu" }],
+  nnewi:  [{ role:"WELDER",    variant:"M", name:"Chike Nwosu" },  { role:"ENGINEER",  variant:"F", name:"Chidinma Eze" }],
+  ilorin: [{ role:"ENGINEER",  variant:"F", name:"Ngozi Bello" },  { role:"ENGINEER",  variant:"M", name:"Dr. Adekunle" }],
+  aba:    [{ role:"INSPECTOR", variant:"M", name:"Uche Chikelu" }, { role:"WELDER",    variant:"F", name:"Ifeoma Nnamdi" }],
+  ph:     [{ role:"ENGINEER",  variant:"M", name:"Tamuno George" },{ role:"INSPECTOR", variant:"F", name:"Ebi Preye" }],
+  lagos:  [{ role:"ENGINEER",  variant:"M", name:"Ibrahim Danladi"},{ role:"ENGINEER", variant:"F", name:"Kemi Ade" }],
+  abuja:  [{ role:"INSPECTOR", variant:"F", name:"Fatima Bala" }],
+  kaduna: [{ role:"WELDER",    variant:"M", name:"Musa Ibrahim" }, { role:"ENGINEER",  variant:"M", name:"Sani Abubakar" }],
+  kano:   [{ role:"WELDER",    variant:"M", name:"Aminu Sule" }],
+  benin:  [], // dormant — no active people
 };
 
 export default function HubPanel({ hub }) {
@@ -52,7 +70,25 @@ export default function HubPanel({ hub }) {
         <div className="cc-panel-status">
           <span className="cc-dot" aria-hidden="true" /> {statusLabel}
         </div>
-        <div className="cc-panel-seed">Alpha network model — hub status and evidence are illustrative until verified registration data is connected.</div>
+        {(() => {
+          const people = PEOPLE_BY_HUB[hub.id] || [];
+          if (people.length === 0) return null;
+          return (
+            <>
+              <div className="cc-panel-kicker">People here</div>
+              <div className="cc-panel-people">
+                {people.map((p, i) => (
+                  <div key={i} className="cc-panel-person" title={p.name}>
+                    <HumanGlyph role={p.role} variant={p.variant} size={30} animate metadata={{ name: p.name }} />
+                    <div className="cc-panel-person-name">{p.name.split(" ")[0]}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
+
+        <div className="cc-panel-seed">Alpha network model — hub status, evidence and people are illustrative until verified registration data is connected.</div>
       </motion.aside>
     </AnimatePresence>
   );

@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "project": "Forge OS",
+    "code": "FGF",
+    "convention": "Codex Forge Foundry — token-based asset naming, uppercase ASCII, underscores, zero-padded sequences.",
+    "spec": "docs/naming_conventions.md in the Forge Foundry Blender pipeline is authoritative. This manifest is the web-side registry."
+  },
+  "renders": {
+    "VEH_TRUCK_ODOGWU_FRONT_A_FINAL_0002":     { "path": "/renders/02-front-quarter.jpg", "family": "TRUCK", "model": "ODOGWU", "variant": "A", "state": "FINAL", "view": "front_quarter",  "usage": "hero fabrication chamber, dossier primary" },
+    "VEH_TRUCK_ODOGWU_HATCH_A_FINAL_0003":     { "path": "/renders/03-hatch-open.jpg",    "family": "TRUCK", "model": "ODOGWU", "variant": "A", "state": "FINAL", "view": "hatch_open",     "usage": "dossier secondary" },
+    "VEH_TRUCK_ODOGWU_GALLEY_A_FINAL_0004":    { "path": "/renders/04-rear-galley.jpg",   "family": "TRUCK", "model": "ODOGWU", "variant": "A", "state": "FINAL", "view": "rear_galley",    "usage": "dossier secondary" },
+    "VEH_TRUCK_ODOGWU_MURAL_A_FINAL_0005":     { "path": "/renders/05-mural-side.jpg",    "family": "TRUCK", "model": "ODOGWU", "variant": "A", "state": "FINAL", "view": "mural_side",     "usage": "dossier livery view" },
+    "VEH_TRUCK_ODOGWU_SIDE_A_FINAL_0001":      { "path": "/renders/01-side-hero.jpg",     "family": "TRUCK", "model": "ODOGWU", "variant": "A", "state": "FINAL", "view": "side_hero",      "usage": "assembly event decomposition" },
+    "VEH_TRUCK_ODOGWU_REAR_A_FINAL_0006":      { "path": "/renders/06-rear-quarter.jpg",  "family": "TRUCK", "model": "ODOGWU", "variant": "A", "state": "FINAL", "view": "rear_quarter",   "usage": "dossier secondary" }
+  },
+  "nigeria": {
+    "NGA_BILLET_PLATE_A_0001":                 { "path": "/assets/nigeria/transparent_overlay_top.png", "family": "BILLET",  "asset": "PLATE",   "variant": "A", "usage": "Command Center machined steel plate" },
+    "NGA_BILLET_OUTLINE_A_0001":               { "path": "/assets/nigeria/nigeria_outline.svg",         "family": "BILLET",  "asset": "OUTLINE", "variant": "A", "usage": "Forge-gold machined perimeter" }
+  },
+  "identity": {
+    "IDN_LOGO_MASTER_A_0001":                  { "path": "/forge_Logo.png",  "usage": "Master brand identity" }
+  },
+  "humans": {
+    "note": "Human glyphs are rendered as inline SVG components. See src/humans/HumanGlyphLibrary.jsx. Constitutional naming: HUM_{role}_AFR_{pose}_{variant}_{seq}",
+    "current_library": [
+      "HUM_WELDER_AFR_NEUTRAL_F_0001",
+      "HUM_WELDER_AFR_NEUTRAL_M_0001",
+      "HUM_ENGINEER_AFR_NEUTRAL_F_0001",
+      "HUM_ENGINEER_AFR_NEUTRAL_M_0001",
+      "HUM_INSPECTOR_AFR_NEUTRAL_F_0001",
+      "HUM_INSPECTOR_AFR_NEUTRAL_M_0001"
+    ],
+    "next_expansion": [
+      "HUM_APPRENTICE_AFR_NEUTRAL_F_0001",
+      "HUM_APPRENTICE_AFR_NEUTRAL_M_0001",
+      "HUM_SUPERVISOR_AFR_NEUTRAL_F_0001",
+      "HUM_SUPERVISOR_AFR_NEUTRAL_M_0001",
+      "HUM_STUDENT_AFR_NEUTRAL_F_0001",
+      "HUM_STUDENT_AFR_NEUTRAL_M_0001"
+    ]
+  }
+}

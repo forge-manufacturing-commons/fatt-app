@@ -1,0 +1,151 @@
+/* ============================================================
+   FORGE HUMAN LANGUAGE — CSS design system
+   Every glyph is drawn on a 48-unit grid with two-line stroke
+   language (structural + accent). PPE cues use forge palette
+   tokens so glyphs auto-theme with the site.
+   ============================================================ */
+
+.forge-glyph{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:0;background:transparent;border:0;color:inherit;
+  vertical-align:middle;
+  cursor:default;
+}
+.forge-glyph[type="button"]{cursor:pointer}
+.forge-glyph svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* ---- structural strokes ---- */
+.glyph-stroke{
+  stroke:var(--cream);stroke-width:1.4;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+}
+.glyph-stance{stroke:rgba(212,175,55,.5);stroke-width:.75;fill:none;vector-effect:non-scaling-stroke;stroke-dasharray:1 2}
+
+/* ---- helmet / visor variants ---- */
+.glyph-helmet{fill:var(--forge-gold);stroke:var(--forge-gold);stroke-width:.6;opacity:.9}
+.glyph-visor{fill:rgba(65,226,255,.28);stroke:var(--forge-cyan);stroke-width:.6}
+.glyph-ppe{stroke:var(--forge-heat);stroke-width:1.4;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.glyph-hivis{stroke:var(--forge-heat);stroke-width:1.1;stroke-linecap:round;opacity:.9;vector-effect:non-scaling-stroke}
+
+/* ---- role-specific tooling colours ---- */
+.forge-glyph-welder    .glyph-tool{fill:var(--forge-heat);stroke:var(--forge-heat);stroke-width:.4}
+.forge-glyph-engineer  .glyph-tool{stroke:var(--forge-gold);stroke-width:.9;fill:none}
+.forge-glyph-inspector .glyph-tool{stroke:var(--forge-cyan);stroke-width:.9;fill:none;stroke-linecap:round;vector-effect:non-scaling-stroke}
+
+/* ---- drawings & clipboards ---- */
+.glyph-drawing      {fill:rgba(20,17,14,.9);stroke:var(--cream);stroke-width:.7;vector-effect:non-scaling-stroke}
+.glyph-drawing-mark {stroke:var(--forge-gold);stroke-width:.5;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:.7}
+
+/* ---- spark cluster ---- */
+.glyph-spark-core{fill:var(--forge-heat);filter:drop-shadow(0 0 2px var(--forge-heat))}
+.glyph-spark-ray{stroke:var(--forge-heat);stroke-width:.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
+
+/* ---- ANIMATION STATES ---- */
+/* Welder: intermittent spark cluster on a long duty cycle (weld → cool → weld).
+   Never continuous — reads as work, not decoration. */
+.forge-glyph-welder.is-animate .glyph-spark{
+  animation:glyphWeldSpark 4.8s cubic-bezier(.4,0,.2,1) infinite;
+  transform-origin:41px 16px;
+}
+.forge-glyph-welder.is-animate .glyph-visor{
+  animation:glyphVisorFlash 4.8s ease-in-out infinite;
+}
+@keyframes glyphWeldSpark{
+  0%, 12%, 100%{opacity:0;transform:scale(0)}
+  16%          {opacity:1;transform:scale(1)}
+  22%          {opacity:.6;transform:scale(1.1)}
+  28%          {opacity:1;transform:scale(1)}
+  38%          {opacity:0;transform:scale(1.2)}
+  62%, 100%    {opacity:0;transform:scale(0)}
+}
+@keyframes glyphVisorFlash{
+  0%, 12%, 42%, 100%{fill:rgba(65,226,255,.28)}
+  18%, 24%, 32%     {fill:rgba(240,246,255,.75)}
+}
+
+/* Engineer: the pointing arm ticks gently as if walking through a review.
+   Very slow. Sub-conscious. */
+.forge-glyph-engineer.is-animate .glyph-point-arm{
+  transform-origin:28px 16px;
+  animation:glyphEngPoint 6.2s ease-in-out infinite;
+}
+@keyframes glyphEngPoint{
+  0%, 100%{transform:rotate(0deg)}
+  40%     {transform:rotate(-6deg)}
+  55%     {transform:rotate(-4deg)}
+}
+
+/* Inspector: caliper arm makes small measurement adjustments. */
+.forge-glyph-inspector.is-animate .glyph-measure-arm{
+  transform-origin:28px 17px;
+  animation:glyphInspMeasure 5.6s ease-in-out infinite;
+}
+@keyframes glyphInspMeasure{
+  0%, 100%{transform:translateX(0)}
+  40%     {transform:translateX(1.5px)}
+  55%     {transform:translateX(.5px)}
+  70%     {transform:translateX(1px)}
+}
+
+/* Female variant — subtly narrower shoulder/pelvis via SVG stroke tuning,
+   already handled in JSX (stanceW = 5.5). Nothing else in CSS. */
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce){
+  .forge-glyph-welder.is-animate .glyph-spark,
+  .forge-glyph-welder.is-animate .glyph-visor,
+  .forge-glyph-engineer.is-animate .glyph-point-arm,
+  .forge-glyph-inspector.is-animate .glyph-measure-arm{animation:none}
+  .forge-glyph-welder .glyph-spark{opacity:.4}
+}
+
+/* ============================================================
+   HUMAN TAG — machined ID badge for named-person surfaces
+   ============================================================ */
+.forge-humantag{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:12px;align-items:center;
+  padding:10px 14px;
+  background:linear-gradient(160deg, rgba(20,17,14,.86), rgba(6,6,6,.94));
+  border:1px solid rgba(212,175,55,.24);
+  border-left:2px solid var(--forge-gold);
+  min-width:0;
+  position:relative;
+}
+.forge-humantag::before, .forge-humantag::after{
+  content:"";position:absolute;width:6px;height:6px;
+  border:1px solid rgba(212,175,55,.5);pointer-events:none;
+}
+.forge-humantag::before{top:-1px;right:-1px;border-left:0;border-bottom:0}
+.forge-humantag::after {bottom:-1px;left:-1px;border-right:0;border-top:0}
+
+.forge-humantag .forge-glyph{
+  background:radial-gradient(circle at 50% 40%, rgba(212,175,55,.06), transparent 65%);
+  border:1px solid rgba(212,175,55,.18);
+  padding:3px;
+}
+
+.forge-humantag-body{min-width:0;overflow-wrap:break-word}
+.forge-humantag-name{
+  font-family:var(--forge-font);font-size:13px;font-weight:700;
+  color:var(--cream);letter-spacing:-.005em;line-height:1.2;
+}
+.forge-humantag-role{
+  font-family:var(--forge-mono);font-size:9.5px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--forge-gold);opacity:.75;margin-top:3px;
+  display:flex;gap:.5ch;flex-wrap:wrap;
+}
+.forge-humantag-workshop{color:rgba(243,233,210,.6)}
+.forge-humantag-sep{color:rgba(212,175,55,.4)}
+.forge-humantag-task{
+  font-family:var(--forge-font);font-size:11.5px;
+  color:rgba(243,233,210,.72);margin-top:4px;line-height:1.35;
+  font-style:italic;
+}
+
+/* Compact variant for tight surfaces */
+.forge-humantag.compact{padding:8px 10px}
+.forge-humantag.compact .forge-humantag-task{display:none}
