@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160">
+    <rect width="240" height="160" fill="#2B2E33"></rect>
+    <rect x="60" y="90" width="90" height="30" fill="#C89B4A"></rect><rect x="70" y="50" width="40" height="40" fill="#C89B4A"></rect>
+   <rect x="150" y="40" width="6" height="90" fill="#1c1e21"></rect><rect x="150" y="120" width="50" height="8" fill="#1c1e21"></rect>
+   <circle cx="90" cy="130" r="14" fill="#1c1e21"></circle><circle cx="140" cy="130" r="14" fill="#1c1e21"></circle>
+    <line x1="60" y1="148" x2="200" y2="148" stroke="#4FC7D6" stroke-width="1"></line><polygon points="60,148 66,145 66,151" fill="#4FC7D6"></polygon><polygon points="200,148 194,145 194,151" fill="#4FC7D6"></polygon><text x="130" y="142" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">2200mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — FORKLIFT</text>
+  </svg>

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <g class="sweep"><path d="M100,100 L100,20 A80,80 0 0 1 160,50 Z" fill="#E1602E" opacity="0.25"></path></g>
+    <circle class="flash" cx="100" cy="100" r="14" fill="#E1602E"></circle>
+    <circle cx="100" cy="100" r="20" fill="none" stroke="#E1602E" stroke-width="1.5"></circle></svg>

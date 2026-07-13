@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <line x1="0" y1="100" x2="200" y2="100" stroke="#C89B4A" stroke-width="1.5" stroke-dasharray="2 4"></line>
+    <circle class="pulse" cx="30" cy="100" r="5" fill="#C89B4A"></circle>
+    <text x="42" y="94" font-family="monospace" font-size="10" fill="#C89B4A">DATUM A</text>
+    <line x1="100" y1="0" x2="100" y2="200" stroke="#C89B4A" stroke-width="1.5" stroke-dasharray="2 4" opacity="0.6"></line></svg>

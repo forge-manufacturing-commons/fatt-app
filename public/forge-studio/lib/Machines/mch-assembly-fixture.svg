@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">
+    <rect width="200" height="140" fill="#2B2E33"></rect>
+    <rect x="30" y="90" width="140" height="14" fill="#7C8085"></rect><rect x="50" y="60" width="10" height="30" fill="#1c1e21"></rect><rect x="140" y="60" width="10" height="30" fill="#1c1e21"></rect><rect x="90" y="60" width="20" height="30" fill="none" stroke="#4FC7D6" stroke-width="1.5"></rect>
+    <line x1="30" y1="118" x2="170" y2="118" stroke="#4FC7D6" stroke-width="1"></line><polygon points="30,118 36,115 36,121" fill="#4FC7D6"></polygon><polygon points="170,118 164,115 164,121" fill="#4FC7D6"></polygon><text x="100" y="112" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">1400mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — ASSEMBLY FIXTURE</text>
+  </svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 200">
+    <rect width="140" height="200" fill="#2B2E33"></rect>
+    <rect x="35" y="50" width="30" height="130" rx="8" fill="#E1602E" opacity="0.85"></rect><rect x="75" y="50" width="30" height="130" rx="8" fill="#2E8F72" opacity="0.85"></rect>
+   <rect x="42" y="35" width="16" height="16" fill="#1c1e21"></rect><rect x="82" y="35" width="16" height="16" fill="#1c1e21"></rect>
+    <line x1="20" y1="50" x2="20" y2="180" stroke="#4FC7D6" stroke-width="1"></line><polygon points="20,50 17,56 23,56" fill="#4FC7D6"></polygon><polygon points="20,180 17,174 23,174" fill="#4FC7D6"></polygon><text x="28" y="115" font-family="monospace" font-size="8" fill="#4FC7D6">1300mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — GAS CYLINDERS</text>
+  </svg>

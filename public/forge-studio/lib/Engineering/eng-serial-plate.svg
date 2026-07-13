@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 90"><rect width="220" height="90" fill="#7C8085"></rect>
+    <rect x="4" y="4" width="212" height="82" fill="none" stroke="#2B2E33" stroke-width="2"></rect>
+    <circle cx="14" cy="14" r="3" fill="#2B2E33"></circle><circle cx="206" cy="14" r="3" fill="#2B2E33"></circle>
+    <circle cx="14" cy="76" r="3" fill="#2B2E33"></circle><circle cx="206" cy="76" r="3" fill="#2B2E33"></circle>
+    <text x="20" y="34" font-family="monospace" font-size="12" fill="#2B2E33">FORGE / NAWEDOAM</text>
+    <text x="20" y="52" font-family="monospace" font-size="10" fill="#2B2E33">COMPONENT: VEH_TRUCK_ODOGWU</text>
+    <text x="20" y="68" font-family="monospace" font-size="10" fill="#2B2E33">OWNER: SME_0000 · VERIFIED</text></svg>

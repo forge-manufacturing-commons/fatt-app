@@ -1313,3 +1313,43 @@ footer b{color:var(--cream)}
 .hero-activity-human .forge-glyph .glyph-stroke{
   stroke:rgba(243,233,210,.92);
 }
+
+/* ============================================================
+   FORGE STUDIO CONSUMPTION POINTS
+   Placement rules for shipped studio SVGs consumed by app.
+   ============================================================ */
+
+/* Hero — ForgeStudio environment layer */
+.fs-hero-environment{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.fs-hero-environment > *{position:absolute}
+
+/* Build Board — status badge alongside the tone signal */
+.board-col-status{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.board-status-badge{
+  width:44px;height:44px;display:block;
+  border:1px solid rgba(200,155,74,.28);
+  background:radial-gradient(circle at 50% 40%, rgba(200,155,74,.06), transparent 65%);
+  padding:2px;
+}
+
+/* Dossier serial plate — small stamped nameplate at top-right of primary */
+.dossier-primary{position:relative}
+.dossier-serial-plate{
+  position:absolute;top:16px;right:16px;
+  width:120px;height:auto;
+  z-index:3;pointer-events:none;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
+}
+@media(max-width:640px){.dossier-serial-plate{width:90px}}
+
+/* ============================================================
+   FIX — plate image must not intercept hub clicks.
+   With 18 hubs on the plate, hit-testing failed under the
+   plate PNG. Every non-interactive plate layer gets
+   pointer-events:none; hubs (`.cc-node`) remain clickable.
+   ============================================================ */
+.cc-plate,
+.cc-plate-billet,
+.cc-plate-edge,
+.cc-plate-perimeter{pointer-events:none}
+.cc-plane img.fs-bg{pointer-events:none}

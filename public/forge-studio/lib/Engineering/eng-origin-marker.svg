@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <circle class="ring" cx="100" cy="100" r="40" fill="none" stroke="#4FC7D6" stroke-width="1" stroke-dasharray="6 10"></circle>
+    <line x1="100" y1="70" x2="100" y2="130" stroke="#4FC7D6" stroke-width="1.5"></line>
+    <line x1="70" y1="100" x2="130" y2="100" stroke="#4FC7D6" stroke-width="1.5"></line>
+    <circle cx="100" cy="100" r="4" fill="#F2EEE6"></circle>
+    <text x="100" y="150" font-family="monospace" font-size="10" fill="#4FC7D6" text-anchor="middle">ORIGIN 0,0,0</text></svg>

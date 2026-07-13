@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 140">
+    <rect width="260" height="140" fill="#2B2E33"></rect>
+    <rect x="20" y="90" width="220" height="10" fill="#7C8085"></rect><rect x="30" y="60" width="50" height="35" fill="#7C8085"></rect><circle cx="55" cy="77" r="10" fill="#1c1e21"></circle>
+   <rect x="220" y="70" width="20" height="25" fill="#7C8085"></rect><rect x="90" y="82" width="120" height="8" fill="#1c1e21"></rect>
+    <line x1="20" y1="112" x2="240" y2="112" stroke="#4FC7D6" stroke-width="1"></line><polygon points="20,112 26,109 26,115" fill="#4FC7D6"></polygon><polygon points="240,112 234,109 234,115" fill="#4FC7D6"></polygon><text x="130" y="106" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">2200mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — LATHE</text>
+  </svg>

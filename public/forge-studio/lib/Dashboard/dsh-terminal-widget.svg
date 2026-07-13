@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140"><rect width="240" height="140" fill="#0b0c0e"></rect><rect x="0" y="0" width="240" height="20" fill="#2B2E33"></rect>
+    <text x="10" y="14" font-family="monospace" font-size="9" fill="#7C8085" text-anchor="start" letter-spacing="0">FORGE // TERMINAL</text>
+    <text x="10" y="40" font-family="monospace" font-size="10" fill="#2E8F72" text-anchor="start" letter-spacing="0">&gt; component.verify(0042)</text>
+    <text x="10" y="56" font-family="monospace" font-size="10" fill="#4FC7D6" text-anchor="start" letter-spacing="0">OK — owner: SME_0088</text>
+    <text x="10" y="72" font-family="monospace" font-size="10" fill="#4FC7D6" text-anchor="start" letter-spacing="0">OK — tolerance within spec</text>
+    <text x="10" y="88" font-family="monospace" font-size="10" fill="#F2EEE6" text-anchor="start" letter-spacing="0">&gt;</text><rect class="cursor" x="20" y="80" width="7" height="12" fill="#F2EEE6"></rect></svg>

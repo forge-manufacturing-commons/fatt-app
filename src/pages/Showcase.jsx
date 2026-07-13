@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { GALLERY } from "../lib/assets";
+import { STUDIO } from "../lib/ForgeStudio";
 
 import HeroSection from "../components/hero/HeroSection";
 import WhyForge from "../components/showcase/WhyForge";
@@ -105,6 +106,7 @@ export default function Showcase() {
               <div className="dossier-primary forge-panel gold-rim">
                 <span className="geo-reg tl" /><span className="geo-reg tr" />
                 <span className="geo-reg bl" /><span className="geo-reg br" />
+                <img className="fs-asset dossier-serial-plate" src={STUDIO.serialPlate} alt="" aria-hidden="true" />
                 <div className="dossier-primary-header">
                   <span className="forge-technical">VIEW <span className="slash">/</span> 01</span>
                   <span className="forge-system emerald no-brackets">DOMINANT</span>

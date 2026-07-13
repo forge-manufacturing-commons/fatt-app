@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 220">
+    <rect width="140" height="220" fill="#2B2E33"></rect>
+    <rect x="30" y="180" width="80" height="16" fill="#7C8085"></rect><rect x="60" y="40" width="12" height="140" fill="#7C8085"></rect><rect x="55" y="90" width="50" height="30" fill="#7C8085"></rect><rect x="63" y="120" width="8" height="30" fill="#1c1e21"></rect>
+    <line x1="30" y1="206" x2="110" y2="206" stroke="#4FC7D6" stroke-width="1"></line><polygon points="30,206 36,203 36,209" fill="#4FC7D6"></polygon><polygon points="110,206 104,203 104,209" fill="#4FC7D6"></polygon><text x="70" y="200" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">700mm</text><line x1="20" y1="40" x2="20" y2="180" stroke="#4FC7D6" stroke-width="1"></line><polygon points="20,40 17,46 23,46" fill="#4FC7D6"></polygon><polygon points="20,180 17,174 23,174" fill="#4FC7D6"></polygon><text x="28" y="110" font-family="monospace" font-size="8" fill="#4FC7D6">1400mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — DRILL PRESS</text>
+  </svg>

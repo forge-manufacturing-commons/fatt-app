@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <path d="M40,140 A60,60 0 1 1 160,140" fill="none" stroke="#7C8085" stroke-width="10"></path>
+    <path d="M40,140 A60,60 0 0 1 100,80" fill="none" stroke="#2E8F72" stroke-width="10"></path>
+    <line class="needle" x1="100" y1="140" x2="100" y2="90" stroke="#E1602E" stroke-width="3"></line>
+    <circle cx="100" cy="140" r="6" fill="#F2EEE6"></circle>
+    <text x="100" y="175" font-family="monospace" font-size="11" fill="#F2EEE6" text-anchor="middle" letter-spacing="0">PRESSURE</text></svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 260">
+  <rect width="340" height="260" fill="#2B2E33"></rect>
+  <text x="10" y="20" font-family="monospace" font-size="10" fill="#C89B4A" text-anchor="start">DETAIL A — HUB INDICATOR, SECTION VIEW (SCALE 5:1)</text>
+  <rect x="30" y="120" width="280" height="50" fill="#7C8085"></rect>
+  <path d="M130,120 L138,140 L202,140 L210,120 Z" fill="#1c1e21"></path>
+  <rect x="126" y="112" width="12" height="8" fill="#C89B4A"></rect>
+  <rect x="202" y="112" width="12" height="8" fill="#C89B4A"></rect>
+  <rect x="150" y="128" width="40" height="8" fill="#F2EEE6"></rect>
+  <ellipse cx="170" cy="112" rx="46" ry="10" fill="#C89B4A" opacity="0.15"></ellipse>
+  <line x1="126" y1="100" x2="126" y2="112" stroke="#4FC7D6" stroke-width="0.8"></line>
+  <line x1="214" y1="100" x2="214" y2="112" stroke="#4FC7D6" stroke-width="0.8"></line>
+  <line x1="126" y1="102" x2="214" y2="102" stroke="#4FC7D6" stroke-width="1"></line>
+  <text x="170" y="96" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">Ø 22mm BEZEL</text>
+  <line x1="150" y1="180" x2="150" y2="196" stroke="#4FC7D6" stroke-width="0.8"></line>
+  <line x1="190" y1="180" x2="190" y2="196" stroke="#4FC7D6" stroke-width="0.8"></line>
+  <line x1="150" y1="192" x2="190" y2="192" stroke="#4FC7D6" stroke-width="1"></line>
+  <text x="170" y="208" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">Ø 10mm LED CORE</text>
+  <text x="30" y="236" font-family="monospace" font-size="8" fill="#F2EEE6" text-anchor="start">1. FORGE GOLD BEZEL, MACHINED, 2mm PROUD</text>
+  <text x="30" y="248" font-family="monospace" font-size="8" fill="#F2EEE6" text-anchor="start">2. STEEL RECESS 20° DRAFT · 3. LED CORE FLUSH · 4. HALO ≤ 15% OPACITY</text>
+</svg>

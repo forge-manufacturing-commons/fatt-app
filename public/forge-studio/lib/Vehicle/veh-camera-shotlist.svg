@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 460">
+  <rect width="340" height="460" fill="#2B2E33"></rect>
+  <g><rect width="340" height="300" fill="#2B2E33"></rect>
+  <circle cx="170" cy="150" r="100" fill="none" stroke="#C89B4A" stroke-width="1" stroke-dasharray="4 4"></circle>
+  <circle cx="170" cy="150" r="4" fill="none" stroke="#C89B4A" stroke-width="1"></circle>
+  <rect x="140" y="136" width="60" height="28" fill="#7C8085"></rect>
+  <circle cx="169.99999999999997" cy="50" r="5" fill="#4FC7D6"></circle>
+    <line x1="169.99999999999997" y1="50" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="169.99999999999997" y="22" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">FRONT</text><circle cx="240.71067811865476" cy="79.28932188134523" r="5" fill="#4FC7D6"></circle>
+    <line x1="240.71067811865476" y1="79.28932188134523" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="260.5096679918781" y="59.4903320081219" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">FRONT 3/4 R</text><circle cx="270" cy="150" r="5" fill="#4FC7D6"></circle>
+    <line x1="270" y1="150" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="298" y="150" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">RIGHT</text><circle cx="240.71067811865476" cy="220.71067811865476" r="5" fill="#4FC7D6"></circle>
+    <line x1="240.71067811865476" y1="220.71067811865476" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="260.5096679918781" y="240.50966799187808" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">REAR 3/4 R</text><circle cx="170" cy="250" r="5" fill="#4FC7D6"></circle>
+    <line x1="170" y1="250" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="170" y="278" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">REAR</text><circle cx="99.28932188134526" cy="220.71067811865476" r="5" fill="#4FC7D6"></circle>
+    <line x1="99.28932188134526" y1="220.71067811865476" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="79.49033200812192" y="240.50966799187808" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">REAR 3/4 L</text><circle cx="70" cy="150" r="5" fill="#4FC7D6"></circle>
+    <line x1="70" y1="150" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="42" y="150.00000000000003" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">LEFT</text><circle cx="99.28932188134523" cy="79.28932188134526" r="5" fill="#4FC7D6"></circle>
+    <line x1="99.28932188134523" y1="79.28932188134526" x2="170" y2="150" stroke="#4FC7D6" stroke-width="0.6" opacity="0.35"></line>
+    <text x="79.4903320081219" y="59.490332008121925" font-family="monospace" font-size="7" fill="#F2EEE6" text-anchor="middle">FRONT 3/4 L</text>
+  <g>
+  <circle r="6" fill="#E1602E">
+    
+  </circle>
+</g>
+  <text x="10" y="20" font-family="monospace" font-size="9" fill="#C89B4A">TOP-DOWN — 8 KEY ANGLES + 360° ORBIT PATH</text></g>
+  <g transform="translate(0,300)"><rect width="340" height="140" fill="#2B2E33"></rect>
+  <rect x="120" y="80" width="100" height="40" fill="#7C8085"></rect>
+  <line x1="20" y1="100" x2="320" y2="100" stroke="#F2EEE6" stroke-width="0.5" opacity="0.4"></line>
+  <circle cx="40" cy="100" r="5" fill="#2E8F72">
+    
+  </circle>
+  <text x="20" y="124" font-family="monospace" font-size="7" fill="#2E8F72">DOLLY IN/OUT</text>
+  <path d="M 60,40 A 120,80 0 0 1 280,40" fill="none" stroke="#C89B4A" stroke-width="1" stroke-dasharray="3 3"></path>
+  <circle r="5" fill="#C89B4A">
+    
+  </circle>
+  <text x="150" y="30" font-family="monospace" font-size="7" fill="#C89B4A">CAMERA ORBIT (ELEVATED)</text>
+  <text x="10" y="16" font-family="monospace" font-size="9" fill="#F2EEE6">SIDE ELEVATION — DOLLY + ORBIT PATHS</text></g>
+</svg>

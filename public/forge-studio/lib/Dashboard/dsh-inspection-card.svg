@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 140"><rect width="220" height="140" fill="#2B2E33"></rect>
+    <rect x="8" y="8" width="204" height="124" fill="none" stroke="#2E8F72" stroke-width="1"></rect>
+    <circle cx="35" cy="45" r="18" fill="none" stroke="#2E8F72" stroke-width="3"></circle>
+    <path d="M27,45 l6,6 l12,-14" fill="none" stroke="#2E8F72" stroke-width="3" stroke-linecap="round"></path>
+    <text x="65" y="38" font-family="monospace" font-size="12" fill="#F2EEE6" text-anchor="start" letter-spacing="0">PART_0042</text><text x="65" y="54" font-family="monospace" font-size="9" fill="#7C8085" text-anchor="start" letter-spacing="0">Inspector: A. Balogun</text>
+    <text x="65" y="70" font-family="monospace" font-size="9" fill="#2E8F72" text-anchor="start" letter-spacing="0">STATUS: PASS</text>
+    <text x="20" y="118" font-family="monospace" font-size="8" fill="#7C8085" text-anchor="start" letter-spacing="0">2026-07-12 · BAY 3</text></svg>

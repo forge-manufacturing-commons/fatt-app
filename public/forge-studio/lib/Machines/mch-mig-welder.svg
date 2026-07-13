@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 170">
+    <rect width="140" height="170" fill="#2B2E33"></rect>
+    <rect x="30" y="70" width="80" height="70" fill="#7C8085"></rect><circle cx="70" cy="50" r="24" fill="none" stroke="#F2EEE6" stroke-width="4"></circle><rect x="60" y="140" width="20" height="12" fill="#1c1e21"></rect>
+    <line x1="30" y1="148" x2="110" y2="148" stroke="#4FC7D6" stroke-width="1"></line><polygon points="30,148 36,145 36,151" fill="#4FC7D6"></polygon><polygon points="110,148 104,145 104,151" fill="#4FC7D6"></polygon><text x="70" y="142" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">700mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — MIG WELDER</text>
+  </svg>

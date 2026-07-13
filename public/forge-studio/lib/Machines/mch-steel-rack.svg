@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220">
+    <rect width="200" height="220" fill="#2B2E33"></rect>
+    <rect x="20" y="30" width="160" height="6" fill="#7C8085"></rect><rect x="20" y="75" width="160" height="6" fill="#7C8085"></rect><rect x="20" y="120" width="160" height="6" fill="#7C8085"></rect><rect x="20" y="165" width="160" height="6" fill="#7C8085"></rect><rect x="20" y="30" width="6" height="180" fill="#7C8085"></rect><rect x="174" y="30" width="6" height="180" fill="#7C8085"></rect>
+    <line x1="20" y1="220" x2="180" y2="220" stroke="#4FC7D6" stroke-width="1"></line><polygon points="20,220 26,217 26,223" fill="#4FC7D6"></polygon><polygon points="180,220 174,217 174,223" fill="#4FC7D6"></polygon><text x="100" y="214" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">1600mm</text><line x1="10" y1="30" x2="10" y2="210" stroke="#4FC7D6" stroke-width="1"></line><polygon points="10,30 7,36 13,36" fill="#4FC7D6"></polygon><polygon points="10,210 7,204 13,204" fill="#4FC7D6"></polygon><text x="18" y="120" font-family="monospace" font-size="8" fill="#4FC7D6">1800mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — STEEL RACK</text>
+  </svg>

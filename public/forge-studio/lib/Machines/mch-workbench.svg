@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 150">
+    <rect width="220" height="150" fill="#2B2E33"></rect>
+    <rect x="30" y="70" width="160" height="14" fill="#7C8085"></rect><rect x="40" y="84" width="10" height="46" fill="#1c1e21"></rect><rect x="170" y="84" width="10" height="46" fill="#1c1e21"></rect>
+    <line x1="30" y1="140" x2="190" y2="140" stroke="#4FC7D6" stroke-width="1"></line><polygon points="30,140 36,137 36,143" fill="#4FC7D6"></polygon><polygon points="190,140 184,137 184,143" fill="#4FC7D6"></polygon><text x="110" y="134" font-family="monospace" font-size="8" fill="#4FC7D6" text-anchor="middle">1500mm</text><line x1="20" y1="84" x2="20" y2="130" stroke="#4FC7D6" stroke-width="1"></line><polygon points="20,84 17,90 23,90" fill="#4FC7D6"></polygon><polygon points="20,130 17,124 23,124" fill="#4FC7D6"></polygon><text x="28" y="107" font-family="monospace" font-size="8" fill="#4FC7D6">900mm</text>
+    <text x="10" y="18" font-family="monospace" font-size="9" fill="#C89B4A">MACHINE — WORKBENCH</text>
+  </svg>

@@ -1,57 +1,96 @@
 // ============================================================
-// FORGE MANUFACTURING COMMAND CENTER — single source of truth
-// Coordinates are % positions within the FULL transparent_overlay_top.png
-// coordinate plane (2000x2000). Calibrated against the plate's actual
-// alpha-mask bounds (bbox 234,382 → 1844,1710) via geo-projection and
-// verified on-plate programmatically. Do not nudge with CSS — edit here.
+// Nigeria Manufacturing Command Center — hub data.
+// SOURCE OF TRUTH: ForgeStudio_Alpha/Documentation/Hub_Industrial_Identity.md
+// Do NOT edit coordinates or industrial identity here.
+// If Nigeria data changes, ForgeStudio ships a new registry.
+//
+// This file adapts the studio's 18-hub registry into the shape
+// the existing map/panel components expect.
 // ============================================================
+import { STUDIO_HUBS, projectHub } from "../../lib/ForgeStudio";
 
-export const HUBS = [
-  { id: "lagos", labelDx: -30, labelDy: 4, labelAnchor: "end", leader: false,  name: "Lagos",           shortName: "LAG", region: "South West",    x: 16.5, y: 70.4, type: "mega",       status: "coordinating",  specialty: "Vehicle integration & logistics",
-    capabilities: ["Mega manufacturing", "Logistics", "Commercial coordination", "Engineering ecosystem"],
-    projects: ["NAWEDOAM supply routes"], builders: 42, smes: 11, institutions: 3, featured: false, lastActivity: "Supplier matched · 46min" },
-  { id: "ilorin", labelDx: 0, labelDy: 16, labelAnchor: "middle", leader: false, name: "Ilorin",          shortName: "ILR", region: "North Central", x: 24.3, y: 56.3, type: "education",  status: "verifying",  specialty: "Technical education & fabrication",
-    capabilities: ["Technical education", "Fabrication", "Skills development"],
-    projects: ["Workforce pipeline"], builders: 18, smes: 5, institutions: 4, featured: false, lastActivity: "Drawing check in review · Engr. Okonkwo" },
-  { id: "abuja", labelDx: 16, labelDy: 0, labelAnchor: "start", leader: false,  name: "Abuja",           shortName: "ABJ", region: "FCT",           x: 44.0, y: 52.4, type: "capital",    status: "standby",  specialty: "National coordination & policy",
-    capabilities: ["National coordination", "Policy", "Institutional engagement"],
-    projects: ["Program governance"], builders: 9,  smes: 2, institutions: 5, featured: false, lastActivity: "Permit approved · 2h" },
-  { id: "kaduna", labelDx: 16, labelDy: 0, labelAnchor: "start", leader: false, name: "Kaduna",          shortName: "KAD", region: "North West",    x: 43.7, y: 42.4, type: "industrial", status: "expanding",  specialty: "Heavy industry & engineering",
-    capabilities: ["Heavy industry", "Engineering", "Northern industrial capacity"],
-    projects: ["Steel sourcing"], builders: 15, smes: 4, institutions: 2, featured: false, lastActivity: "Onboarding new SME · today" },
-  { id: "kano", labelDx: 16, labelDy: 0, labelAnchor: "start", leader: false,   name: "Kano",            shortName: "KAN", region: "North West",    x: 50.9, y: 32.1, type: "industrial", status: "standby",  specialty: "Northern manufacturing ecosystem",
-    capabilities: ["Manufacturing", "Production ecosystem", "Trade networks"],
-    projects: ["Component distribution"], builders: 21, smes: 7, institutions: 2, featured: false, lastActivity: "Waiting for revision" },
-  { id: "benin", labelDx: -34, labelDy: -10, labelAnchor: "end", leader: true,  name: "Benin City",      shortName: "BEN", region: "South South",   x: 31.5, y: 71.2, type: "fabrication",status: "sleeping",  specialty: "Engineering, machining & fabrication",
-    capabilities: ["Engineering", "Machining", "Fabrication"],
-    projects: ["Body panel study"], builders: 14, smes: 6, institutions: 2, featured: false, lastActivity: "Dormant · joining next cycle", labelDx: -34, labelDy: -10, labelAnchor: "end",    leader: false },
-  { id: "warri", labelDx: -38, labelDy: 14, labelAnchor: "end", leader: true,  name: "Effurun / Warri", shortName: "WAR", region: "South South",   x: 32.5, y: 76.7, type: "alpha",      status: "fabricating",  specialty: "Forge Alpha Fabrication Hub",
-    capabilities: ["Heavy fabrication", "Industrial welding", "Energy engineering", "Marine engineering"],
-    projects: ["NAWEDOAM", "Steel chassis", "Structural frames"], builders: 27, smes: 8, institutions: 2, featured: true, lastActivity: "Torch cooling · Engr. Adebayo", labelDx: -38, labelDy: 14,  labelAnchor: "end",    leader: true },
-  { id: "ph", labelDx: 6, labelDy: 30, labelAnchor: "middle", leader: true,     name: "Port Harcourt",   shortName: "PHC", region: "South South",   x: 40.8, y: 81.8, type: "energy",     status: "standby",  specialty: "Energy & marine engineering",
-    capabilities: ["Energy", "Marine engineering", "Oil & gas industrial capability"],
-    projects: ["Pressure systems review"], builders: 16, smes: 5, institutions: 2, featured: false, lastActivity: "Awaiting material · pressure test", labelDx: 6,   labelDy: 30,  labelAnchor: "middle", leader: true },
-  { id: "aba", labelDx: 34, labelDy: 12, labelAnchor: "start", leader: true,    name: "Aba",             shortName: "ABA", region: "South East",    x: 43.2, y: 79.7, type: "sme",        status: "active",  specialty: "Dense SME production",
-    capabilities: ["SME production", "Manufacturing entrepreneurship", "Rapid fabrication"],
-    projects: ["Fitting & trim study"], builders: 25, smes: 12, institutions: 1, featured: false, lastActivity: "Component accepted · 3h", labelDx: 34,  labelDy: 12,  labelAnchor: "start",  leader: false },
-  { id: "nnewi", labelDx: 34, labelDy: -12, labelAnchor: "start", leader: true,  name: "Nnewi",           shortName: "NNW", region: "South East",    x: 40.2, y: 73.4, type: "automotive", status: "fabricating",  specialty: "Automotive manufacturing",
-    capabilities: ["Automotive manufacturing", "Industrial capability", "Parts ecosystem"],
-    projects: ["Drivetrain sourcing"], builders: 19, smes: 9, institutions: 1, featured: false, lastActivity: "Fabrication in progress · 12min", labelDx: 34,  labelDy: -12, labelAnchor: "start",  leader: false },
-];
+// Runtime, human-facing lifecycle state per hub (not part of the
+// frozen studio — this is application state that reflects the live
+// network). Marked "Alpha network model" throughout the UI.
+const RUNTIME_STATE = {
+  warri:     { status:"fabricating",  lastActivity:"Torch cooling · Engr. Adebayo",       featured:true  },
+  nnewi:     { status:"fabricating",  lastActivity:"Fabrication in progress · 12min"                     },
+  aba:       { status:"active",       lastActivity:"Component accepted · 3h"                             },
+  ilorin:    { status:"verifying",    lastActivity:"Drawing check in review · Engr. Okonkwo"             },
+  portharcourt:{ status:"standby",    lastActivity:"Awaiting material · pressure test"                    },
+  lagos:     { status:"coordinating", lastActivity:"Supplier matched · 46min"                            },
+  kaduna:    { status:"expanding",    lastActivity:"Onboarding new SME · today"                          },
+  kano:      { status:"standby",      lastActivity:"Waiting for revision"                                },
+  benin:     { status:"sleeping",     lastActivity:"Dormant · joining next cycle"                        },
+  jos:       { status:"standby",      lastActivity:"Awaiting site survey"                                },
+  makurdi:   { status:"standby",      lastActivity:"Onboarding queue"                                    },
+  maiduguri: { status:"sleeping",     lastActivity:"Dormant · joining next cycle"                        },
+  ibadan:    { status:"standby",      lastActivity:"Manufacturing capacity registered"                    },
+  abeokuta:  { status:"standby",      lastActivity:"Agro-processing SME onboarded · 2d"                  },
+  asaba:     { status:"active",       lastActivity:"Logistics link verified"                             },
+  onitsha:   { status:"active",       lastActivity:"Distribution route active"                           },
+  owerri:    { status:"standby",      lastActivity:"Services onboarding"                                 },
+  enugu:     { status:"standby",      lastActivity:"Mineral supply capacity mapped"                       },
+};
 
-// Storytelling supply graph (section 16) — meaningful direction, not roads.
+// Adapt studio hubs into the shape the map + panel expect.
+// coordinates projected 0..100% via projectHub().
+// specialty ← industrial identity from studio
+// capabilities/projects ← illustrative Alpha network model content
+export const HUBS = STUDIO_HUBS.map(h => {
+  const rs = RUNTIME_STATE[h.id] || {};
+  const p = projectHub(h.lat, h.lon);
+  return {
+    id: h.id,
+    name: h.name,
+    shortName: h.id === "portharcourt" ? "PH" : h.id.slice(0,3).toUpperCase(),
+    coords: `${h.lat.toFixed(2)}°N, ${h.lon.toFixed(2)}°E`,
+    x: p.x, y: p.y,
+    accent: h.accent,             // studio accent bucket
+    specialty: h.identity,        // industrial identity (frozen)
+    capabilities: [h.identity],   // Alpha model — replaced by real registration data
+    projects: [],                 // filled by activity engine or SME registrations
+    builders: 0, smes: 0, institutions: 0,
+    status: rs.status || "standby",
+    lastActivity: rs.lastActivity,
+    featured: h.featured || rs.featured || false,
+  };
+});
+
+// Motion timing for hub/network reveal. Matches the shape the existing
+// NetworkLines/NetworkNode/StatsPanel components already expect.
+export const SEQUENCE = {
+  boot:   0.4,
+  lines:  1.2,
+  nodes:  1.9,
+  stats:  2.5,
+};
+
+// LINKS — manufacturing corridors between hubs, per ForgeStudio
+// nga-transport-corridors + Command_Center_Spec.md §"Network channels".
+// Each pair links a fabrication/assembly city to a review/distribution city.
+// Edges kept sparse — the plate is engineered, not a spider-web.
 export const LINKS = [
-  ["lagos", "ilorin"], ["ilorin", "abuja"], ["abuja", "kaduna"], ["kaduna", "kano"],
-  ["lagos", "benin"], ["benin", "warri"], ["warri", "ph"], ["ph", "aba"], ["aba", "nnewi"],
+  // Chassis corridor (Warri Alpha → Nnewi automotive → Aba fabrication)
+  ["warri", "nnewi"],
+  ["nnewi", "aba"],
+  // Engineering review corridor (Warri → Ilorin poly → Lagos coordination)
+  ["warri", "ilorin"],
+  ["ilorin", "lagos"],
+  // Energy corridor (Warri → Port Harcourt → Aba)
+  ["warri", "portharcourt"],
+  ["portharcourt", "aba"],
+  // Northern industrial corridor (Kaduna → Kano → Lagos coordination)
+  ["kaduna", "kano"],
+  ["kaduna", "lagos"],
+  // Foundry loop (Benin → Warri)
+  ["benin", "warri"],
 ];
 
-// Network-level stats. SEED DATA — clearly marked in the UI; these grow
-// from real registrations, never presented as audited national figures.
+// Aggregate stats — labels honest per §17 of Odogwu 80% pass
 export const NETWORK_STATS = [
-  { label: "Manufacturing cities in the network", value: HUBS.length, seed: false },
-  { label: "Builder network capacity (target)", value: HUBS.reduce((a, h) => a + h.builders, 0), seed: true },
-  { label: "SME capacity (target)", value: HUBS.reduce((a, h) => a + h.smes, 0), seed: true },
-  { label: "Institutional participation (target)", value: HUBS.reduce((a, h) => a + h.institutions, 0), seed: true },
+  { label:"Manufacturing cities in the network",   value: HUBS.length,       seed:false },
+  { label:"Alpha model builder capacity (target)", value: 2500,              seed:true  },
+  { label:"Alpha model SME capacity (target)",     value: 500,               seed:true  },
+  { label:"Institutional participation target",    value: 120,               seed:true  },
 ];
-
-export const SEQUENCE = { plate: 0.2, hubStart: 0.9, hubStep: 0.14, lines: 2.4, particles: 3.2, stats: 2.8 };

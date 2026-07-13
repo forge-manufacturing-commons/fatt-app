@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useForgeActivity } from "../../lib/ForgeActivityEngine.jsx";
 import FactoryAtmosphere from "../forge/FactoryAtmosphere";
+import { STUDIO } from "../../lib/ForgeStudio";
 import { HumanTag } from "../../humans/HumanGlyphLibrary.jsx";
 
 // ============================================================
@@ -48,6 +49,14 @@ export default function HeroSection() {
     <section className="hero-os" aria-label="Enter the Forge">
       <FactoryAtmosphere />
       <div className="hero-os-geometry" aria-hidden="true" />
+      {/* ForgeStudio hero environment — floor plate + steel beam + crane + window,
+          per Hero_Environment_Spec.md §A/B */}
+      <div className="fs-hero-environment" aria-hidden="true">
+        <img className="fs-bg floor"      src={STUDIO.wksReflectiveFloor}  alt="" />
+        <img className="fs-bg subtle"     src={STUDIO.wksSteelBeam}        alt="" style={{opacity:.14,mixBlendMode:"screen"}}/>
+        <img className="fs-bg subtle fs-mot-conveyor" src={STUDIO.wksCraneSilhouette} alt="" style={{opacity:.10,left:"58%",right:"auto",width:"38%",top:"6%",height:"auto"}}/>
+        <img className="fs-bg subtle"     src={STUDIO.wksFactoryWindow}    alt="" style={{opacity:.18,mixBlendMode:"screen",left:"auto",right:"4%",width:"32%",top:"12%",height:"46%"}}/>
+      </div>
 
       <div className="wrap hero-os-grid">
         {/* ------- LEFT: command typography column ------- */}

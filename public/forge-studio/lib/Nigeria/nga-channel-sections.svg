@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 170">
+  <rect width="340" height="170" fill="#2B2E33"></rect>
+  <text x="10" y="20" font-family="monospace" font-size="10" fill="#C89B4A" text-anchor="start">DETAIL B — NETWORK CHANNEL SECTIONS (SCALE 2:1)</text>
+  
+  <g transform="translate(20,0)">
+    <rect x="0" y="70" width="90" height="40" fill="#7C8085"></rect>
+    <path d="M30,70 L36,84 L54,84 L60,70 Z" fill="#1c1e21"></path>
+    <text x="45" y="130" font-family="monospace" font-size="7.5" fill="#F2EEE6" text-anchor="middle">MANUFACTURING</text>
+    <text x="45" y="142" font-family="monospace" font-size="7" fill="#4FC7D6" text-anchor="middle">4mm V-CHANNEL</text>
+  </g>
+  
+  <g transform="translate(125,0)">
+    <rect x="0" y="70" width="90" height="40" fill="#7C8085"></rect>
+    <rect x="32" y="70" width="26" height="12" fill="#1c1e21"></rect><rect x="36" y="78" width="18" height="3" fill="#E1602E" opacity="0.7"></rect>
+    <text x="45" y="130" font-family="monospace" font-size="7.5" fill="#F2EEE6" text-anchor="middle">POWER CONDUIT</text>
+    <text x="45" y="142" font-family="monospace" font-size="7" fill="#4FC7D6" text-anchor="middle">6mm RECESS</text>
+  </g>
+  
+  <g transform="translate(230,0)">
+    <rect x="0" y="70" width="90" height="40" fill="#7C8085"></rect>
+    <path d="M35,70 L55,70 L55,76 L35,76 Z" fill="#1c1e21"></path>
+    <text x="45" y="130" font-family="monospace" font-size="7.5" fill="#F2EEE6" text-anchor="middle">TRANSPORT</text>
+    <text x="45" y="142" font-family="monospace" font-size="7" fill="#4FC7D6" text-anchor="middle">1.5mm ENGRAVE</text>
+  </g>
+</svg>

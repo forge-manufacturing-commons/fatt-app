@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <line class="arr" x1="46" y1="100" x2="154" y2="100" stroke="#C89B4A" stroke-width="2" stroke-dasharray="6 4"></line>
+    <polygon points="160,100 148,94 148,106" fill="#C89B4A"></polygon>
+    <g transform="translate(40,100)">
+    <circle r="16" fill="#2B2E33" stroke="#C89B4A" stroke-width="2"></circle>
+    <text y="5" font-family="monospace" font-size="13" fill="#C89B4A" text-anchor="middle">1</text>
+  </g><g transform="translate(100,100)">
+    <circle r="16" fill="#2B2E33" stroke="#C89B4A" stroke-width="2"></circle>
+    <text y="5" font-family="monospace" font-size="13" fill="#C89B4A" text-anchor="middle">2</text>
+  </g><g transform="translate(160,100)">
+    <circle r="16" fill="#2B2E33" stroke="#2E8F72" stroke-width="2"></circle>
+    <text y="5" font-family="monospace" font-size="13" fill="#2E8F72" text-anchor="middle">3</text>
+  </g></svg>

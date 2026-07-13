@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchJobs } from "../../lib/supabase";
 import { useForgeActivity } from "../../lib/ForgeActivityEngine.jsx";
 import { HumanGlyph } from "../../humans/HumanGlyphLibrary.jsx";
+import { STUDIO } from "../../lib/ForgeStudio";
 
 // ============================================================
 // 06 / BUILD BOARD — the manufacturing heartbeat of Forge.
@@ -65,6 +66,15 @@ const EVIDENCE = {
 
 const STAGE_LABEL = { done:"COMPLETE", qa:"IN REVIEW", fabricating:"IN PROGRESS", queued:"QUEUED" };
 const STAGE_TONE  = { done:"emerald",  qa:"gold",      fabricating:"cyan",       queued:"muted"   };
+
+// ForgeStudio Status & Ownership — NAWEDOAM lifecycle badges
+// (Status/sta-*.svg — cross-portal, do not build a page-specific badge)
+const STUDIO_BADGE = {
+  done:         STUDIO.staVerified,
+  qa:           STUDIO.staVerification,
+  fabricating:  STUDIO.staInFabrication,
+  queued:       STUDIO.staAssigned,
+};
 
 // map activity tone → which board rows quietly register a change
 const TONE_STAGE = { fabricate:"fabricating", review:"qa", evidence:"qa", accept:"done" };
@@ -197,7 +207,8 @@ export default function BoardPreview() {
                   </div>
 
                   {/* col 4 — status signal */}
-                  <div className="board-col">
+                  <div className="board-col board-col-status">
+                    <img className="board-status-badge" src={STUDIO_BADGE[j.stage] || STUDIO.staAssigned} alt="" aria-hidden="true" />
                     <span className={"forge-signal " + tone_class}>{STAGE_LABEL[j.stage]}</span>
                   </div>
 

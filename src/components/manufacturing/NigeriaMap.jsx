@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useForgeActivity } from "../../lib/ForgeActivityEngine.jsx";
+import { STUDIO } from "../../lib/ForgeStudio";
 import "./NigeriaMap.css";
 import plateUrl from "../../assets/nigeria/transparent_overlay_top.png";
 import { HUBS, SEQUENCE } from "./nigeriaData";
@@ -65,6 +66,13 @@ export default function NigeriaMap() {
 
         <div className="cc-stage">
           <div className="cc-plane">
+            {/* ForgeStudio schematic overlays — transport + power grid.
+                Per Command_Center_Spec.md: engineered channels, not glowing lines.
+                Static SVGs, motion added at runtime via fs-mot-power-travel. */}
+            <img className="fs-bg subtle" src={STUDIO.ngaTransport}
+                 alt="" style={{position:"absolute",left:"11.7%",top:"19.1%",width:"80.5%",height:"66.4%",opacity:.32,mixBlendMode:"screen",pointerEvents:"none",zIndex:1}} />
+            <img className="fs-bg subtle fs-mot-fade" src={STUDIO.ngaPowerGrid}
+                 alt="" style={{position:"absolute",left:"11.7%",top:"19.1%",width:"80.5%",height:"66.4%",opacity:.20,mixBlendMode:"screen",pointerEvents:"none",zIndex:1}} />
             {/* Billet thickness — dark drop layer underneath */}
             <img src={plateUrl} className="cc-plate-billet" alt="" aria-hidden="true" draggable="false" />
             <motion.img

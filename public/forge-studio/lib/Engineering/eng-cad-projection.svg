@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <g class="wire" fill="none" stroke="#4FC7D6" stroke-width="1.2">
+      <polygon points="60,130 140,130 160,100 80,100"></polygon>
+      <polygon points="60,60 140,60 160,30 80,30"></polygon>
+      <line x1="60" y1="130" x2="60" y2="60"></line><line x1="140" y1="130" x2="140" y2="60"></line>
+      <line x1="160" y1="100" x2="160" y2="30"></line><line x1="80" y1="100" x2="80" y2="30"></line>
+    </g></svg>

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2B2E33"></rect>
+    <circle class="ring seg" cx="100" cy="100" r="70" fill="none" stroke="#4FC7D6" stroke-width="4"></circle>
+    <g stroke="#4FC7D6" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="75" y="70" width="50" height="50" rx="4"></rect><path d="M85,95 l10,10 l20,-25"></path></g>
+    <text x="100" y="182" font-family="monospace" font-size="12" fill="#F2EEE6" text-anchor="middle" letter-spacing="1">VERIFICATION</text></svg>
