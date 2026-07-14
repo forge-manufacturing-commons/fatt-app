@@ -1,0 +1,170 @@
+// ============================================================
+// FORGE OS — ROOMS
+// Every room is a place. Each declares a camera, mounts machines,
+// and derives its state from the Activity Engine. None of these
+// are webpage sections.
+// ============================================================
+
+import Room from "../os/Room.jsx";
+import Machine, { MACHINES } from "../os/Machine.jsx";
+import { SerialPlate, LaserRuler, VerificationSeal } from "../os/Engineering.jsx";
+import { useForgeActivity } from "../os/ActivityEngine.jsx";
+import { STUDIO_HUBS } from "../os/ForgeOS.js";
+import { BLENDER } from "../os/BlenderSocket.js";
+import { HumanGlyph } from "../humans/HumanGlyphLibrary.jsx";
+
+import HeroSection from "../components/hero/HeroSection";
+import WhyForge from "../components/showcase/WhyForge";
+import EcosystemSystem from "../components/forge/EcosystemSystem";
+import NigeriaMap from "../components/manufacturing/NigeriaMap";
+import BoardPreview from "../components/forge/BoardPreview";
+
+/* 01 — ARRIVAL DOCK ---------------------------------------- */
+export function ArrivalDock() {
+  return (
+    <Room id="arrival-dock" overlays={false}>
+      <HeroSection />
+      <WhyForge />
+      <EcosystemSystem />
+      <div className="forge-machine-floor" style={{ marginTop: 40 }}>
+        <Machine id="forklift" telemetry={{ LOAD: "0 kg" }} />
+        <Machine id="materialPallets" />
+        <Machine id="steelRack" />
+      </div>
+    </Room>
+  );
+}
+
+/* 02 — NATIONAL MANUFACTURING GRID -------------------------- */
+export function NationalGrid() {
+  const { hubStates } = useForgeActivity();
+  const live = Object.keys(hubStates).length;
+  return (
+    <Room id="national-grid">
+      <NigeriaMap />
+      <p className="forge-technical" style={{ marginTop: 18, color: "var(--forge-muted)" }}>
+        {STUDIO_HUBS.length} HUBS · REAL WGS84 COORDINATES · {live} REPORTING LIVE STATE THIS CYCLE
+        {" · "}PLATE SOCKET <code style={{color:"var(--forge-cyan)"}}>{BLENDER.nigeriaHero.slot}</code> ({BLENDER.nigeriaHero.status})
+      </p>
+    </Room>
+  );
+}
+
+/* 03 — ENGINEERING BAY -------------------------------------- */
+export function EngineeringBay() {
+  return (
+    <Room id="engineering-bay">
+      <div className="forge-machine-floor">
+        <Machine id="workbench" telemetry={{ DRAWINGS: 6 }} />
+        <Machine id="toolCabinet" />
+        <Machine id="drillPress" />
+        <Machine id="assemblyFixture" telemetry={{ JIG: "CHS-014" }} />
+      </div>
+      <div style={{ display:"flex", gap:20, flexWrap:"wrap", marginTop:34 }}>
+        <SerialPlate component="CHS-014" owner="Warri Fabrication Co-op" status="IN FABRICATION" />
+        <SerialPlate component="HUB-002" owner="Nnewi Precision Works" status="VERIFIED" />
+        <SerialPlate component="BRK-007" owner="Ilorin Polytechnic" status="APPROVED" />
+      </div>
+    </Room>
+  );
+}
+
+/* 04 — PRODUCTION LINE -------------------------------------- */
+export function ProductionLine() {
+  const { machineStates } = useForgeActivity();
+  const line = ["migWelder","lathe","sheetBrake","hydraulicPress","chainHoist","compressedAir","gasCylinders","craneHook"];
+  const active = line.filter(m => machineStates[m] === "active").length;
+  return (
+    <Room id="production-line">
+      <p className="forge-system" style={{ marginBottom:20, color:"var(--forge-muted)" }}>
+        [ {active} OF {line.length} MACHINES UNDER LOAD ] — state derived from the activity engine, not animated
+      </p>
+      <div className="forge-machine-floor">
+        {line.map(m => <Machine key={m} id={m} />)}
+      </div>
+    </Room>
+  );
+}
+
+/* 05 — VEHICLE INSPECTION HANGAR ---------------------------- */
+export function InspectionHangar() {
+  return (
+    <Room id="inspection-hangar">
+      <div style={{ position:"relative" }}>
+        <LaserRuler style={{ position:"absolute", top:0, left:0, width:"100%", opacity:.3 }} />
+        <div className="forge-machine-floor">
+          <Machine id="inspectionTable" state="inspection" telemetry={{ TOL:"±0.15" }} />
+          <Machine id="craneHook" />
+          <Machine id="chainHoist" />
+        </div>
+      </div>
+      <div style={{ display:"flex", gap:26, alignItems:"center", marginTop:30, flexWrap:"wrap" }}>
+        <VerificationSeal style={{ width:70 }} />
+        <HumanGlyph role="INSPECTOR" variant="F" metadata={{ name:"Amina Suleiman", workshop:"Forge Quality Office", task:"Verifying chassis rail" }} />
+        <span className="forge-technical" style={{ color:"var(--forge-muted)" }}>
+          VEHICLE SOCKET <code style={{color:"var(--forge-cyan)"}}>{BLENDER.vehicleGLB.slot}</code> — {BLENDER.vehicleGLB.status}
+        </span>
+      </div>
+    </Room>
+  );
+}
+
+/* 06 — FACTORY CONTROL ROOM --------------------------------- */
+export function ControlRoom() {
+  const { log } = useForgeActivity();
+  return (
+    <Room id="control-room">
+      <div className="forge-ctrl">
+        {log.length === 0 && <p className="forge-system">[ awaiting first event ]</p>}
+        {log.map((e, i) => (
+          <div key={`${e.at}-${i}`} className="forge-ctrl-row" data-type={e.type}>
+            <span className="forge-ctrl-t">{new Date(e.at).toLocaleTimeString()}</span>
+            <span className="forge-ctrl-type">{e.type}</span>
+            <span className="forge-ctrl-txt">{e.text}</span>
+            <span className="forge-ctrl-hub">{e.hub?.toUpperCase()}</span>
+            <span className="forge-ctrl-who">{e.human}</span>
+          </div>
+        ))}
+      </div>
+    </Room>
+  );
+}
+
+/* 07 — NATIONAL IMPACT DASHBOARD ---------------------------- */
+export function ImpactDashboard() {
+  const { log } = useForgeActivity();
+  // ONLY numbers that are actually true of this system. Nothing invented.
+  const real = [
+    { k:"Manufacturing hubs mapped", v:STUDIO_HUBS.length, note:"real WGS84 coordinates" },
+    { k:"Machine classes in the library", v:Object.keys(MACHINES).length, note:"Machine_Library.md" },
+    { k:"Rooms in Forge OS", v:16, note:"kernel registry" },
+    { k:"Events processed this session", v:log.length, note:"activity engine" },
+  ];
+  return (
+    <Room id="impact-dashboard">
+      <div className="forge-impact">
+        {real.map(r => (
+          <div key={r.k} className="forge-impact-cell">
+            <span className="forge-impact-v forge-command">{r.v}</span>
+            <span className="forge-impact-k forge-human">{r.k}</span>
+            <span className="forge-impact-n forge-technical">{r.note}</span>
+          </div>
+        ))}
+      </div>
+      <p className="forge-human" style={{ marginTop:22, color:"var(--forge-muted)", maxWidth:"64ch" }}>
+        These are the only numbers Forge OS currently knows to be true. Production figures —
+        vehicles built, SMEs contracted, students trained — will appear here when the network
+        reports them. They will not be estimated.
+      </p>
+    </Room>
+  );
+}
+
+/* 08 — BUILD BOARD ------------------------------------------ */
+export function BuildBoard() {
+  return (
+    <Room id="build-board">
+      <BoardPreview />
+    </Room>
+  );
+}
