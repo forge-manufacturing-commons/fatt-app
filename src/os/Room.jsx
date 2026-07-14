@@ -18,7 +18,10 @@ import { CameraOverlays } from "./Engineering.jsx";
 import { useForgeActivity } from "./ActivityEngine.jsx";
 import "./ForgeOS.css";
 
-export default function Room({ id, children, className = "", overlays = true }) {
+// chrome=false: the room mounts with its identity and runtime, but WITHOUT the
+// engineering header. The Arrival Dock is a continuous argument, not a labelled
+// specimen — a first-time visitor must not be made to read a room plate first.
+export default function Room({ id, children, className = "", overlays = true, chrome = true }) {
   const room = roomById(id);
   const { event } = useForgeActivity();
 
@@ -36,6 +39,7 @@ export default function Room({ id, children, className = "", overlays = true }) 
       data-camera={cam.id}
       aria-label={room.name}
     >
+      {chrome && (
       <header className="forge-room-head">
         <span className="forge-room-seq forge-system">{room.sequence}</span>
         <h2 className="forge-room-name forge-command">{room.name}</h2>
@@ -46,6 +50,7 @@ export default function Room({ id, children, className = "", overlays = true }) 
           <div><dt>STATE</dt><dd className={`forge-room-status forge-room-status--${room.status}`}>{room.status.toUpperCase()}</dd></div>
         </dl>
       </header>
+      )}
 
       {overlays && <CameraOverlays tokens={cam.overlays} />}
 
@@ -53,9 +58,11 @@ export default function Room({ id, children, className = "", overlays = true }) 
         {room.status === "commissioning" ? <Commissioning room={room} /> : children}
       </div>
 
+      {chrome && (
       <footer className="forge-room-feed forge-system" aria-live="polite">
         {event ? <>[{event.type}] {event.text} · {event.hub?.toUpperCase()}</> : <>[system] awaiting activity</>}
       </footer>
+      )}
     </section>
   );
 }

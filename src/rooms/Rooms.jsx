@@ -13,24 +13,27 @@ import { STUDIO_HUBS } from "../os/ForgeOS.js";
 import { BLENDER } from "../os/BlenderSocket.js";
 import { HumanGlyph } from "../humans/HumanGlyphLibrary.jsx";
 
-import HeroSection from "../components/hero/HeroSection";
-import WhyForge from "../components/showcase/WhyForge";
-import EcosystemSystem from "../components/forge/EcosystemSystem";
 import NigeriaMap from "../components/manufacturing/NigeriaMap";
 import BoardPreview from "../components/forge/BoardPreview";
 
-/* 01 — ARRIVAL DOCK ---------------------------------------- */
+// The Arrival Dock IS the argument: capability exists -> here are the hands ->
+// here is how it is built -> here are the cities -> here is the actual work ->
+// here is the object -> here is the impact -> nobody builds it alone.
+// It is consumed WHOLE. Chopping it into rooms broke it once; not again.
+import Showcase from "../pages/Showcase.jsx";
+
+/* 01 — ARRIVAL DOCK ----------------------------------------
+   A first-time visitor gets the continuous scroll, unbroken.
+   The rooms are DEPTH for people who already believe — they are
+   not a replacement for the way through. Room identity, camera
+   contract and the activity engine are all still mounted here;
+   only the engineering header is suppressed, because the dock is
+   an argument, not a labelled specimen.
+------------------------------------------------------------ */
 export function ArrivalDock() {
   return (
-    <Room id="arrival-dock" overlays={false}>
-      <HeroSection />
-      <WhyForge />
-      <EcosystemSystem />
-      <div className="forge-machine-floor" style={{ marginTop: 40 }}>
-        <Machine id="forklift" telemetry={{ LOAD: "0 kg" }} />
-        <Machine id="materialPallets" />
-        <Machine id="steelRack" />
-      </div>
+    <Room id="arrival-dock" chrome={false} overlays={false} className="forge-room--bare">
+      <Showcase />
     </Room>
   );
 }
