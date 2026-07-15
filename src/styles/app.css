@@ -1353,3 +1353,18 @@ footer b{color:var(--cream)}
 .cc-plate-edge,
 .cc-plate-perimeter{pointer-events:none}
 .cc-plane img.fs-bg{pointer-events:none}
+
+
+/* ---- Live 3D truck viewer sizing ----
+   <model-viewer> has no intrinsic dimensions; the old <img> rules don't apply.
+   Give it an explicit box so it doesn't collapse to zero height. */
+.hero-truck model-viewer{
+  width:100%;
+  aspect-ratio:4/3;
+  min-height:220px;
+  display:block;
+  background:transparent;
+  --poster-color:transparent;
+  border:1px solid rgba(212,175,55,.24);
+}
+.hero-truck model-viewer::part(default-progress-bar){ display:none; }

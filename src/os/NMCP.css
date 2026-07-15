@@ -2,8 +2,8 @@
 @media(max-width:900px){ .nmcp{ grid-template-columns:1fr; } }
 
 .nmcp-stage{ position:relative; border:1px solid var(--forge-rule,#2A2521); background:#0b0a09;
-  overflow:hidden; min-height:300px; display:flex; align-items:center; justify-content:center; }
-.nmcp-render{ width:100%; height:auto; display:block; }
+  overflow:hidden; min-height:300px; max-height:560px; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
+.nmcp-render{ width:100%; height:100%; max-height:520px; object-fit:contain; display:block; }
 .nmcp-socket{ padding:40px; text-align:left; }
 .nmcp-socket span{ color:var(--forge-gold,#C89B4A); display:block; margin-bottom:10px; }
 .nmcp-socket p{ color:var(--forge-muted,#8A857C); max-width:52ch; margin:0; }
