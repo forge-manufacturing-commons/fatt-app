@@ -1,0 +1,26 @@
+.nmcp{ display:grid; grid-template-columns:1.6fr 1fr; gap:28px; align-items:start; }
+@media(max-width:900px){ .nmcp{ grid-template-columns:1fr; } }
+
+.nmcp-stage{ position:relative; border:1px solid var(--forge-rule,#2A2521); background:#0b0a09;
+  overflow:hidden; min-height:300px; display:flex; align-items:center; justify-content:center; }
+.nmcp-render{ width:100%; height:auto; display:block; }
+.nmcp-socket{ padding:40px; text-align:left; }
+.nmcp-socket span{ color:var(--forge-gold,#C89B4A); display:block; margin-bottom:10px; }
+.nmcp-socket p{ color:var(--forge-muted,#8A857C); max-width:52ch; margin:0; }
+.nmcp-socket code{ color:var(--forge-cyan,#4FC7D6); }
+
+.nmcp-leds{ position:absolute; inset:0; pointer-events:none; }
+.nmcp-led{ position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; } /* positioned by render, invisible over static img until GLB viewer lands */
+
+.nmcp-plate-id{ border:1px solid var(--forge-rule,#2A2521); background:var(--forge-street-2,#141110); padding:22px; }
+.nmcp-id-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:6px; }
+.nmcp-serial{ font-size:22px; color:var(--forge-cream,#F2EEE6); }
+.nmcp-cert{ color:var(--forge-emerald,#2E8F72); font-size:9px; letter-spacing:.14em; white-space:nowrap; }
+.nmcp-name{ color:var(--forge-gold,#C89B4A); font-size:13px; margin-bottom:18px; }
+.nmcp-spec{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--forge-rule,#2A2521);
+  border:1px solid var(--forge-rule,#2A2521); margin:0 0 14px; }
+.nmcp-spec > div{ background:var(--forge-street-2,#141110); padding:9px 12px; }
+.nmcp-spec dt{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.18em; color:var(--forge-muted,#8A857C); margin-bottom:5px; }
+.nmcp-spec dd{ margin:0; font:600 12px/1 var(--forge-mono,monospace); color:var(--forge-cream,#F2EEE6); }
+.nmcp-spec dd em{ font-style:normal; color:var(--forge-muted,#8A857C); font-size:9px; margin-left:4px; }
+.nmcp-provenance{ color:var(--forge-muted,#8A857C); font-size:10px; margin:0; }

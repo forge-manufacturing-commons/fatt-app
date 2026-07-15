@@ -12,6 +12,7 @@ import { useForgeActivity } from "../os/ActivityEngine.jsx";
 import { STUDIO_HUBS } from "../os/ForgeOS.js";
 import { BLENDER } from "../os/BlenderSocket.js";
 import { HumanGlyph } from "../humans/HumanGlyphLibrary.jsx";
+import NMCP from "../os/NMCP.jsx";
 
 import NigeriaMap from "../components/manufacturing/NigeriaMap";
 import BoardPreview from "../components/forge/BoardPreview";
@@ -44,6 +45,8 @@ export function NationalGrid() {
   const live = Object.keys(hubStates).length;
   return (
     <Room id="national-grid">
+      <NMCP />
+      <div style={{height:34}} />
       <NigeriaMap />
       <p className="forge-technical" style={{ marginTop: 18, color: "var(--forge-muted)" }}>
         {STUDIO_HUBS.length} HUBS · REAL WGS84 COORDINATES · {live} REPORTING LIVE STATE THIS CYCLE

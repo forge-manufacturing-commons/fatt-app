@@ -1,0 +1,44 @@
+{
+  "id": "NMCP-0001",
+  "name": "NAWEDOAM Manufacturing Command Plate",
+  "short": "NMCP",
+  "status": "Forge Alpha Certified",
+  "revision": "A.02",
+  "lifecycle": "Production Asset",
+  "certified": "2026-07-15",
+  "type": "manufactured-component",
+  "authority": "ForgeStudio_Alpha",
+  "geometry": {
+    "material_spec": "EN S355 structural steel (represented)",
+    "plate_thickness_mm": 35,
+    "presentation_tilt_deg": 10,
+    "plate_size_m": [2.40, 1.94],
+    "computed_plate_mass_kg": 812,
+    "mass_basis": "plate volume x 7850 kg/m3, computed from mesh (not measured)",
+    "object_count": 214,
+    "boundary_source": "GADM admin-1, dissolved to national outline, simplified to 10mm machining resolution",
+    "hub_coordinates": "real WGS84, 18 hubs"
+  },
+  "hubs": 18,
+  "network": { "corridors": 10, "power": 6, "logistics": 7, "inspection_rings": 2 },
+  "cameras": [
+    "CAM_NGA_SIGNATURE_070MM_A_0001",
+    "CAM_NGA_HERO_050MM_A_0001",
+    "CAM_NGA_ORTHO_000MM_A_0001",
+    "CAM_NGA_BLUEPRINT_000MM_A_0001",
+    "CAM_NGA_INSPECT_050MM_A_0001",
+    "CAM_NGA_MACRO_100MM_A_0001",
+    "CAM_NGA_REVIEW_035MM_A_0001"
+  ],
+  "files": {
+    "blend": "NMCP.blend (source: Forge_World_v0.3.blend, FORGE_Nigeria collection)",
+    "glb": "NMCP.glb (214 objects, modifiers applied, 4.86 MB)",
+    "step": "NOT EXPORTED — Blender has no native STEP writer; requires CAD Sketcher / FreeCAD bridge",
+    "fbx": "available on request from source .blend"
+  },
+  "provenance_notes": [
+    "Plate outline is REAL GADM boundary. Hub coordinates are REAL WGS84.",
+    "Mass is COMPUTED from geometry, not weighed. Labelled CALC on the engraved plate.",
+    "Material physical properties are runtime-derived; Studio Material System spec is [Unreleased]."
+  ]
+}
