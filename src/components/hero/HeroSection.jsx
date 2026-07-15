@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useForgeActivity } from "../../lib/ForgeActivityEngine.jsx";
 import FactoryAtmosphere from "../forge/FactoryAtmosphere";
+import TruckViewer from "./TruckViewer";
 import { STUDIO } from "../../lib/ForgeStudio";
 import { HumanTag } from "../../humans/HumanGlyphLibrary.jsx";
 
@@ -183,7 +184,8 @@ export default function HeroSection() {
             style={{ left: TRUCK.x + "%", top: TRUCK.y + "%" }}
             animate={{ filter: `brightness(${0.4 + energy * 0.65}) saturate(${0.55 + energy * 0.55}) contrast(${1 + energy * 0.08})` }}
             transition={{ duration: 0.7 }}>
-            <img src={truckUrl} alt="" draggable="false" />
+            {/* live 3D body-locked truck; falls back to {truckUrl} if GLB absent */}
+            <TruckViewer poster={truckUrl} />
             {/* Subsystem zones — light up only when activity engine points at them */}
             <span className={"tzone tzone-chassis"       + (activeTarget === "chassis" ? " active" : "")} />
             <span className={"tzone tzone-body"          + (activeTarget === "body" ? " active" : "")} />
