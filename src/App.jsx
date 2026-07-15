@@ -14,6 +14,7 @@ import { ForgeActivityProvider, useForgeActivity } from "./os/ActivityEngine.jsx
 import { ForgeActivityProvider as LegacyPhaseProvider } from "./lib/ForgeActivityEngine.jsx";
 import { ROOMS, roomById } from "./os/ForgeOS.js";
 import Room from "./os/Room.jsx";
+import RoomLocator from "./os/RoomLocator.jsx";
 import "./os/ForgeOS.css";
 
 import { ArrivalDock, NationalGrid, EngineeringBay, ProductionLine,
@@ -78,6 +79,7 @@ export default function App() {
       <>
         {!isConfigured && <div className="demo-banner">Demo mode — seed data. Add Supabase keys in .env to go live.</div>}
         <OSRail />
+        <RoomLocator />
         <div className="page">
           <Routes>
             {ROOMS.map(r => {
