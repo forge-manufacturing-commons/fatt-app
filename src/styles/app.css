@@ -165,8 +165,8 @@ footer b{color:var(--cream)}
    Sits under the live network/truck; darkened so the animation stays readable. */
 .hero-os::before{
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:url("/renders/bay/hero.png") center 42% / cover no-repeat;
-  opacity:.34;
+  background:url("/renders/bay/hero.png") center 38% / 118% auto no-repeat;
+  opacity:.30;
   -webkit-mask-image:radial-gradient(120% 100% at 60% 45%, #000 30%, transparent 82%);
           mask-image:radial-gradient(120% 100% at 60% 45%, #000 30%, transparent 82%);
 }
