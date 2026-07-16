@@ -38,6 +38,11 @@ export default function TruckViewer({ poster = FALLBACK_IMG, autoRotate = true }
 
   useEffect(() => {
     let cancelled = false;
+    // Mobile: model-viewer captures touch and traps page scroll. Never mount it.
+    const isMobile = typeof window !== "undefined" &&
+      (window.matchMedia?.("(max-width: 820px)")?.matches ||
+       ("ontouchstart" in window && window.innerWidth < 900));
+    if (isMobile) { setFailed(true); return; }
     // 1. is the GLB actually present? (HEAD request — no download if missing)
     fetch(GLB_URL, { method: "HEAD" })
       .then((r) => {
