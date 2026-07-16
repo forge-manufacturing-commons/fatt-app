@@ -128,3 +128,63 @@
   .room-nmcp--command .nmcp-room-cta{ align-items:flex-start; text-align:left; }
   .room-nmcp--command .nmcp-stage{ min-height:min(72vh, 620px); }
 }
+
+
+/* ============================================================
+   MUSEUM-SCALE EXHIBIT — the NMCP IS the room (RO directive).
+   The plate breaks the content container and fills the viewport
+   edge-to-edge. No border, no box, no card. The steel is the
+   architecture; everything else orbits it as annotations.
+   ============================================================ */
+
+/* break the plate OUT of the content container to full viewport width */
+.room-nmcp--command .forge-room-floor{ max-width:none; padding:0; }
+.room-nmcp--command{ padding-top:0; }
+
+/* THE EXHIBIT — full-bleed, viewport-filling, unframed */
+.room-nmcp--command .nmcp{ margin:0; }
+.room-nmcp--command .nmcp-stage{
+  width:100vw;
+  margin-left:calc(50% - 50vw);          /* full-bleed escape from any container */
+  aspect-ratio:auto;
+  height:92vh;
+  min-height:92vh;
+  border:0;                               /* no box */
+  box-shadow:none;
+  background:radial-gradient(140% 120% at 50% 42%, #14110f 0%, #0a0908 55%, #040302 100%);
+}
+/* remove the corner registration marks — no framing */
+.room-nmcp--command .nmcp-stage::before,
+.room-nmcp--command .nmcp-stage::after{ display:none; }
+
+/* the model fills the exhibit */
+.room-nmcp--command .nmcp-stage model-viewer{ height:92vh; min-height:92vh; }
+.room-nmcp--command .nmcp-render{ height:92vh; object-fit:contain; }
+
+/* the equipment tag floats on the plate, museum-label style */
+.room-nmcp--command .nmcp-tag{ top:28px; left:max(28px, calc(50vw - 700px)); }
+
+/* STATISTICS become ANNOTATIONS — a thin instrument strip, not a card row.
+   Overlaps the bottom of the exhibit like a control-panel readout. */
+.room-nmcp--command .nmcp-strip{
+  position:relative;
+  width:min(1100px, 92vw);
+  margin:-56px auto 0;                    /* rides UP onto the exhibit */
+  z-index:4;
+  border:1px solid var(--forge-rule,#2A2521);
+  background:rgba(10,9,8,.82);
+  backdrop-filter:blur(6px);
+}
+
+/* copy becomes engineering notes — quiet, centered, below */
+.room-nmcp--command .nmcp-room-foot{
+  width:min(1100px, 92vw); margin:26px auto 0;
+  justify-content:space-between;
+}
+
+@media(max-width:760px){
+  .room-nmcp--command .nmcp-stage{ height:72vh; min-height:72vh; }
+  .room-nmcp--command .nmcp-stage model-viewer,
+  .room-nmcp--command .nmcp-render{ height:72vh; min-height:72vh; }
+  .room-nmcp--command .nmcp-strip{ margin-top:-32px; }
+}
