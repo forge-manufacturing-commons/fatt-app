@@ -43,23 +43,27 @@ export function ArrivalDock() {
 export function NationalGrid() {
   const { hubStates } = useForgeActivity();
   const live = Object.keys(hubStates).length;
-  // The room is built AROUND the plate. The NMCP is the hero object of this room;
-  // nothing (not even the flat NigeriaMap) may compete with it. RO directive.
+  // RO directive — visual order: 1.NMCP  2.status  3.heading  4.copy  5.nav.
+  // The plate comes FIRST and fills the room. All text is demoted below it.
   return (
-    <Room id="national-grid" chrome={false} className="room-nmcp">
-      <div className="nmcp-room-head">
-        <span className="nmcp-room-seq forge-system">02 / NATIONAL MANUFACTURING GRID</span>
-        <p className="nmcp-room-lede forge-human">
-          The national manufacturing control surface — {STUDIO_HUBS.length} hubs at real coordinates,
-          {" "}{live} reporting live this cycle.
-        </p>
-      </div>
-
+    <Room id="national-grid" chrome={false} className="room-nmcp room-nmcp--command">
+      {/* 1. THE PLATE — first in flow, fills the room, the primary instrument */}
       <NMCP />
 
-      <div className="nmcp-room-cta">
-        <a href="/government" className="forge-cta-primary">Enter the manufacturing network →</a>
-        <span className="forge-technical">NMCP-0001 · the engineering icon of Forge</span>
+      {/* 3+4. heading & copy — DEMOTED below the object, supporting only */}
+      <div className="nmcp-room-foot">
+        <div className="nmcp-room-headline">
+          <span className="nmcp-room-seq forge-system">02 / NATIONAL MANUFACTURING GRID</span>
+          <p className="nmcp-room-lede forge-human">
+            The national manufacturing control surface — {STUDIO_HUBS.length} hubs at real coordinates,
+            {" "}{live} reporting live this cycle.
+          </p>
+        </div>
+        {/* 5. navigation */}
+        <div className="nmcp-room-cta">
+          <a href="/government" className="forge-cta-primary">Enter the manufacturing network →</a>
+          <span className="forge-technical">NMCP-0001 · the engineering icon of Forge</span>
+        </div>
       </div>
     </Room>
   );
