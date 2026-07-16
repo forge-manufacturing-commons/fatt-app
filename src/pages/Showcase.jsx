@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { GALLERY } from "../lib/assets";
 import { STUDIO } from "../lib/ForgeStudio";
 
+import NmcpArrival from "../components/showcase/NmcpArrival";
 import HeroSection from "../components/hero/HeroSection";
 import WhyForge from "../components/showcase/WhyForge";
 import EcosystemSystem from "../components/forge/EcosystemSystem";
@@ -28,6 +29,10 @@ export default function Showcase() {
 
   return (
     <>
+      {/* 00 — NMCP ARRIVAL / the plate is the first engineering artifact met */}
+      <NmcpArrival />
+      <GeoDivider />
+
       {/* 01 — HERO / SYSTEM DECLARATION */}
       <HeroSection />
       <GeoDivider />
