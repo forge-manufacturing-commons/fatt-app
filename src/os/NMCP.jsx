@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { useForgeActivity } from "./ActivityEngine.jsx";
 import { STUDIO_HUBS } from "./ForgeOS.js";
+import PlateViewer from "./PlateViewer.jsx";
 import "./NMCP.css";
 
 const META_URL   = "/assets/NMCP/metadata.json";
@@ -22,6 +23,7 @@ const RENDER_URL = "/assets/NMCP/renders/signature.png";
 export default function NMCP() {
   const [meta, setMeta] = useState(null);
   const [hasRender, setHasRender] = useState(false);
+  const [plate3D, setPlate3D] = useState(true);
   const { hubStates } = useForgeActivity();
 
   useEffect(() => {
@@ -37,10 +39,13 @@ export default function NMCP() {
   return (
     <div className="nmcp">
       <div className="nmcp-stage">
-        {hasRender ? (
+        {plate3D && (
+          <PlateViewer poster={hasRender ? RENDER_URL : undefined} onUnavailable={() => setPlate3D(false)} />
+        )}
+        {!plate3D && hasRender && (
           <img className="nmcp-render" src={RENDER_URL} alt="NAWEDOAM Manufacturing Command Plate" />
-        ) : (
-          // Honest fallback: the socket is wired, the render is being exported.
+        )}
+        {!plate3D && !hasRender && (
           <div className="nmcp-socket">
             <span className="forge-system">[ NMCP RENDER SOCKET ]</span>
             <p className="forge-human">

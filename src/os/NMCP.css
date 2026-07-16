@@ -24,3 +24,6 @@
 .nmcp-spec dd{ margin:0; font:600 12px/1 var(--forge-mono,monospace); color:var(--forge-cream,#F2EEE6); }
 .nmcp-spec dd em{ font-style:normal; color:var(--forge-muted,#8A857C); font-size:9px; margin-left:4px; }
 .nmcp-provenance{ color:var(--forge-muted,#8A857C); font-size:10px; margin:0; }
+
+/* 3D plate viewer fills the stage */
+.nmcp-stage model-viewer{ width:100%; height:100%; min-height:340px; display:block; background:transparent; }
