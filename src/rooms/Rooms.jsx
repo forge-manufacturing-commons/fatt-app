@@ -43,15 +43,24 @@ export function ArrivalDock() {
 export function NationalGrid() {
   const { hubStates } = useForgeActivity();
   const live = Object.keys(hubStates).length;
+  // The room is built AROUND the plate. The NMCP is the hero object of this room;
+  // nothing (not even the flat NigeriaMap) may compete with it. RO directive.
   return (
-    <Room id="national-grid">
+    <Room id="national-grid" chrome={false} className="room-nmcp">
+      <div className="nmcp-room-head">
+        <span className="nmcp-room-seq forge-system">02 / NATIONAL MANUFACTURING GRID</span>
+        <p className="nmcp-room-lede forge-human">
+          The national manufacturing control surface — {STUDIO_HUBS.length} hubs at real coordinates,
+          {" "}{live} reporting live this cycle.
+        </p>
+      </div>
+
       <NMCP />
-      <div style={{height:34}} />
-      <NigeriaMap />
-      <p className="forge-technical" style={{ marginTop: 18, color: "var(--forge-muted)" }}>
-        {STUDIO_HUBS.length} HUBS · REAL WGS84 COORDINATES · {live} REPORTING LIVE STATE THIS CYCLE
-        {" · "}PLATE SOCKET <code style={{color:"var(--forge-cyan)"}}>{BLENDER.nigeriaHero.slot}</code> ({BLENDER.nigeriaHero.status})
-      </p>
+
+      <div className="nmcp-room-cta">
+        <a href="/government" className="forge-cta-primary">Enter the manufacturing network →</a>
+        <span className="forge-technical">NMCP-0001 · the engineering icon of Forge</span>
+      </div>
     </Room>
   );
 }
