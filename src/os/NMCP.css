@@ -1,29 +1,81 @@
-.nmcp{ display:grid; grid-template-columns:1.6fr 1fr; gap:28px; align-items:start; }
-@media(max-width:900px){ .nmcp{ grid-template-columns:1fr; } }
+/* ============================================================
+   NMCP — the hero object of the National Manufacturing Grid.
+   The room is designed AROUND the plate, not the plate around the room.
+   Layout: heading -> 2 lines -> LARGE plate -> indicators -> CTA.
+   The plate dominates ~65% of the composition. Everything else supports.
+   ============================================================ */
 
-.nmcp-stage{ position:relative; border:1px solid var(--forge-rule,#2A2521); background:#0b0a09;
-  overflow:hidden; min-height:300px; max-height:560px; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
-.nmcp-render{ width:100%; height:100%; max-height:520px; object-fit:contain; display:block; }
-.nmcp-socket{ padding:40px; text-align:left; }
+.nmcp{ display:block; }
+
+/* THE STAGE — the plate is the hero. Full width, tall, commanding. */
+.nmcp-stage{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/10;
+  min-height:min(68vh, 640px);
+  border:1px solid var(--forge-rule,#2A2521);
+  background:radial-gradient(120% 120% at 50% 35%, #14110f 0%, #0b0a09 60%, #060504 100%);
+  overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 120px rgba(0,0,0,.6);
+}
+.nmcp-render{ width:100%; height:100%; object-fit:contain; display:block; }
+.nmcp-stage model-viewer{ width:100%; height:100%; min-height:340px; display:block; background:transparent; }
+
+/* corner registration marks — frames the plate like an instrument under inspection */
+.nmcp-stage::before,.nmcp-stage::after{
+  content:"";position:absolute;width:26px;height:26px;pointer-events:none;
+  border:1px solid var(--forge-gold,#C89B4A);opacity:.5;
+}
+.nmcp-stage::before{ top:16px;left:16px;border-right:0;border-bottom:0; }
+.nmcp-stage::after{ bottom:16px;right:16px;border-left:0;border-top:0; }
+
+.nmcp-socket{ padding:40px; text-align:left; max-width:60ch; }
 .nmcp-socket span{ color:var(--forge-gold,#C89B4A); display:block; margin-bottom:10px; }
-.nmcp-socket p{ color:var(--forge-muted,#8A857C); max-width:52ch; margin:0; }
+.nmcp-socket p{ color:var(--forge-muted,#8A857C); margin:0; }
 .nmcp-socket code{ color:var(--forge-cyan,#4FC7D6); }
 
 .nmcp-leds{ position:absolute; inset:0; pointer-events:none; }
-.nmcp-led{ position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; } /* positioned by render, invisible over static img until GLB viewer lands */
+.nmcp-led{ position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; }
 
-.nmcp-plate-id{ border:1px solid var(--forge-rule,#2A2521); background:var(--forge-street-2,#141110); padding:22px; }
-.nmcp-id-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:6px; }
-.nmcp-serial{ font-size:22px; color:var(--forge-cream,#F2EEE6); }
-.nmcp-cert{ color:var(--forge-emerald,#2E8F72); font-size:9px; letter-spacing:.14em; white-space:nowrap; }
-.nmcp-name{ color:var(--forge-gold,#C89B4A); font-size:13px; margin-bottom:18px; }
-.nmcp-spec{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--forge-rule,#2A2521);
-  border:1px solid var(--forge-rule,#2A2521); margin:0 0 14px; }
-.nmcp-spec > div{ background:var(--forge-street-2,#141110); padding:9px 12px; }
-.nmcp-spec dt{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.18em; color:var(--forge-muted,#8A857C); margin-bottom:5px; }
-.nmcp-spec dd{ margin:0; font:600 12px/1 var(--forge-mono,monospace); color:var(--forge-cream,#F2EEE6); }
-.nmcp-spec dd em{ font-style:normal; color:var(--forge-muted,#8A857C); font-size:9px; margin-left:4px; }
-.nmcp-provenance{ color:var(--forge-muted,#8A857C); font-size:10px; margin:0; }
+/* THE INSTRUMENT STRIP — a thin band of live status UNDER the plate.
+   Reads like a control-panel readout. Supports the object; never competes. */
+.nmcp-strip{
+  display:flex; flex-wrap:wrap; align-items:stretch; gap:1px;
+  margin-top:2px; background:var(--forge-rule,#2A2521);
+  border:1px solid var(--forge-rule,#2A2521); border-top:0;
+}
+.nmcp-strip > div{
+  flex:1 1 130px; background:var(--forge-street-2,#141110); padding:11px 16px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.nmcp-strip dt{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.2em; color:var(--forge-muted,#8A857C); }
+.nmcp-strip dd{ margin:0; font:600 13px/1 var(--forge-mono,monospace); color:var(--forge-cream,#F2EEE6); }
+.nmcp-strip dd em{ font-style:normal; font-size:9px; color:var(--forge-muted,#8A857C); margin-left:5px; }
+.nmcp-strip .live dd{ color:var(--forge-emerald,#2E8F72); }
+.nmcp-strip .cert dd{ color:var(--forge-gold,#C89B4A); }
 
-/* 3D plate viewer fills the stage */
-.nmcp-stage model-viewer{ width:100%; height:100%; min-height:340px; display:block; background:transparent; }
+/* serial ID line — small, top-left over the plate, like an equipment tag */
+.nmcp-tag{
+  position:absolute; top:16px; left:52px; z-index:3;
+  display:flex; align-items:baseline; gap:10px;
+}
+.nmcp-tag .id{ font:700 13px/1 var(--forge-mono,monospace); letter-spacing:.14em; color:var(--forge-cream,#F2EEE6); }
+.nmcp-tag .cert{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.16em; color:var(--forge-emerald,#2E8F72); }
+
+.nmcp-provenance{ color:var(--forge-muted,#8A857C); font-size:10px; margin:12px 0 0; letter-spacing:.04em; }
+
+
+/* ============================================================
+   ROOM LAYOUT — the Grid is built AROUND the plate (RO directive).
+   Squint test: the first thing seen must be the steel command plate.
+   ============================================================ */
+.room-nmcp .forge-room-floor{ max-width:1240px; }
+.nmcp-room-head{ margin:0 0 18px; }
+.nmcp-room-seq{ display:block; color:var(--forge-gold,#C89B4A); letter-spacing:.22em; font-size:11px; margin-bottom:8px; }
+.nmcp-room-seq::before{ content:""; display:inline-block; width:26px; height:1px; background:var(--forge-gold,#C89B4A); vertical-align:middle; margin-right:10px; }
+.nmcp-room-lede{ margin:0; max-width:64ch; color:var(--forge-muted,#8A857C); font-size:14px; line-height:1.5; }
+.room-nmcp .nmcp-stage{ aspect-ratio:16/9; min-height:min(74vh, 720px); }
+.nmcp-room-cta{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-top:20px; }
+.nmcp-room-cta .forge-technical{ color:var(--forge-muted,#8A857C); }
+@media(min-width:1100px){ .room-nmcp .nmcp-stage{ min-height:min(78vh, 760px); } }
