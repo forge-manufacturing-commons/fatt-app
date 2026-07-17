@@ -9,7 +9,6 @@ import WhyForge from "../components/showcase/WhyForge";
 import EcosystemSystem from "../components/forge/EcosystemSystem";
 import AssemblyEvent from "../components/forge/AssemblyEvent";
 import HowItWorks from "../components/showcase/HowItWorks";
-import NigeriaMap from "../components/manufacturing/NigeriaMap";
 import BoardPreview from "../components/forge/BoardPreview";
 import ImpactStats from "../components/showcase/ImpactStats";
 import GeoDivider from "../components/forge/GeoDivider";
@@ -79,8 +78,8 @@ export default function Showcase() {
       {/* 05 — MANUFACTURING PIPELINE */}
       <HowItWorks />
 
-      {/* 06 — NIGERIA MANUFACTURING COMMAND CENTER */}
-      <NigeriaMap />
+      {/* 06 — the Nigeria command surface is now the machined NMCP plate
+             (NMCP Arrival + National Grid room). Flat SVG map removed. */}
 
       {/* 07 — LIVE BUILD BOARD PREVIEW */}
       <BoardPreview />
