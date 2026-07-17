@@ -1,0 +1,48 @@
+{
+  "object": "NMCP-0001",
+  "views": [
+    {
+      "id": "inspect_01_hero",
+      "label": "HERO",
+      "description": "Full plate, signature hero view",
+      "image": "/assets/NMCP/inspection/inspect_01_hero.png"
+    },
+    {
+      "id": "inspect_02_top",
+      "label": "TOP",
+      "description": "Orthographic top-down, full network",
+      "image": "/assets/NMCP/inspection/inspect_02_top.png"
+    },
+    {
+      "id": "inspect_03_hubdetail",
+      "label": "HUB DETAIL",
+      "description": "Macro \u2014 hub assemblies, lenses, machining",
+      "image": "/assets/NMCP/inspection/inspect_03_hubdetail.png"
+    },
+    {
+      "id": "inspect_04_network",
+      "label": "NETWORK",
+      "description": "Inspection \u2014 corridors and power lines",
+      "image": "/assets/NMCP/inspection/inspect_04_network.png"
+    },
+    {
+      "id": "inspect_05_review",
+      "label": "REVIEW",
+      "description": "Review angle \u2014 chamfer and datums",
+      "image": "/assets/NMCP/inspection/inspect_05_review.png"
+    },
+    {
+      "id": "inspect_06_blueprint",
+      "label": "BLUEPRINT",
+      "description": "Blueprint orthographic elevation",
+      "image": "/assets/NMCP/inspection/inspect_06_blueprint.png"
+    },
+    {
+      "id": "inspect_07_pedestal",
+      "label": "PEDESTAL",
+      "description": "Serviceable pedestal \u2014 access panels, anchors",
+      "image": "/assets/NMCP/inspection/inspect_07_pedestal.png"
+    }
+  ],
+  "mobile_hero": "/assets/NMCP/inspection/mobile_hero.png"
+}

@@ -14,7 +14,7 @@
 import { useEffect, useState } from "react";
 import { useForgeActivity } from "./ActivityEngine.jsx";
 import { STUDIO_HUBS } from "./ForgeOS.js";
-import PlateViewer from "./PlateViewer.jsx";
+import InspectionViewer from "./InspectionViewer.jsx";
 import "./NMCP.css";
 
 const META_URL   = "/assets/NMCP/metadata.json";
@@ -39,21 +39,8 @@ export default function NMCP() {
   return (
     <div className="nmcp">
       <div className="nmcp-stage">
-        {plate3D && (
-          <PlateViewer poster={hasRender ? RENDER_URL : undefined} onUnavailable={() => setPlate3D(false)} />
-        )}
-        {!plate3D && hasRender && (
-          <img className="nmcp-render" src={RENDER_URL} alt="NAWEDOAM Manufacturing Command Plate" />
-        )}
-        {!plate3D && !hasRender && (
-          <div className="nmcp-socket">
-            <span className="forge-system">[ NMCP RENDER SOCKET ]</span>
-            <p className="forge-human">
-              Signature render exports to <code>{RENDER_URL}</code>. The component is
-              Forge Alpha Certified; the image drops in with no code change.
-            </p>
-          </div>
-        )}
+        {/* Forge Inspection System — authored Blender cameras, no orbit toy. */}
+        <InspectionViewer />
         {/* LED overlay — data-driven hub states over the steel. Steel permanent, data alive. */}
         <div className="nmcp-leds" aria-hidden="true">
           {STUDIO_HUBS.slice(0, 18).map((h, i) => {
