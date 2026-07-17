@@ -16,7 +16,6 @@
 .nmcp-arrival-scroll{ font:900 11px/1 var(--forge-mono,monospace); letter-spacing:.18em; color:var(--gold,#C89B4A); text-transform:uppercase; }
 /* MOBILE — plate is an exhibit, never the page. No 3D, no scroll-trap. */
 @media(max-width:820px){
-  .nmcp-arrival-exhibit .nmcp-stage{ height:52vh; min-height:52vh; background:#0a0908 url("/assets/NMCP/renders/signature.png") center/contain no-repeat; }
-  .nmcp-arrival-exhibit model-viewer{ display:none !important; }
-  .nmcp-arrival-exhibit .nmcp-render{ height:52vh; min-height:52vh; }
+  /* mobile presence kept — PlateViewer shows the cinematic render, not a hidden viewer */
+  .nmcp-arrival-exhibit .nmcp-stage{ height:58vh; min-height:58vh; }
 }
