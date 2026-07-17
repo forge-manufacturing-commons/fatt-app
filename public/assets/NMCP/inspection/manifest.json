@@ -6,57 +6,50 @@
       "id": "cam01_hero",
       "cam": "CAM_001",
       "label": "HERO",
-      "description": "Full machined plate, gold chamfer, three-quarter hero",
+      "description": "Machined command plate, square elevation",
       "image": "/assets/NMCP/inspection/cam01_hero.png"
     },
     {
-      "id": "cam02_north",
+      "id": "cam08_fullnet",
       "cam": "CAM_002",
+      "label": "FULL NETWORK",
+      "description": "All hubs, corridors and power lines",
+      "image": "/assets/NMCP/inspection/cam08_fullnet.png"
+    },
+    {
+      "id": "cam02_north",
+      "cam": "CAM_003",
       "label": "NORTH NETWORK",
-      "description": "Northern hubs \u2014 Kano, Kaduna, Jos, Maiduguri",
+      "description": "Kano, Kaduna, Jos, Maiduguri",
       "image": "/assets/NMCP/inspection/cam02_north.png"
     },
     {
       "id": "cam03_south",
-      "cam": "CAM_003",
+      "cam": "CAM_004",
       "label": "SOUTH NETWORK",
-      "description": "Southern hubs \u2014 Lagos, Port Harcourt, Aba, Warri",
+      "description": "Lagos, Port Harcourt, Aba, Warri",
       "image": "/assets/NMCP/inspection/cam03_south.png"
     },
     {
       "id": "cam04_hubdetail",
-      "cam": "CAM_004",
+      "cam": "CAM_005",
       "label": "HUB DETAIL",
-      "description": "Macro \u2014 hub assemblies, lenses, machining marks",
+      "description": "Hub assemblies, lenses, machining",
       "image": "/assets/NMCP/inspection/cam04_hubdetail.png"
     },
     {
       "id": "cam05_spec",
-      "cam": "CAM_005",
-      "label": "MANUFACTURING SPEC",
-      "description": "Engraved specification block \u2014 material, mass, revision",
-      "image": "/assets/NMCP/inspection/cam05_spec.png"
-    },
-    {
-      "id": "cam06_pedestal",
       "cam": "CAM_006",
-      "label": "PEDESTAL",
-      "description": "Serviceable base \u2014 access panels, anchors, lift points",
-      "image": "/assets/NMCP/inspection/cam06_pedestal.png"
+      "label": "MANUFACTURING SPEC",
+      "description": "Engraved specification block",
+      "image": "/assets/NMCP/inspection/cam05_spec.png"
     },
     {
       "id": "cam07_ortho",
       "cam": "CAM_007",
       "label": "ORTHOGRAPHIC",
-      "description": "True top-down orthographic \u2014 full network geometry",
+      "description": "True top-down network geometry",
       "image": "/assets/NMCP/inspection/cam07_ortho.png"
-    },
-    {
-      "id": "cam08_fullnet",
-      "cam": "CAM_008",
-      "label": "FULL NETWORK",
-      "description": "Elevated \u2014 all corridors, power lines, inspection rings",
-      "image": "/assets/NMCP/inspection/cam08_fullnet.png"
     }
   ],
   "mobile_hero": "/assets/NMCP/inspection/mobile_hero.png"
