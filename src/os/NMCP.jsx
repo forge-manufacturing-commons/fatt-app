@@ -14,7 +14,7 @@
 import { useEffect, useState } from "react";
 import { useForgeActivity } from "./ActivityEngine.jsx";
 import { STUDIO_HUBS } from "./ForgeOS.js";
-import InspectionViewer from "./InspectionViewer.jsx";
+import NmcpCinematic from "./NmcpCinematic.jsx";
 import "./NMCP.css";
 
 const META_URL   = "/assets/NMCP/metadata.json";
@@ -40,7 +40,7 @@ export default function NMCP() {
     <div className="nmcp">
       <div className="nmcp-stage">
         {/* Forge Inspection System — authored Blender cameras, no orbit toy. */}
-        <InspectionViewer />
+        <NmcpCinematic />
         {/* LED overlay — data-driven hub states over the steel. Steel permanent, data alive. */}
         <div className="nmcp-leds" aria-hidden="true">
           {STUDIO_HUBS.slice(0, 18).map((h, i) => {
