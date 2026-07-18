@@ -1,63 +1,69 @@
 // ============================================================
-// FORGE — NMCP CINEMATIC DISPLAY
-// A slow cinematic loop of the machined command plate — real Blender
-// motion (parallax, specular travel across brushed steel), played as a
-// preloaded frame sequence. Not interactive: the object breathes on its
-// own, like an Apple / Tesla product hero. No orbit, no scroll-trap.
+// FORGE — NMCP CINEMATIC
+// The machined command plate as a continuous cinematic loop:
+//   REVEAL (close on the gold chamfer) -> ROTATE (specular travels
+//   across the brushed steel) -> SETTLE (straight hero) -> loop.
+// Rendered in Blender, encoded to mp4/webm. Not interactive: the object
+// breathes on its own. pointer-events:none so page scroll is never trapped.
+// Honours prefers-reduced-motion by showing the settle frame only.
 // ============================================================
 import { useEffect, useRef, useState } from "react";
 import "./NmcpCinematic.css";
 
-const MANIFEST = "/assets/NMCP/cinematic/cinematic.json";
+const MP4    = "/assets/NMCP/cinematic/nmcp.mp4";
+const WEBM   = "/assets/NMCP/cinematic/nmcp.webm";
+const POSTER = "/assets/NMCP/cinematic/poster.webp";
 
 export default function NmcpCinematic() {
-  const [frames, setFrames] = useState([]);
-  const [ready, setReady] = useState(false);
-  const [idx, setIdx] = useState(0);
-  const raf = useRef(null);
-  const last = useRef(0);
-  const fps = useRef(14);
+  const vref = useRef(null);
+  const [reduced, setReduced] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    fetch(MANIFEST).then(r => r.ok ? r.json() : null).then(d => {
-      if (!d?.frames?.length) return;
-      fps.current = d.fps || 14;
-      // preload all frames before playing (no flicker)
-      let loaded = 0;
-      d.frames.forEach(src => {
-        const img = new Image();
-        img.onload = () => { if (++loaded === d.frames.length) setReady(true); };
-        img.src = src;
-      });
-      setFrames(d.frames);
-    }).catch(() => {});
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    setReduced(!!mq?.matches);
+    const onChange = (e) => setReduced(e.matches);
+    mq?.addEventListener?.("change", onChange);
+    return () => mq?.removeEventListener?.("change", onChange);
   }, []);
 
+  // some browsers block autoplay until a gesture — retry quietly, never block the page
   useEffect(() => {
-    if (!ready || !frames.length) return;
-    const interval = 1000 / fps.current;
-    const tick = (t) => {
-      if (t - last.current >= interval) {
-        setIdx(i => (i + 1) % frames.length);
-        last.current = t;
-      }
-      raf.current = requestAnimationFrame(tick);
-    };
-    raf.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf.current);
-  }, [ready, frames.length]);
+    const v = vref.current;
+    if (!v || reduced) return;
+    const tryPlay = () => v.play?.().catch(() => {});
+    tryPlay();
+    const onVis = () => { if (!document.hidden) tryPlay(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [reduced]);
 
-  if (!frames.length) {
-    return <div className="nmcp-cine-load forge-system">[ LOADING COMMAND PLATE ]</div>;
+  if (reduced || failed) {
+    return (
+      <div className="nmcp-cine">
+        <img className="nmcp-cine-still" src={POSTER} alt="NAWEDOAM Manufacturing Command Plate" draggable="false" />
+      </div>
+    );
   }
 
   return (
     <div className="nmcp-cine">
-      {/* stacked frames, only current visible — preloaded, no flicker */}
-      {frames.map((src, i) => (
-        <img key={i} src={src} alt="" className={`nmcp-cine-frame ${i === idx ? "on" : ""}`} draggable="false" />
-      ))}
-      {!ready && <div className="nmcp-cine-load forge-system">[ LOADING ]</div>}
+      <video
+        ref={vref}
+        className="nmcp-cine-video"
+        poster={POSTER}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        disablePictureInPicture
+        onError={() => setFailed(true)}
+        aria-label="NAWEDOAM Manufacturing Command Plate — cinematic inspection loop"
+      >
+        <source src={WEBM} type="video/webm" />
+        <source src={MP4} type="video/mp4" />
+      </video>
     </div>
   );
 }
