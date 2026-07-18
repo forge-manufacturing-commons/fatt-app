@@ -39,3 +39,24 @@ export const STATS = [
     value: 96
   }
 ]
+
+// ------------------------------------------------------------
+// PLATFORM HIERARCHY (Epic 1 — Institutional Alpha)
+// Forge is the institution. Forge OS is the software. Forge-A-Truck-Thon
+// is the global challenge run ON the platform. NAWEDOAM is the reference
+// platform — the first vehicle programme proving the model.
+// ------------------------------------------------------------
+export const PLATFORM = {
+  institution: "FORGE",
+  descriptor:  "Open Manufacturing Operating System",
+  system:      "Forge OS",
+  challenge:   "Forge-A-Truck-Thon",
+  challengeDescriptor: "Global Challenge",
+  referencePlatform:   "NAWEDOAM",
+  referenceDescriptor: "Reference Platform",
+  tiers: [
+    { id:"forge",     label:"Forge",              role:"Institution" },
+    { id:"forge-os",  label:"Forge OS",           role:"Operating System" },
+    { id:"challenge", label:"Forge-A-Truck-Thon", role:"Global Challenge" },
+  ],
+};

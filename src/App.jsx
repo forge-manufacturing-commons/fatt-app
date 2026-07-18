@@ -20,6 +20,10 @@ import "./os/ForgeOS.css";
 import { ArrivalDock, NationalGrid, EngineeringBay, ProductionLine,
          InspectionHangar, ControlRoom, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
 import Join from "./pages/Join.jsx";
+import { PLATFORM } from "./constants/site.js";
+import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
+  from "./pages/Institution.jsx";
+import Repositories from "./pages/Repositories.jsx";
 
 const BUILT = {
   "arrival-dock":     ArrivalDock,
@@ -31,6 +35,32 @@ const BUILT = {
   "impact-dashboard": ImpactDashboard,
   "build-board":      BuildBoard,
 };
+
+// ------------------------------------------------------------
+// INSTITUTIONAL TIER (Sprint 11, Epic 2)
+// Forge (institution) -> Forge OS (system) -> Forge-A-Truck-Thon (challenge).
+// The hierarchy is stated on every screen; the platform is the subject.
+// ------------------------------------------------------------
+function InstRail() {
+  return (
+    <div className="forge-inst-rail">
+      <div className="forge-inst-in">
+        <span className="forge-inst-tier">
+          <b>{PLATFORM.institution}</b>
+          <span>{PLATFORM.descriptor}</span>
+        </span>
+        <nav className="forge-inst-links" aria-label="Platform">
+          <NavLink to="/docs">Documentation</NavLink>
+          <NavLink to="/repositories">Repositories</NavLink>
+          <NavLink to="/governance">Governance</NavLink>
+          <NavLink to="/research">Research</NavLink>
+          <a href="https://github.com/forgeatruck-ux" target="_blank" rel="noreferrer">GitHub</a>
+          <NavLink to="/join">Contribute</NavLink>
+        </nav>
+      </div>
+    </div>
+  );
+}
 
 function OSRail() {
   const { event } = useForgeActivity();
@@ -78,6 +108,7 @@ export default function App() {
     <LegacyPhaseProvider>
       <>
         {!isConfigured && <div className="demo-banner">Demo mode — seed data. Add Supabase keys in .env to go live.</div>}
+        <InstRail />
         <OSRail />
         <RoomLocator />
         <div className="page">
@@ -93,13 +124,28 @@ export default function App() {
               );
             })}
             <Route path="/join" element={<Join />} />
+            {/* Institutional surfaces — controlled documents & source of record */}
+            <Route path="/docs"          element={<DocsIndex />} />
+            <Route path="/constitution"  element={<Constitution />} />
+            <Route path="/governance"    element={<Governance />} />
+            <Route path="/whitepaper"    element={<Whitepaper />} />
+            <Route path="/licenses"      element={<Licenses />} />
+            <Route path="/partners"      element={<Partners />} />
+            <Route path="/research"      element={<Research />} />
+            <Route path="/repositories"  element={<Repositories />} />
           </Routes>
         </div>
         <footer>
           <div className="wrap">
-            <b>Forge OS</b> — a Nigerian distributed-manufacturing operating system. NAWEDOAM: one SME,
-            one component, one owner. Built by a keiretsu network of SMEs, polytechnic and university
-            workshops, NYSC corps members, and diaspora engineers.
+            <div className="forge-hierarchy">
+              <b>{PLATFORM.institution}</b> — {PLATFORM.descriptor}.
+              {" "}<b>{PLATFORM.system}</b> — the platform runtime.
+              {" "}<b>{PLATFORM.challenge}</b> — {PLATFORM.challengeDescriptor.toLowerCase()}.
+              {" "}Reference platform: <b>{PLATFORM.referencePlatform}</b>.
+            </div>
+            NAWEDOAM: one SME, one component, one owner. Built by a keiretsu network of
+            enterprises, polytechnic and university workshops, NYSC corps members, and
+            diaspora engineers.
             <div className="attribution">Base 3D model: "Kei Truck" by grs (Sketchfab), CC-BY 4.0, modified.</div>
           </div>
         </footer>
