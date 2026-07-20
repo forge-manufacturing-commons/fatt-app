@@ -4,6 +4,7 @@ import { GALLERY } from "../lib/assets";
 import { STUDIO } from "../lib/ForgeStudio";
 
 import NmcpArrival from "../components/showcase/NmcpArrival";
+import NationalGraph from "../os/NationalGraph.jsx";
 import HeroSection from "../components/hero/HeroSection";
 import WhyForge from "../components/showcase/WhyForge";
 import EcosystemSystem from "../components/forge/EcosystemSystem";
@@ -30,6 +31,10 @@ export default function Showcase() {
     <>
       {/* 00 — NMCP ARRIVAL / the plate is the first engineering artifact met */}
       <NmcpArrival />
+      <GeoDivider />
+
+      {/* 00b — the plate's living network: the National Manufacturing Graph */}
+      <NationalGraph />
       <GeoDivider />
 
       {/* 01 — HERO / SYSTEM DECLARATION */}

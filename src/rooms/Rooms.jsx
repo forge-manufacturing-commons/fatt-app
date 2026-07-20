@@ -66,6 +66,9 @@ export function NationalGrid() {
           <span className="forge-technical">NMCP-0001 · the engineering icon of Forge</span>
         </div>
       </div>
+
+      {/* the plate is the instrument; the graph is the living network it monitors */}
+      <NationalGraph />
     </Room>
   );
 }
