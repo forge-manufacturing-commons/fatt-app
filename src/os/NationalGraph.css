@@ -1,0 +1,97 @@
+/* ============================================================
+   NATIONAL MANUFACTURING GRAPH
+   Command-and-control visualisation. Geography is substrate;
+   manufacturing relationships are the subject.
+   ============================================================ */
+.ng{ padding:clamp(60px,7vw,104px) 0; background:var(--forge-black,#0A0908); }
+.ng-head{ width:min(1240px,92vw); margin:0 auto 30px; }
+.ng-kicker{ display:block; color:var(--forge-gold,#C89B4A); font-size:10px; letter-spacing:.24em; margin-bottom:14px; }
+.ng-title{ margin:0; font-weight:900; letter-spacing:-.04em; line-height:.84; text-transform:uppercase;
+  font-size:clamp(28px,4.2vw,52px); color:var(--forge-cream,#F2EEE6); }
+
+/* dual-column stats — designed vs producing */
+.ng-stats{ width:min(1240px,92vw); margin:0 auto; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:1px;
+  background:var(--forge-rule,#2A2521); border:1px solid var(--forge-rule,#2A2521); }
+.ng-stat{ background:#0E0C0B; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+.ng-stat-label{ font-size:8.5px; letter-spacing:.22em; color:var(--forge-muted,#8A857C); }
+.ng-stat-row{ display:flex; gap:22px; align-items:flex-end; }
+.ng-stat-dec, .ng-stat-on{ display:flex; flex-direction:column; gap:3px; }
+.ng-stat-dec b{ font:900 26px/1 var(--forge-mono,monospace); color:var(--forge-gold,#C89B4A); }
+.ng-stat-on  b{ font:900 26px/1 var(--forge-mono,monospace); color:var(--forge-muted,#6E6960); }
+.ng-stat-dec i, .ng-stat-on i{ font:700 7.5px/1 var(--forge-mono,monospace);
+  letter-spacing:.2em; font-style:normal; color:var(--forge-muted,#8A857C); }
+.ng-survey{ width:min(1240px,92vw); margin:12px auto 0; color:var(--forge-muted,#8A857C);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+
+.ng-stage{ position:relative; width:min(1240px,92vw); margin:26px auto 0; }
+.ng-svg{ width:100%; height:auto; display:block; }
+
+/* substrate — deliberately quiet, an etched plate not a political map */
+.ng-substrate{ fill:rgba(210,205,195,.028); stroke:rgba(200,155,74,.20); stroke-width:2.5; }
+
+/* ---- edges: every line means something ---- */
+.ng-edge{ fill:none; stroke:var(--forge-gold,#C89B4A); opacity:.55; stroke-linecap:round; }
+.rel-partnership{ stroke:var(--forge-gold,#C89B4A); }
+.rel-research{ stroke:var(--forge-cyan,#4FC7D6); stroke-dasharray:14 10; opacity:.5; }
+.rel-transfer{ stroke:var(--forge-emerald,#2E8F72); stroke-dasharray:2 12; opacity:.55; }
+.rel-corridor{ stroke:#E07B39; opacity:.75; }
+.ng-edge-core{ stroke:#0A0908; opacity:1; }
+.rel-project{ stroke:#E07B39; stroke-dasharray:18 14; animation:ng-pulse 2.4s linear infinite; }
+@keyframes ng-pulse{ to{ stroke-dashoffset:-64; } }
+
+/* ---- nodes ---- */
+.ng-node{ cursor:pointer; }
+.ng-node-halo{ fill:rgba(200,155,74,.05); }
+.ng-node-ring{ fill:#0C0B0A; stroke:var(--forge-gold,#C89B4A); stroke-width:2.5; }
+.ng-node-glyph{ fill:var(--forge-gold,#C89B4A); font-size:26px; }
+.ng-node-label{ fill:var(--forge-cream,#F2EEE6); font:900 20px/1 var(--forge-mono,monospace); letter-spacing:.08em; }
+.ng-node-cell{ fill:var(--forge-muted,#8A857C); font:700 15px/1 var(--forge-mono,monospace); letter-spacing:.14em; }
+.ng-node.state-declared .ng-node-ring{ stroke-dasharray:5 4; }
+.ng-node:hover .ng-node-ring, .ng-node.is-active .ng-node-ring{ stroke:var(--forge-cyan,#4FC7D6); stroke-width:4; }
+.ng-node:hover .ng-node-halo, .ng-node.is-active .ng-node-halo{ fill:rgba(79,199,214,.12); }
+
+/* ---- cell detail overlay ---- */
+.ng-card{ position:absolute; top:18px; right:18px; width:min(330px,86%);
+  background:rgba(10,9,8,.94); backdrop-filter:blur(8px);
+  border:1px solid var(--forge-rule,#2A2521); border-left:2px solid var(--forge-gold,#C89B4A);
+  padding:18px; }
+.ng-card-x{ position:absolute; top:8px; right:10px; background:none; border:0;
+  color:var(--forge-muted,#8A857C); font-size:20px; cursor:pointer; line-height:1; }
+.ng-card-kicker{ color:var(--forge-gold,#C89B4A); font-size:9px; letter-spacing:.22em; }
+.ng-card-name{ margin:8px 0 14px; font-weight:900; letter-spacing:-.03em; line-height:.9;
+  text-transform:uppercase; font-size:26px; color:var(--forge-cream,#F2EEE6); }
+.ng-card-plate{ display:grid; grid-template-columns:1fr 1fr; gap:1px; margin:0 0 14px;
+  background:var(--forge-rule,#2A2521); border:1px solid var(--forge-rule,#2A2521); }
+.ng-card-plate > div{ background:#0E0C0B; padding:8px 10px; display:flex; flex-direction:column; gap:4px; }
+.ng-card-plate dt{ font:700 7.5px/1 var(--forge-mono,monospace); letter-spacing:.2em; color:var(--forge-muted,#8A857C); }
+.ng-card-plate dd{ margin:0; font:900 11.5px/1.2 var(--forge-mono,monospace); color:var(--forge-cream,#F2EEE6); }
+.ng-card-plate dd.st-declared{ color:var(--forge-gold,#C89B4A); }
+.ng-card-plate dd.st-engaged{ color:var(--forge-cyan,#4FC7D6); }
+.ng-card-plate dd.unk{ color:var(--forge-muted,#6E6960); }
+.ng-card-rel{ list-style:none; margin:0; padding:0; }
+.ng-card-rel li{ display:flex; align-items:center; gap:8px; padding:6px 0;
+  border-top:1px solid var(--forge-rule,#2A2521); color:var(--forge-cream,#F2EEE6); font-size:11.5px; }
+.ng-card-rel em{ margin-left:auto; font-style:normal; color:var(--forge-muted,#8A857C); font-size:9.5px;
+  letter-spacing:.1em; text-transform:uppercase; }
+
+/* ---- legend ---- */
+.ng-legend{ width:min(1240px,92vw); margin:24px auto 0; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:22px; }
+.ng-legend-col{ display:flex; flex-direction:column; gap:9px; }
+.ng-legend-col > .forge-system{ color:var(--forge-gold,#C89B4A); font-size:9px; letter-spacing:.22em; }
+.ng-leg{ display:flex; align-items:center; gap:9px; color:var(--forge-muted,#8A857C); font-size:11.5px; }
+.ng-leg em{ margin-left:auto; font-style:normal; font-size:9px; letter-spacing:.14em; color:var(--forge-cyan,#4FC7D6); }
+.sw{ width:26px; height:0; border-top:2px solid var(--forge-gold,#C89B4A); flex:0 0 auto; }
+.sw.rel-research{ border-top-style:dashed; border-color:var(--forge-cyan,#4FC7D6); }
+.sw.rel-transfer{ border-top-style:dotted; border-color:var(--forge-emerald,#2E8F72); }
+.sw.rel-corridor{ border-top:4px double #E07B39; }
+.sw.rel-project{ border-top:2px dashed #E07B39; }
+.ng-caps{ display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; }
+.ng-cap{ display:flex; align-items:center; gap:7px; color:var(--forge-muted,#8A857C); font-size:11px; }
+.ng-cap b{ color:var(--forge-gold,#C89B4A); font-size:13px; }
+
+@media(max-width:820px){
+  .ng-card{ position:relative; top:0; right:0; width:100%; margin-top:14px; }
+  .ng-caps{ grid-template-columns:1fr; }
+}

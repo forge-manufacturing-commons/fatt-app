@@ -114,3 +114,18 @@ export function platformTotals() {
     capabilities:  new Set(NODES.map(n=>n.capability)).size,
   };
 }
+
+// ------------------------------------------------------------
+// ADVISORY LAYER — diaspora engineering bodies.
+// These are the only relationships where outreach has genuinely opened,
+// so they are the only entries carrying a state above DECLARED. Marked
+// ENGAGED (contact made), never VERIFIED (no agreement concluded).
+// ------------------------------------------------------------
+export const ADVISORY = [
+  { id:"nse-houston", name:"NSE Houston Branch",  kind:"Diaspora engineering body",
+    relation:"TRANSFER", state:CELL_STATE.ENGAGED, provenance:PROVENANCE.ENGAGED },
+  { id:"nse-glasgow", name:"NSE Glasgow Branch",  kind:"Diaspora engineering body",
+    relation:"TRANSFER", state:CELL_STATE.ENGAGED, provenance:PROVENANCE.ENGAGED },
+  { id:"anesa",       name:"ANESA Inc.",          kind:"Diaspora engineering body",
+    relation:"RESEARCH", state:CELL_STATE.ENGAGED, provenance:PROVENANCE.ENGAGED },
+];
