@@ -95,3 +95,11 @@
   .ng-card{ position:relative; top:0; right:0; width:100%; margin-top:14px; }
   .ng-caps{ grid-template-columns:1fr; }
 }
+
+/* central interchange — Abuja renders as the network hub */
+.ng-node.is-hub .ng-node-ring{ stroke:var(--forge-gold,#C89B4A); stroke-width:4; stroke-dasharray:none; }
+.ng-node-hubring{ fill:none; stroke:var(--forge-gold,#C89B4A); stroke-width:1.5; opacity:.4;
+  stroke-dasharray:4 6; animation:ng-hubspin 40s linear infinite; transform-origin:center; }
+@keyframes ng-hubspin{ to{ transform:rotate(360deg); } }
+.ng-node-hublabel{ fill:var(--forge-gold,#C89B4A); font:700 13px/1 var(--forge-mono,monospace);
+  letter-spacing:.2em; }

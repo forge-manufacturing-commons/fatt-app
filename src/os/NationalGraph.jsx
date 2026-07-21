@@ -37,14 +37,18 @@ function Node({ n, onPick, active }) {
   const p = place(n.id); if (!p) return null;
   const h = hub(n.id);
   const cap = CAPABILITY[n.capability];
+  const k = n.hub ? 1.6 : 1;            // central hub renders larger
   return (
-    <g className={`ng-node state-${n.state.toLowerCase()} ${active?"is-active":""}`}
+    <g className={`ng-node state-${n.state.toLowerCase()} ${active?"is-active":""} ${n.hub?"is-hub":""}`}
        transform={`translate(${p.x},${p.y})`} onClick={() => onPick(n)}>
-      <circle className="ng-node-halo" r="46" />
-      <circle className="ng-node-ring" r="26" />
-      <text className="ng-node-glyph" textAnchor="middle" dominantBaseline="central">{cap.glyph}</text>
-      <text className="ng-node-label" x="0" y="58" textAnchor="middle">{h.name.toUpperCase()}</text>
-      <text className="ng-node-cell"  x="0" y="80" textAnchor="middle">{n.cell}</text>
+      {n.hub && <circle className="ng-node-hubring" r={64} />}
+      <circle className="ng-node-halo" r={46*k} />
+      <circle className="ng-node-ring" r={26*k} />
+      <text className="ng-node-glyph" textAnchor="middle" dominantBaseline="central"
+            style={{fontSize:`${26*k}px`}}>{cap.glyph}</text>
+      <text className="ng-node-label" x="0" y={58*k} textAnchor="middle">{h.name.toUpperCase()}</text>
+      <text className="ng-node-cell"  x="0" y={78*k} textAnchor="middle">{n.cell}</text>
+      {n.hub && <text className="ng-node-hublabel" x="0" y={-44} textAnchor="middle">CENTRAL INTERCHANGE</text>}
     </g>
   );
 }
