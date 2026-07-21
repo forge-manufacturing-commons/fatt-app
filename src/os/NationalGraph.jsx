@@ -40,7 +40,7 @@ function Node({ n, onPick, active }) {
   const k = n.hub ? 1.6 : 1;            // central hub renders larger
   return (
     <g className={`ng-node state-${n.state.toLowerCase()} ${active?"is-active":""} ${n.hub?"is-hub":""}`}
-       transform={`translate(${p.x},${p.y})`} onClick={() => onPick(n)}>
+       transform={`translate(${p.x},${p.y})`} onClick={() => { onPick(n); }}>
       {n.hub && <circle className="ng-node-hubring" r={64} />}
       <circle className="ng-node-halo" r={46*k} />
       <circle className="ng-node-ring" r={26*k} />
@@ -53,8 +53,9 @@ function Node({ n, onPick, active }) {
   );
 }
 
-export default function NationalGraph() {
+export default function NationalGraph({ onSelect } = {}) {
   const [picked, setPicked] = useState(null);
+  const pick = (n) => { setPicked(n); onSelect?.(n?.id ?? null); };
   const t = platformTotals();
   const vb = `0 0 ${BB.x1 + BB.x0} ${BB.y1 + BB.y0}`;
 
@@ -92,7 +93,7 @@ export default function NationalGraph() {
           <path d={NIGERIA_PATH} className="ng-substrate" />
           <g className="ng-edges">{EDGES.map((e,i) => <Edge key={i} e={e} />)}</g>
           <g className="ng-nodes">
-            {NODES.map(n => <Node key={n.id} n={n} onPick={setPicked} active={picked?.id===n.id} />)}
+            {NODES.map(n => <Node key={n.id} n={n} onPick={pick} active={picked?.id===n.id} />)}
           </g>
         </svg>
 

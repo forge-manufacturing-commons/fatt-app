@@ -129,3 +129,34 @@ export const ADVISORY = [
   { id:"anesa",       name:"ANESA Inc.",          kind:"Diaspora engineering body",
     relation:"RESEARCH", state:CELL_STATE.ENGAGED, provenance:PROVENANCE.ENGAGED },
 ];
+
+// ------------------------------------------------------------
+// NODE INTELLIGENCE — SPECIMEN DATA ONLY.
+// Illustrative figures showing how a populated cell reads. Every value
+// here is a specimen: it demonstrates the instrument, it is not a survey
+// result. Rendered exclusively behind the console's SPECIMEN watermark.
+// Real survey data will replace these one cell at a time.
+// ------------------------------------------------------------
+export const NODE_INTEL = {
+  lagos:        { discipline:"Vehicle Assembly",       capacity:78, suppliers:186, universities:7, projects:22, readiness:"COMMISSIONING" },
+  kaduna:       { discipline:"Precision Machining",    capacity:82, suppliers:142, universities:5, projects:18, readiness:"COMMISSIONING" },
+  kano:         { discipline:"Heavy Fabrication",      capacity:71, suppliers:158, universities:4, projects:14, readiness:"COMMISSIONING" },
+  nnewi:        { discipline:"Automotive Components",  capacity:88, suppliers:240, universities:3, projects:26, readiness:"COMMISSIONING" },
+  aba:          { discipline:"Light Fabrication",      capacity:74, suppliers:198, universities:2, projects:16, readiness:"COMMISSIONING" },
+  portharcourt: { discipline:"Energy Systems",         capacity:69, suppliers:96,  universities:4, projects:12, readiness:"COMMISSIONING" },
+  enugu:        { discipline:"Precision Machining",    capacity:66, suppliers:88,  universities:5, projects:10, readiness:"COMMISSIONING" },
+  ibadan:       { discipline:"Fabrication",            capacity:72, suppliers:120, universities:6, projects:13, readiness:"COMMISSIONING" },
+  abuja:        { discipline:"Engineering Validation", capacity:64, suppliers:74,  universities:8, projects:20, readiness:"COMMISSIONING" },
+  benin:        { discipline:"Foundry & Casting",      capacity:70, suppliers:82,  universities:3, projects:9,  readiness:"COMMISSIONING" },
+};
+// default for cells without a specimen sheet — honestly pending
+export const INTEL_DEFAULT = { discipline:null, capacity:null, suppliers:null, universities:null, projects:null, readiness:"SURVEY PENDING" };
+
+// the actions a decision panel offers — all REAL, none fabricated
+export const CELL_ACTIONS = [
+  { id:"register",  label:"Register capability",   kind:"primary" },
+  { id:"survey",    label:"Contribute survey data",kind:"primary" },
+  { id:"docs",      label:"Open documentation",    kind:"ghost"   },
+  { id:"standards", label:"View standards",        kind:"ghost"   },
+  { id:"consortium",label:"Join consortium",       kind:"ghost"   },
+];

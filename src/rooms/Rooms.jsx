@@ -13,7 +13,7 @@ import { STUDIO_HUBS } from "../os/ForgeOS.js";
 import { BLENDER } from "../os/BlenderSocket.js";
 import { HumanGlyph } from "../humans/HumanGlyphLibrary.jsx";
 import NMCP from "../os/NMCP.jsx";
-import NationalGraph from "../os/NationalGraph.jsx";
+import OperationsConsole from "../os/OperationsConsole.jsx";
 
 import NigeriaMap from "../components/manufacturing/NigeriaMap";
 import BoardPreview from "../components/forge/BoardPreview";
