@@ -1,0 +1,212 @@
+﻿Diagnose log at 2026-08-02T19:59:48Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.7.3+5fa7116896c82164996a609accd1c5ad90fe730a
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 26200)
+Reading environment variables... OK
+ Variables:
+SESSIONNAME=Console
+ProgramFiles(x86)=C:\Program Files (x86)
+MSYSTEM=MINGW64
+ProgramW6432=C:\Program Files
+DokanLibrary2_LibraryPath_x86=C:\Program Files\Dokan\Dokan Library-2.2.1\x86\lib\
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 140 Stepping 1, GenuineIntel
+TMP=C:\Users\malco\AppData\Local\Temp
+PROCESSOR_ARCHITECTURE=AMD64
+EFC_9724_2283032206=1
+Path=C:/Program Files/Git/mingw64/libexec/git-core;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\malco\bin;c:\Users\malco\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand;c:\Users\malco\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\Common Files\Autodesk Shared\;C:\Program Files\Calibre2\;C:\Program Files\Git\cmd;C:\Program Files\nodejs\;C:\Users\malco\AppData\Local\Programs\Python\Launcher\;C:\Users\malco\AppData\Local\Microsoft\WindowsApps;C:\Users\malco\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\malco\AppData\Roaming\npm;C:\Users\malco\AppData\Local\Microsoft\WinGet\Links;
+ADSK_3DSMAX_x64_2026=C:\Program Files\Autodesk\3ds Max 2026\
+PROCESSOR_REVISION=8c01
+configsetroot=C:\WINDOWS\ConfigSetRoot
+VSCODE_GIT_ASKPASS_MAIN=c:\Users\malco\AppData\Roaming\Code\User\globalStorage\vscode.git\askpass\70789581cae28aa7\askpass-main.js
+CommonProgramFiles=C:\Program Files\Common Files
+TEMP=C:\Users\malco\AppData\Local\Temp
+USERPROFILE=C:\Users\malco
+LOGONSERVER=\\MSI
+TERM=xterm-256color
+USERNAME=Malcolm
+SystemRoot=C:\WINDOWS
+CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_17740_AQUJAWJAGQFNUNZH
+GIT_EXEC_PATH=C:/Program Files/Git/mingw64/libexec/git-core
+PLINK_PROTOCOL=ssh
+OneDrive=C:\Users\malco\OneDrive
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+ZES_ENABLE_SYSMAN=1
+VSCODE_PYTHON_AUTOACTIVATE_GUARD=1
+ProgramData=C:\ProgramData
+EFC_9724_2775293581=1
+DokanLibrary2_LibraryPath_x64=C:\Program Files\Dokan\Dokan Library-2.2.1\lib\
+HOMEPATH=\Users\malco
+COMPUTERNAME=MSI
+DriverData=C:\Windows\System32\Drivers\DriverData
+VSCODE_INJECTION=1
+ALLUSERSPROFILE=C:\ProgramData
+CommonProgramW6432=C:\Program Files\Common Files
+COPILOT_DEBUG_NONCE=1f79353fbb6a7e34becead4c0de3c216
+DokanLibrary2=C:\Program Files\Dokan\Dokan Library-2.2.1\
+EFC_9724_3789132940=1
+HOMEDRIVE=C:
+GIT_ASKPASS=c:\Users\malco\AppData\Roaming\Code\User\globalStorage\vscode.git\askpass\70789581cae28aa7\askpass.sh
+windir=C:\WINDOWS
+GIT_TRACE2_PARENT_SID=fc850e5b-ff4f-4028-b7c3-c81fc424dd75
+SystemDrive=C:
+NUMBER_OF_PROCESSORS=8
+OS=Windows_NT
+EFC_9724_4126798990=1
+ProgramFiles=C:\Program Files
+ComSpec=C:\WINDOWS\system32\cmd.exe
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL
+HOME=C:\Users\malco
+LANG=en_US.UTF-8
+PSModulePath=C:\Users\malco\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+TMPDIR=C:\Users\malco\AppData\Local\Temp
+APPDATA=C:\Users\malco\AppData\Roaming
+USERDOMAIN=MSI
+PROCESSOR_LEVEL=6
+asl.log=Destination=file
+LOCALAPPDATA=C:\Users\malco\AppData\Local
+VSCODE_GIT_IPC_HANDLE=\\.\pipe\vscode-git-603aa7ff27-sock
+VSCODE_GIT_ASKPASS_NODE=C:\Users\malco\AppData\Local\Programs\Microsoft VS Code\Code.exe
+EFC_9724_1262719628=1
+TERM_PROGRAM_VERSION=1.129.1
+USERDOMAIN_ROAMINGPROFILE=MSI
+EFC_9724_1592913036=1
+COLORTERM=truecolor
+PUBLIC=C:\Users\Public
+TERM_PROGRAM=vscode
+VSCODE_GIT_ASKPASS_EXTRA_ARGS=
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\malco\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\malco\AppData\Local\Temp\a76f4d63bda3ca2b0d5f1590'... OK
+Reading from temporary file 'C:\Users\malco\AppData\Local\Temp\a76f4d63bda3ca2b0d5f1590'... OK
+Deleting temporary file 'C:\Users\malco\AppData\Local\Temp\a76f4d63bda3ca2b0d5f1590'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\malco
+UserDataDirectoryPath: C:\Users\malco\.gcm
+GetCurrentDirectory(): C:\Users\malco\Desktop\case\fatt-app
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+ OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:64742/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.54.0.windows.1'
+Locating current repository...Git repository at 'C:/Users/malco/Desktop/case/fatt-app/.git'
+ OK
+Listing all Git configuration... OK
+Git configuration:
+file:C:/Program Files/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.required=true
+file:C:/Program Files/Git/etc/gitconfig	http.sslbackend=schannel
+file:C:/Program Files/Git/etc/gitconfig	core.autocrlf=true
+file:C:/Program Files/Git/etc/gitconfig	core.fscache=true
+file:C:/Program Files/Git/etc/gitconfig	core.symlinks=true
+file:C:/Program Files/Git/etc/gitconfig	pull.rebase=false
+file:C:/Program Files/Git/etc/gitconfig	credential.helper=manager
+file:C:/Program Files/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:C:/Program Files/Git/etc/gitconfig	init.defaultbranch=master
+file:C:/Users/malco/.gitconfig	user.name=Forge A Truck
+file:C:/Users/malco/.gitconfig	user.email=forgeatruck@gmail.com
+file:C:/Users/malco/.gitconfig	credential.helper=manager
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.ignorecase=true
+file:.git/config	remote.origin.url=https://sotinnovate@github.com/sotinnovate/fatt-app.git
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+file:.git/config	branch.main.remote=origin
+file:.git/config	branch.main.merge=refs/heads/main
+file:.git/config	branch.backup-before-pass6.vscode-merge-base=origin/main
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+
+------------
+Diagnostic: Microsoft authentication (AAD/MSA)
+Skipped: False
+Success: True
+Exception: None
+Log:
+Broker is not enabled.
+Flow type is: Auto
+Gathering MSAL token cache data... OK
+CacheDirectory: C:\Users\malco\AppData\Local\.IdentityService
+CacheFileName: msal.cache
+CacheFilePath: C:\Users\malco\AppData\Local\.IdentityService\msal.cache
+Creating cache helper... OK
+Verifying MSAL token cache persistence... OK
+
+------------
+Diagnostic: GitHub API
+Skipped: False
+Success: False
+Exception:
+System.Net.Http.HttpRequestException: An error occurred while sending the request. ---> System.Net.WebException: The remote name could not be resolved: 'api.github.com'
+   at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)
+   at System.Net.Http.HttpClientHandler.GetResponseCallback(IAsyncResult ar)
+   --- End of inner exception stack trace ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at GitHub.GitHubRestApi.<GetMetaInfoAsync>d__5.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at GitHub.Diagnostics.GitHubApiDiagnostic.<RunInternalAsync>d__2.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at GitCredentialManager.Diagnostics.Diagnostic.<RunAsync>d__6.MoveNext()
+Log:
+Using 'https://github.com/' as API target.
+Querying '/meta' endpoint...
