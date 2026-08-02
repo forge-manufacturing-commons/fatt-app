@@ -5,7 +5,7 @@
 // ============================================================
 
 import { useEffect, useState } from "react";
-import { Routes, Route, NavLink } from "react-router-dom";
+import { Routes, Route, NavLink, useLocation } from "react-router-dom";
 import { isConfigured } from "./lib/supabase";
 import { ForgeActivityProvider, useForgeActivity } from "./os/ActivityEngine.jsx";
 // Legacy phase/tone engine still drives the hero band, board pulses, ecosystem,
@@ -13,12 +13,14 @@ import { ForgeActivityProvider, useForgeActivity } from "./os/ActivityEngine.jsx
 // swapping it out would orphan five working components for no gain.
 import { ForgeActivityProvider as LegacyPhaseProvider } from "./lib/ForgeActivityEngine.jsx";
 import { ROOMS, roomById } from "./os/ForgeOS.js";
+import { LOGO_NAVBAR } from "./lib/assets";
 import Room from "./os/Room.jsx";
 import RoomLocator from "./os/RoomLocator.jsx";
 import "./os/ForgeOS.css";
 
 import { ArrivalDock, NationalGrid, EngineeringBay, ProductionLine,
          InspectionHangar, ControlRoom, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
+import DemoStudio from "./rooms/DemoStudio.jsx";
 import Join from "./pages/Join.jsx";
 import { PLATFORM } from "./constants/site.js";
 import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
@@ -34,6 +36,7 @@ const BUILT = {
   "control-room":     ControlRoom,
   "impact-dashboard": ImpactDashboard,
   "build-board":      BuildBoard,
+  "demo-studio":      DemoStudio,
 };
 
 // ------------------------------------------------------------
@@ -62,25 +65,99 @@ function InstRail() {
   );
 }
 
+// Domain groups for the rail. Room ids reference the kernel ROOMS registry.
+// Any room not listed here is auto-collected under "More" — the rail never hides a room.
+const DOMAIN_GROUPS = [
+  { id: "operations",  label: "Operations",  ids: ["arrival-dock", "national-grid", "production-line", "control-room", "impact-dashboard"] },
+  { id: "engineering", label: "Engineering", ids: ["engineering-bay", "inspection-hangar", "build-board"] },
+  { id: "network",     label: "Network",     ids: ["sme-portal", "university-portal", "government-portal", "investor-portal", "marketplace"] },
+  { id: "systems",     label: "Systems",     ids: ["manufacturing-cloud", "digital-twin", "ai-assistant", "demo-studio"] },
+];
+
+// Grouped, collapsible navigation. Route-based (react-router), driven by the kernel
+// ROOMS registry — so it scales to any number of rooms without a horizontal overflow.
 function OSRail() {
   const { event } = useForgeActivity();
+  const { pathname } = useLocation();
+  const [openGroup, setOpenGroup] = useState(null);
+
+  const groupedIds = new Set(DOMAIN_GROUPS.flatMap(g => g.ids));
+  const groups = DOMAIN_GROUPS.map(g => ({
+    ...g,
+    rooms: g.ids.map(id => ROOMS.find(r => r.id === id)).filter(Boolean),
+  })).filter(g => g.rooms.length > 0);
+  const extras = ROOMS.filter(r => !groupedIds.has(r.id));
+  if (extras.length) groups.push({ id: "more", label: "More", rooms: extras });
+
+  const activeRoom = ROOMS.find(r => r.path === pathname);
+  const activeGroupId = groups.find(g => g.rooms.some(r => r.id === activeRoom?.id))?.id;
+
   return (
     <div className="forge-os-rail">
       <div className="forge-os-rail-in">
-        <NavLink to="/" className="forge-os-mark">FORGE<b>OS</b></NavLink>
-        <nav className="forge-os-doors" aria-label="Forge OS rooms">
-          {ROOMS.map(r => (
-            <NavLink
-              key={r.id}
-              to={r.path}
-              end={r.path === "/"}
-              className={({ isActive }) =>
-                `forge-os-door${isActive ? " active" : ""}${r.status === "commissioning" ? " forge-os-door--commissioning" : ""}`}
-              title={r.purpose}
-            >
-              <em>{r.sequence}</em>{r.name}
-            </NavLink>
-          ))}
+        <NavLink to="/" className="forge-os-mark" onClick={() => setOpenGroup(null)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <img src={LOGO_NAVBAR} alt="Forge" height={30} style={{ height: 30, width: "auto", objectFit: "contain" }} />
+          <b style={{ color: "var(--forge-teal)", fontSize: 12, letterSpacing: "0.08em" }}>OS</b>
+        </NavLink>
+        <nav className="forge-os-doors" aria-label="Forge OS rooms" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {groups.map(g => {
+            const isOpen = openGroup === g.id;
+            const isActive = activeGroupId === g.id;
+            return (
+              <div
+                key={g.id}
+                style={{ position: "relative" }}
+                onMouseLeave={() => { if (isOpen) setOpenGroup(null); }}
+              >
+                <button
+                  type="button"
+                  className="forge-os-door"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpenGroup(isOpen ? null : g.id)}
+                  style={{
+                    cursor: "pointer", font: "inherit", color: "inherit",
+                    background: isOpen ? "rgba(255,255,255,.08)" : "transparent",
+                    borderBottom: isActive ? "2px solid var(--forge-teal)" : "2px solid transparent",
+                  }}
+                >
+                  {g.label} <span style={{ opacity: .5, fontSize: 11 }}>{g.rooms.length}</span>
+                </button>
+                {isOpen && (
+                  <div
+                    role="menu"
+                    style={{
+                      position: "absolute", top: "100%", left: 0, zIndex: 60,
+                      minWidth: 240, background: "#0d141d", border: "1px solid #1c2733",
+                      borderRadius: 8, padding: 6, boxShadow: "0 14px 34px rgba(0,0,0,.55)",
+                    }}
+                  >
+                    {g.rooms.map(r => (
+                      <NavLink
+                        key={r.id}
+                        to={r.path}
+                        end={r.path === "/"}
+                        onClick={() => setOpenGroup(null)}
+                        title={r.purpose}
+                        className={({ isActive: a }) =>
+                          `forge-os-door${a ? " active" : ""}${r.status === "commissioning" ? " forge-os-door--commissioning" : ""}`}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8,
+                          padding: "7px 10px", borderRadius: 6, whiteSpace: "nowrap",
+                          opacity: r.status === "commissioning" ? .6 : 1,
+                        }}
+                      >
+                        <em style={{ fontStyle: "normal", opacity: .5, fontSize: 11, minWidth: 20 }}>{r.sequence}</em>
+                        <span>{r.name}</span>
+                        {r.status === "commissioning" && (
+                          <span style={{ marginLeft: "auto", fontSize: 9, letterSpacing: 1, opacity: .5 }}>SOON</span>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
         <span className="forge-os-status forge-system">
           <i /> {event ? event.type.toUpperCase() : "SYSTEM ONLINE"}

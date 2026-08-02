@@ -40,15 +40,27 @@ export default function NMCP() {
   return (
     <div className="nmcp">
       <div className="nmcp-stage">
-        {/* Forge Inspection System — authored Blender cameras, no orbit toy. */}
-        <PlateInstrument><NmcpCinematic /></PlateInstrument>
-        {/* LED overlay — data-driven hub states over the steel. Steel permanent, data alive. */}
-        <div className="nmcp-leds" aria-hidden="true">
-          {STUDIO_HUBS.slice(0, 18).map((h, i) => {
-            const st = hubStates[(h.id || h.name || "").toLowerCase()] || "standby";
-            return <span key={i} className={`nmcp-led nmcp-led--${st}`} />;
-          })}
-        </div>
+        {hasRender ? (
+          /* Machined Nigeria — static render (no animation, per directive):
+             chamfered gold edges, brushed steel texture, 3D city hubs, ~27° slant. */
+          <img
+            className="nmcp-plate-render"
+            src={RENDER_URL}
+            alt="NAWEDOAM Manufacturing Command Plate — machined Nigeria with chamfered gold edges"
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
+        ) : (
+          /* Honest fallback: the authored cinematic + live LED overlay only if the render is absent. */
+          <>
+            <PlateInstrument><NmcpCinematic /></PlateInstrument>
+            <div className="nmcp-leds" aria-hidden="true">
+              {STUDIO_HUBS.slice(0, 18).map((h, i) => {
+                const st = hubStates[(h.id || h.name || "").toLowerCase()] || "standby";
+                return <span key={i} className={`nmcp-led nmcp-led--${st}`} />;
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {meta && (

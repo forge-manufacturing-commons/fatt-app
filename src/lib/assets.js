@@ -37,3 +37,9 @@ export const GALLERY = RENDERS.length ? RENDERS : ROOT_IMAGES
 export const HERO_IMAGE = GALLERY[0] || null
 
 export const LOGO = '/forge_Logo.png'
+
+// Brand identity assets (space-free copies of the files dropped in /public).
+// Hierarchy: Mark (symbol) → Emblem (symbol + wordmark) → Navbar (nav wordmark).
+export const LOGO_NAVBAR = '/forge-navbar.png'
+export const LOGO_EMBLEM = '/forge-emblem.png'
+export const LOGO_MARK = '/forge-mark.png'

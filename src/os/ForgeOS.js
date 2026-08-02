@@ -63,6 +63,8 @@ export const ROOMS = [
   { id:"investor-portal",  name:"Investor Portal",              path:"/investor",    camera:"review",     status:"commissioning", sequence:"14", activeState:"Commissioning", purpose:"Diaspora capital, technical advisory, in-kind support." },
   { id:"marketplace",      name:"Marketplace",                  path:"/marketplace", camera:"review",     status:"commissioning", sequence:"15", activeState:"Commissioning", purpose:"Components, vehicles, capability." },
   { id:"ai-assistant",     name:"AI Manufacturing Assistant",   path:"/assistant",   camera:"review",     status:"commissioning", sequence:"16", activeState:"Commissioning", purpose:"Manufacturing intelligence across every room." },
+  // Executable reference room: one workflow through the Activity Engine and Runtime Engine, live.
+  { id:"demo-studio",      name:"Demo Studio",                  path:"/demo",        camera:"blueprint",  status:"operational",   sequence:"17", activeState:"Live", purpose:"Executable reference — one workflow through the event bus and runtime, visualised live." },
 ];
 
 export const roomById   = id   => ROOMS.find(r => r.id === id) || null;
