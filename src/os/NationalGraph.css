@@ -103,3 +103,13 @@
 @keyframes ng-hubspin{ to{ transform:rotate(360deg); } }
 .ng-node-hublabel{ fill:var(--forge-gold,#C89B4A); font:700 13px/1 var(--forge-mono,monospace);
   letter-spacing:.2em; }
+
+/* ---- supply-chain flow: the signature animation ---- */
+.flow-route{ fill:none; stroke-width:2; opacity:.16; stroke-dasharray:2 10; stroke-linecap:round; }
+.flow-dot{ opacity:.9; filter:drop-shadow(0 0 6px currentColor); }
+.flow-dot.at-cell{ opacity:1; }
+.flow-dot-core{ fill:#0A0908; }
+.flow-act rect{ fill:rgba(10,9,8,.92); stroke:var(--forge-gold,#C89B4A); stroke-width:1; }
+.flow-act text{ fill:var(--forge-cream,#F2EEE6); font:900 13px/1 var(--forge-mono,monospace);
+  letter-spacing:.14em; }
+.flow-token{ pointer-events:none; }

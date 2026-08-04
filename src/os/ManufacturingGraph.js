@@ -160,3 +160,45 @@ export const CELL_ACTIONS = [
   { id:"standards", label:"View standards",        kind:"ghost"   },
   { id:"consortium",label:"Join consortium",       kind:"ghost"   },
 ];
+
+// ------------------------------------------------------------
+// SUPPLY-CHAIN FLOWS — the signature animation.
+// A component travels the network, transformed at each cell, until it
+// leaves as a finished export. This is the Forge concept made visible:
+// distributed manufacture, one component per cell, assembled into a vehicle.
+// Each stage names what that cell DID to the component.
+// Routes follow real EDGES so the motion reads as the actual network.
+// ------------------------------------------------------------
+export const SUPPLY_FLOWS = [
+  {
+    id:"flow-a", label:"Body & Chassis Line",
+    stages:[
+      { at:"kaduna",  act:"STEEL"     },
+      { at:"jos",     act:"MATERIALS" },
+      { at:"abuja",   act:"VALIDATE"  },
+      { at:"enugu",   act:"MACHINING" },
+      { at:"aba",     act:"FABRICATE" },
+      { at:"onitsha", act:"ASSEMBLE"  },
+      { at:"lagos",   act:"EXPORT"    },
+    ],
+  },
+  {
+    id:"flow-b", label:"Drivetrain Line",
+    stages:[
+      { at:"nnewi",   act:"MACHINING" },
+      { at:"onitsha", act:"ASSEMBLE"  },
+      { at:"benin",   act:"CASTING"   },
+      { at:"ibadan",  act:"FABRICATE" },
+      { at:"lagos",   act:"EXPORT"    },
+    ],
+  },
+  {
+    id:"flow-c", label:"Energy Module Line",
+    stages:[
+      { at:"portharcourt", act:"ENERGY"   },
+      { at:"warri",        act:"SYSTEMS"  },
+      { at:"benin",        act:"FABRICATE"},
+      { at:"lagos",        act:"EXPORT"   },
+    ],
+  },
+];

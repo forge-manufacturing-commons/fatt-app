@@ -9,6 +9,7 @@ import { STUDIO_HUBS, projectHub } from "../lib/ForgeStudio.js";
 import { NODES, EDGES, ADVISORY, CAPABILITY, RELATION, CELL_STATE, platformTotals }
   from "./ManufacturingGraph.js";
 import { NIGERIA_PATH, NIGERIA_BBOX as BB } from "./nigeriaOutline.js";
+import SupplyFlowLayer from "./SupplyFlowLayer.jsx";
 import "./NationalGraph.css";
 
 const hub = (id) => STUDIO_HUBS.find(h => h.id === id);
@@ -92,6 +93,7 @@ export default function NationalGraph({ onSelect } = {}) {
         <svg viewBox={vb} className="ng-svg" role="img" aria-label="National manufacturing graph">
           <path d={NIGERIA_PATH} className="ng-substrate" />
           <g className="ng-edges">{EDGES.map((e,i) => <Edge key={i} e={e} />)}</g>
+          <SupplyFlowLayer />
           <g className="ng-nodes">
             {NODES.map(n => <Node key={n.id} n={n} onPick={pick} active={picked?.id===n.id} />)}
           </g>
