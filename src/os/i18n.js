@@ -318,9 +318,27 @@ const yo = {
   'runtime.step.studios': 'Sítúdíò',
 };
 
-// Urhobo — first-class runtime language, English placeholders pending the
-// Chief Architect's own translations. Replace values below when supplied.
-const urh = { ...en };
+// Urhobo — first-class runtime language. Native-source translations
+// supplied by the Chief Architect. Keys not yet translated fall back to
+// English via the { ...en } spread, so the interface never breaks.
+const urh = {
+  ...en,
+  'hero.label':        'Forge Manufacturing Commons',
+  'hero.line1':        'Ẹ́rha Ovwẹ̀vwẹ̀',
+  'hero.line2':        'Fuo Nàijíríà',
+  'hero.line3':        'Avwọ́rò Ìmẹ̀vwẹ̀',
+  'hero.desc':         "ForgeOS vẹ́ ẹrha ovwẹ̀vwẹ̀ r'ọ́ kpẹ̀ r'ẹ́mẹ̀vwẹ̀ avwọ́rò Nàijíríà. Ugbokodo r'ẹ́mẹ̀vwẹ̀ vẹ̀. Ẹ̀kpẹ̀ r'ovwẹ̀vwẹ̀ vẹ̀. Ovwẹ̀vwẹ̀ injinia vẹ̀. Ẹ́rha ovwẹ̀vwẹ̀ ọ̀kpọ̀.",
+  'cta.launch':        'Kpọ̀ ForgeOS',
+  'cta.explore':       "Kẹ̀ r'Avwọ́rò Ìmẹ̀vwẹ̀",
+  'status.title':      "Ọ̀nọ̀ R'Ónọ̀",
+  'status.hubs':       "ivbiẹ́mẹ̀vwẹ̀ r'ọ́ mighọ",
+  'status.workshops':  "ugbokodo r'ẹ́mẹ̀vwẹ̀ r'ọ́ dẹ̀vwe",
+  'status.people':     "ivbiebọ r'ọ́ kpọ̀",
+  'metric.people':     "Ivbiebọ R'Ọ́ Kpọ̀",
+  'metric.workshops':  'Ugbokodo',
+  'metric.components': 'Ẹ̀kpẹ̀',
+  'metric.states':     "Ivwievwi R'Ọ́ Kpọ̀",
+};
 
 export const translations = { en, fr, ha, ig, pcm, urh, yo };
 
