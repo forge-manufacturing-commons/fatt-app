@@ -24,13 +24,15 @@ import LanguageRuntime from "./LanguageRuntime.jsx";
 
 // --- BUILD-D001 palette -------------------------------------------------------
 const BLACK = "#0D0D0F", IVORY = "#F5F1E9", TEAL = "#0A7F73", AMBER = "#F5A623";
+const PINK = "#FF2E63";   // BUILD-D001 highlight — momentum, bold initiative
+const METRIC_ACCENTS = [TEAL, PINK, AMBER, PINK, TEAL];
 const SURFACE = "#111418", BORDER = "#1C2128", MUTED = "#8899aa";
 const SORA = "var(--forge-brand-font, 'Sora', system-ui, sans-serif)";
 const DISPLAY = "var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 
 const HUB_COLOR = {
   fabricating: TEAL, coordinating: TEAL, verifying: TEAL,
-  expanding: AMBER, maintenance: AMBER, standby: BORDER,
+  expanding: AMBER, maintenance: PINK, standby: BORDER,
 };
 const hubColor = (s) => HUB_COLOR[s] || SURFACE;
 
@@ -76,7 +78,7 @@ function SectionLabel({ children }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL }}>{children}</div>
-      <div style={{ width: 40, height: 2, background: AMBER, marginTop: 6 }} />
+      <div style={{ width: 40, height: 2, background: PINK, marginTop: 6 }} />
     </div>
   );
 }
@@ -84,7 +86,7 @@ function SectionLabel({ children }) {
 function Divider() {
   return (
     <div aria-hidden="true" style={{ position: "relative", height: 2, margin: "0 clamp(24px,5vw,60px)", background: "linear-gradient(90deg, transparent, rgba(10,127,115,.45) 18%, rgba(10,127,115,.45) 82%, transparent)" }}>
-      <span style={{ position: "absolute", left: "50%", top: "50%", width: 9, height: 9, background: AMBER, transform: "translate(-50%,-50%) rotate(45deg)" }} />
+      <span style={{ position: "absolute", left: "50%", top: "50%", width: 9, height: 9, background: PINK, transform: "translate(-50%,-50%) rotate(45deg)" }} />
     </div>
   );
 }
@@ -92,7 +94,7 @@ function Divider() {
 function StatusRow({ value, text, ok }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "3px 0", fontFamily: SORA, fontSize: 13 }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: ok ? TEAL : AMBER, boxShadow: `0 0 6px ${(ok ? TEAL : AMBER)}66`, flexShrink: 0 }} />
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: ok ? TEAL : PINK, boxShadow: `0 0 6px ${(ok ? TEAL : PINK)}66`, flexShrink: 0 }} />
       {value != null && <b style={{ color: AMBER, fontWeight: 700 }}>{value}</b>}
       <span style={{ color: "rgba(245,241,233,0.82)" }}>{text}</span>
     </div>
@@ -139,9 +141,9 @@ function Metric({ Icon, value, label, desc, index = 0 }) {
   const n = useCountUp(value);
   const even = index % 2 === 0;
   return (
-    <div style={{ clipPath: even ? FORGE_CLIPS.panelBR : FORGE_CLIPS.panelTR, background: SURFACE, borderTop: `2px solid ${even ? TEAL : AMBER}`, padding: "22px 24px", flex: "1 1 180px", minWidth: 160 }}>
+    <div style={{ clipPath: even ? FORGE_CLIPS.panelBR : FORGE_CLIPS.panelTR, background: SURFACE, borderTop: `2px solid ${METRIC_ACCENTS[index % METRIC_ACCENTS.length]}`, padding: "22px 24px", flex: "1 1 180px", minWidth: 160 }}>
       <div style={{ marginBottom: 10 }}><Icon /></div>
-      <div style={{ fontFamily: SORA, fontWeight: 800, fontSize: 36, color: AMBER, lineHeight: 1 }}>{n}</div>
+      <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 38, color: METRIC_ACCENTS[index % METRIC_ACCENTS.length], lineHeight: 1 }}>{n}</div>
       <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: TEAL, marginTop: 8 }}>{label}</div>
       <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 11, color: MUTED, marginTop: 4 }}>{desc}</div>
     </div>
@@ -153,11 +155,11 @@ const STUDIOS = [
   { path: "/production",  number: "01", nameKey: "studio.manufacturing", desc: "Coordinate distributed SME production", accent: TEAL },
   { path: "/engineering", number: "02", nameKey: "studio.engineering",   desc: "Author and version specifications",    accent: TEAL },
   { path: "/inspection",  number: "03", nameKey: "studio.inspection",     desc: "Quality verification and certification", accent: AMBER },
-  { path: "/control",     number: "04", nameKey: "studio.control",        desc: "Live operational intelligence",         accent: AMBER },
+  { path: "/control",     number: "04", nameKey: "studio.control",        desc: "Live operational intelligence",         accent: PINK },
   { path: "/grid",        number: "05", nameKey: "studio.grid",           desc: "National manufacturing network map",     accent: AMBER },
   { path: "/board",       number: "06", nameKey: "studio.board",          desc: "Work orders, owners, sign-off",          accent: TEAL },
-  { path: "/demo",        number: "07", nameKey: "studio.demo",           desc: "The full runtime, end to end",           accent: TEAL },
-  { path: "/impact",      number: "08", nameKey: "studio.impact",         desc: "What the network has produced",          accent: AMBER },
+  { path: "/demo",        number: "07", nameKey: "studio.demo",           desc: "The full runtime, end to end",           accent: PINK },
+  { path: "/impact",      number: "08", nameKey: "studio.impact",         desc: "What the network has produced",          accent: PINK },
 ];
 
 function StudioPortal({ s, name, onEnter, index, enterLabel }) {
@@ -241,7 +243,7 @@ export default function ArrivalDock() {
             <div style={{ marginBottom: 22 }}>
               <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(34px,5vw,54px)", lineHeight: 1.04, letterSpacing: "-0.02em", color: IVORY }}>{t("hero.line1")}</div>
               <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(34px,5vw,54px)", lineHeight: 1.04, letterSpacing: "-0.02em", color: TEAL }}>{t("hero.line2")}</div>
-              <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(34px,5vw,54px)", lineHeight: 1.04, letterSpacing: "-0.02em", color: AMBER }}>{t("hero.line3")}</div>
+              <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(34px,5vw,54px)", lineHeight: 1.04, letterSpacing: "-0.02em", color: PINK }}>{t("hero.line3")}</div>
             </div>
 
             <p style={{ fontFamily: SORA, fontWeight: 400, fontSize: 15, color: "rgba(245,241,233,0.7)", maxWidth: 480, lineHeight: 1.6, marginBottom: 24 }}>
@@ -300,7 +302,7 @@ export default function ArrivalDock() {
       <section id="section-network" style={{ position: "relative", padding: "80px clamp(24px,5vw,60px)", background: BLACK }}>
         <RegMarks />
         <SectionLabel>{t("network.label")}</SectionLabel>
-        <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 30, letterSpacing: "-0.02em", color: IVORY }}>{t("network.title")}</div>
+        <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 32, letterSpacing: "-0.03em", color: IVORY }}>{t("network.title")}</div>
         <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 14, color: MUTED, marginTop: 4 }}>{activeCount} · {t("network.stations")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginTop: 40 }}>
           {hubs.length === 0 && <div style={{ fontFamily: SORA, fontSize: 13, color: MUTED, fontStyle: "italic" }}>Awaiting first station reports…</div>}
@@ -330,7 +332,7 @@ export default function ArrivalDock() {
       <section style={{ position: "relative", padding: "80px clamp(24px,5vw,60px)", background: SURFACE }}>
         <RegMarks />
         <SectionLabel>{t("studios.label")}</SectionLabel>
-        <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 30, letterSpacing: "-0.02em", color: IVORY }}>{t("studios.title")}</div>
+        <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 32, letterSpacing: "-0.03em", color: IVORY }}>{t("studios.title")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginTop: 40 }}>
           {STUDIOS.map((s, i) => <StudioPortal key={s.path} s={s} name={t(s.nameKey)} index={i} enterLabel={t("studios.enter")} onEnter={(p) => navigate(p)} />)}
         </div>
@@ -341,7 +343,7 @@ export default function ArrivalDock() {
       {/* ===================== THE HANDS — Nigerian ===================== */}
       <section style={{ padding: "80px clamp(24px,5vw,60px)", background: BLACK }}>
         <SectionLabel>{t("hands.label")}</SectionLabel>
-        <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 30, letterSpacing: "-0.02em", color: IVORY }}>{t("hands.title")}</div>
+        <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 32, letterSpacing: "-0.03em", color: IVORY }}>{t("hands.title")}</div>
         <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 14, color: MUTED, marginTop: 6, maxWidth: 620, lineHeight: 1.6 }}>{t("hands.copy")}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginTop: 32 }}>
           <HumanTag role="WELDER"    variant="F" name="Adaeze Okoro"   workshop="Warri Fabrication Co-op" task="Chassis rail weld" />
