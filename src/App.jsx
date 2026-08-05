@@ -21,6 +21,7 @@ import "./os/ForgeOS.css";
 import { ArrivalDock, NationalGrid, EngineeringBay, ProductionLine,
          InspectionHangar, ControlRoom, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
 import DemoStudio from "./rooms/DemoStudio.jsx";
+import LanguageStudio from "./rooms/LanguageStudio.jsx";
 import Join from "./pages/Join.jsx";
 import { PLATFORM } from "./constants/site.js";
 import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
@@ -40,6 +41,7 @@ const BUILT = {
   "impact-dashboard": ImpactDashboard,
   "build-board":      BuildBoard,
   "demo-studio":      DemoStudio,
+  "language-studio":  LanguageStudio,
 };
 
 // ------------------------------------------------------------
@@ -91,6 +93,7 @@ const DOMAIN_GROUPS = [
   { id: "operations",  label: "Operations",  ids: ["arrival-dock", "national-grid", "production-line", "control-room", "impact-dashboard"] },
   { id: "engineering", label: "Engineering", ids: ["engineering-bay", "inspection-hangar", "build-board"] },
   { id: "network",     label: "Network",     ids: ["sme-portal", "university-portal", "government-portal", "investor-portal", "marketplace"] },
+  { id: "knowledge",   label: "Knowledge",   ids: ["language-studio"] },
   { id: "systems",     label: "Systems",     ids: ["manufacturing-cloud", "digital-twin", "ai-assistant", "demo-studio"] },
 ];
 

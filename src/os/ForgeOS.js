@@ -55,6 +55,8 @@ export const ROOMS = [
   // Declared. Runtime shared. Not yet furnished — and not faked.
   { id:"build-board",      name:"Build Board",                  path:"/board",       camera:"blueprint",  status:"operational",   sequence:"08", activeState:"Work Orders Open",
     purpose:"SCADA work-order terminal. Component, owner, progress, sign-off." },
+  { id:"language-studio",  name:"Language Studio",              path:"/language",    camera:"review",     status:"operational",   sequence:"09", activeState:"Runtime Live",
+    purpose:"Translation coverage across the runtime languages, and the exact strings still outstanding." },
   { id:"manufacturing-cloud", name:"Manufacturing Cloud",       path:"/cloud",       camera:"review",     status:"commissioning", sequence:"09", activeState:"Commissioning", purpose:"Shared production infrastructure across the SME network." },
   { id:"digital-twin",     name:"Digital Twin",                 path:"/twin",        camera:"orbit",      status:"commissioning", sequence:"10", activeState:"Commissioning", purpose:"Live 3D mirror of the vehicle. Awaiting Blender GLB." },
   { id:"sme-portal",       name:"SME Portal",                   path:"/sme",         camera:"review",     status:"commissioning", sequence:"11", activeState:"Commissioning", purpose:"One SME. One component. One owner." },
