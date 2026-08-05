@@ -84,7 +84,7 @@ transform:translateX(6px);
 
 .primary{
 
-background:#FF1E63;
+background:var(--forge-pink);
 
 color:white;
 
@@ -112,7 +112,7 @@ border:1px solid rgba(255,255,255,.12);
 
 .secondary:hover{
 
-border-color:#15C9AC;
+border-color:var(--forge-teal);
 
 background:rgba(21,201,172,.08);
 
@@ -122,7 +122,7 @@ transform:translateY(-3px);
 
 .gold{
 
-background:#FFB01F;
+background:var(--forge-amber);
 
 color:#111;
 

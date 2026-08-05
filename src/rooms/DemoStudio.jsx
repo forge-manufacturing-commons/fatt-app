@@ -56,7 +56,7 @@ const WORKFLOW = [
 const STATE_COLOR = {
   active: "#2f9e44", fabricating: "#2f9e44", idle: "#868e96", standby: "#868e96",
   maintenance: "#f08c00", inspection: "#1c7ed6", verifying: "#1c7ed6",
-  coordinating: "#7048e8", expanding: "#1098ad", unknown: "#adb5bd",
+  coordinating: "#0A7F73", expanding: "#1098ad", unknown: "#adb5bd",
 };
 const shortTime = (at) => { try { return new Date(at).toLocaleTimeString([], { hour12: false }); } catch { return ""; } };
 
@@ -173,7 +173,7 @@ export default function DemoStudio() {
 
           <Panel title="Languages (Runtime Engine)">
             {runtime.languages.map((l) => (
-              <div key={l} style={row}><span><span style={dot("#7048e8")} />{l}</span></div>
+              <div key={l} style={row}><span><span style={dot("#0A7F73")} />{l}</span></div>
             ))}
           </Panel>
         </div>

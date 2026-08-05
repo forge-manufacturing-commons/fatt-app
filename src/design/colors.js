@@ -12,11 +12,11 @@ const colors = {
 
   muted: "#A3AFBF",
 
-  primary: "#15C9AC",
+  primary: "#0A7F73",
 
-  secondary: "#FF1E63",
+  secondary: "#FF2E63",
 
-  gold: "#FFB01F",
+  gold: "#F5A623",
 
   success: "#2DD36F",
 

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { submitLead, fetchJobs } from '../lib/supabase'
 
 const LANES = [
-  { k: 'mentor',  ic: '◇', c: '#15C9AC', h: 'Technical mentorship', p: 'Design-review calls, materials-sourcing advice, remote engineering guidance for the workshops doing the build.', cta: 'Offer mentorship', extra: 'Your engineering field (e.g. mechanical, gas systems)' },
-  { k: 'inkind',  ic: '⚙', c: '#FFB01F', h: 'In-kind support', p: 'Tools, machinery, or equipment donated to the SME and student workshops. A brake press, a welder, a CNC — real capacity.', cta: 'Pledge equipment', extra: 'What you can donate' },
-  { k: 'capital', ic: '₦', c: '#FF1E63', h: 'Program capital', p: 'Grant or sponsorship support for the build event and the record attempt. Investment memo available on request.', cta: 'Discuss capital', extra: "Backing range you're exploring" },
-  { k: 'partner', ic: '⬢', c: '#F3E9D2', h: 'SME partnership', p: 'Own a stake in a member SME. Diaspora partners become co-owners inside the keiretsu — capital, mentorship, and networks fused into one aligned relationship.', cta: 'Explore ownership', extra: 'Ticket range + hands-on or passive' },
+  { k: 'mentor',  ic: '◇', c: '#0A7F73', h: 'Technical mentorship', p: 'Design-review calls, materials-sourcing advice, remote engineering guidance for the workshops doing the build.', cta: 'Offer mentorship', extra: 'Your engineering field (e.g. mechanical, gas systems)' },
+  { k: 'inkind',  ic: '⚙', c: '#F5A623', h: 'In-kind support', p: 'Tools, machinery, or equipment donated to the SME and student workshops. A brake press, a welder, a CNC — real capacity.', cta: 'Pledge equipment', extra: 'What you can donate' },
+  { k: 'capital', ic: '₦', c: '#FF2E63', h: 'Program capital', p: 'Grant or sponsorship support for the build event and the record attempt. Investment memo available on request.', cta: 'Discuss capital', extra: "Backing range you're exploring" },
+  { k: 'partner', ic: '⬢', c: '#F5F1E9', h: 'SME partnership', p: 'Own a stake in a member SME. Diaspora partners become co-owners inside the keiretsu — capital, mentorship, and networks fused into one aligned relationship.', cta: 'Explore ownership', extra: 'Ticket range + hands-on or passive' },
 ]
 
 export default function Join() {
@@ -44,7 +44,7 @@ export default function Join() {
         <div className="lanes">
           {LANES.map(x => (
             <div className={'lane' + (lane === x.k ? ' pick' : '')} key={x.k}>
-              <div className="li" style={{ background: x.c, color: '#0A0807' }}>{x.ic}</div>
+              <div className="li" style={{ background: x.c, color: '#0D0D0F' }}>{x.ic}</div>
               <h4>{x.h}</h4>
               <p>{x.p}</p>
               <button onClick={() => pick(x.k)}>{lane === x.k ? 'Selected ✓' : x.cta}</button>

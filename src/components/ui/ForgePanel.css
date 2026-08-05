@@ -22,7 +22,7 @@ transition:.45s;
 
 transform:translateY(-6px);
 
-border-color:#15C9AC;
+border-color:var(--forge-teal);
 
 box-shadow:0 20px 60px rgba(0,0,0,.45);
 
@@ -38,13 +38,13 @@ opacity:.05;
 
 background-image:
 
-linear-gradient(30deg,#15C9AC 12%,transparent 12%),
+linear-gradient(30deg,var(--forge-teal) 12%,transparent 12%),
 
-linear-gradient(-30deg,#15C9AC 12%,transparent 12%),
+linear-gradient(-30deg,var(--forge-teal) 12%,transparent 12%),
 
-linear-gradient(30deg,transparent 88%,#FF1E63 88%),
+linear-gradient(30deg,transparent 88%,var(--forge-pink) 88%),
 
-linear-gradient(-30deg,transparent 88%,#FF1E63 88%);
+linear-gradient(-30deg,transparent 88%,var(--forge-pink) 88%);
 
 background-size:80px 80px;
 
@@ -78,19 +78,19 @@ height:11px;
 
 border-radius:50%;
 
-background:#FF1E63;
+background:var(--forge-pink);
 
 }
 
 .forge-dots span:nth-child(2){
 
-background:#15C9AC;
+background:var(--forge-teal);
 
 }
 
 .forge-dots span:nth-child(3){
 
-background:#FFB01F;
+background:var(--forge-amber);
 
 }
 
@@ -102,13 +102,13 @@ height:1px;
 
 margin-left:24px;
 
-background:linear-gradient(to right,#15C9AC,transparent);
+background:linear-gradient(to right,var(--forge-teal),transparent);
 
 }
 
 .forge-eyebrow{
 
-color:#15C9AC;
+color:var(--forge-teal);
 
 font-size:.82rem;
 

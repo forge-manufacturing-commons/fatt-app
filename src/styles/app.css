@@ -1,8 +1,38 @@
 :root{
-  --street:#0A0807; --street-2:#14100E; --panel:#1A1512;
-  --pink:#FF1E63; --teal:#15C9AC; --gold:#FFB01F; --cream:#F3E9D2;
-  --green:#1E8A3C; --red:#E4231F;
-  --ink:#F3E9D2; --muted:#8F8072; --rule:#F3E9D2;
+  /* ---- BUILD-D001 canonical palette — the single source of truth ---- */
+  --forge-black:#0D0D0F;
+  --forge-ivory:#F5F1E9;
+  --forge-teal:#0A7F73;
+  --forge-amber:#F5A623;
+  --forge-pink:#FF2E63;
+  --forge-surface:#111418;
+  --forge-border:#1C2128;
+  --forge-green:#1a7a4a;
+  --forge-red:#8b2020;
+  --forge-grey:#8899aa;
+
+  /* ---- Legacy names, re-pointed ----
+     These were a SECOND palette competing with BUILD-D001: --teal was
+     #15C9AC, which is the bright teal flagged across three video reviews.
+     It was never a hardcoded hex — it was a token resolving to the wrong
+     value, which is why searching for hex strings never found it.
+     The names are kept so no downstream rule has to be rewritten; they
+     now resolve to the canonical palette.
+     --rule stays ivory deliberately: the legacy surfaces use it for thick
+     brutalist borders, and pointing it at a dark border value would erase
+     them. */
+  --street:var(--forge-black);
+  --street-2:var(--forge-surface);
+  --panel:var(--forge-surface);
+  --pink:var(--forge-pink);
+  --teal:var(--forge-teal);
+  --gold:var(--forge-amber);
+  --cream:var(--forge-ivory);
+  --green:var(--forge-green);
+  --red:var(--forge-red);
+  --ink:var(--forge-ivory);
+  --muted:var(--forge-grey);
+  --rule:var(--forge-ivory);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}

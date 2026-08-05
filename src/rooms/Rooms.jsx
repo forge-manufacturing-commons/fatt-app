@@ -139,9 +139,9 @@ export function InspectionHangar() {
 // happened) and the operating picture the Runtime Engine derives from it (what the
 // system now knows). buildRuntime() existed in ForgeRuntime.js but nothing rendered
 // it until here — this is the OS thinking, made visible.
-const CTRL_MACHINE_COLOR = { active:"#2ecc71", inspection:"#3aa0e8", maintenance:"#ffb01f", idle:"#6b7f96" };
-const CTRL_HUB_COLOR = { fabricating:"#2ecc71", verifying:"#3aa0e8", coordinating:"#7048e8", expanding:"#15c9ac", maintenance:"#ffb01f", standby:"#6b7f96" };
-const ctrlDot = (c) => ({ display:"inline-block", width:8, height:8, borderRadius:999, marginRight:8, background:c || "#6b7f96", verticalAlign:"middle" });
+const CTRL_MACHINE_COLOR = { active:"#1a7a4a", inspection:"#0A7F73", maintenance:"#F5A623", idle:"#3a4a5a" };
+const CTRL_HUB_COLOR = { fabricating:"#1a7a4a", verifying:"#0A7F73", coordinating:"#0A7F73", expanding:"#0A7F73", maintenance:"#F5A623", standby:"#3a4a5a" };
+const ctrlDot = (c) => ({ display:"inline-block", width:8, height:8, borderRadius:999, marginRight:8, background:c || "#3a4a5a", verticalAlign:"middle" });
 
 function CtrlMetric({ label, value }) {
   return (
@@ -161,7 +161,7 @@ function CtrlList({ title, entries, colors }) {
         : entries.map(([id, st]) => (
             <div key={id} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", fontSize:13 }}>
               <span><i style={ctrlDot(colors[st])} />{id}</span>
-              <span style={{ color:colors[st] || "#6b7f96", fontSize:12, textTransform:"capitalize" }}>{st}</span>
+              <span style={{ color:colors[st] || "#3a4a5a", fontSize:12, textTransform:"capitalize" }}>{st}</span>
             </div>
           ))}
     </div>

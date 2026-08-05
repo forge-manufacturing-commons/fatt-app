@@ -32,7 +32,7 @@ letter-spacing:.3em;
 
 text-transform:uppercase;
 
-color:#15C9AC;
+color:var(--forge-teal);
 
 margin-bottom:18px;
 
@@ -46,7 +46,7 @@ width:50px;
 
 height:2px;
 
-background:#15C9AC;
+background:var(--forge-teal);
 
 }
 
