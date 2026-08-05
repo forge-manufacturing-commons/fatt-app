@@ -26,6 +26,9 @@ import { PLATFORM } from "./constants/site.js";
 import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
   from "./pages/Institution.jsx";
 import Repositories from "./pages/Repositories.jsx";
+import { ForgeIdentityProvider, useIdentity } from "./os/ForgeIdentity.jsx";
+import Access from "./pages/Access.jsx";
+import Workspace from "./os/Workspace.jsx";
 
 const BUILT = {
   "arrival-dock":     ArrivalDock,
@@ -59,9 +62,26 @@ function InstRail() {
           <NavLink to="/research">Research</NavLink>
           <a href="https://github.com/forgeatruck-ux" target="_blank" rel="noreferrer">GitHub</a>
           <NavLink to="/join">Contribute</NavLink>
+          <IdentityLink />
         </nav>
       </div>
     </div>
+  );
+}
+
+// Identity entry point. Shows the actor when signed in, an unread count when
+// they have notifications, and the registration route when they do not.
+function IdentityLink() {
+  const { session, profile, unreadCount, configured } = useIdentity();
+  if (!configured) return null;
+  if (!session) return <NavLink to="/access">Register</NavLink>;
+  return (
+    <NavLink to="/workspace">
+      {profile?.display_name || "Workspace"}
+      {unreadCount > 0 && (
+        <b style={{ marginLeft: 6, color: "var(--forge-pink, #FF2E63)" }}>{unreadCount}</b>
+      )}
+    </NavLink>
   );
 }
 
@@ -181,6 +201,7 @@ export default function App() {
   }, []);
 
   return (
+    <ForgeIdentityProvider>
     <ForgeActivityProvider>
     <LegacyPhaseProvider>
       <>
@@ -210,6 +231,9 @@ export default function App() {
             <Route path="/partners"      element={<Partners />} />
             <Route path="/research"      element={<Research />} />
             <Route path="/repositories"  element={<Repositories />} />
+            {/* Identity — Phase 1 */}
+            <Route path="/access"         element={<Access />} />
+            <Route path="/workspace"      element={<Workspace />} />
           </Routes>
         </div>
         <footer>
@@ -229,5 +253,6 @@ export default function App() {
       </>
     </LegacyPhaseProvider>
     </ForgeActivityProvider>
+    </ForgeIdentityProvider>
   );
 }
