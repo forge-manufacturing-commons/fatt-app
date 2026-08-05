@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForgeActivity } from "../os/ActivityEngine.jsx";
+import { useForgeActivity, EVENT } from "../os/ActivityEngine.jsx";
 import { buildRuntime } from "../os/ForgeRuntime.js";
 import { useLanguage } from "../os/useLanguage.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
@@ -150,6 +150,43 @@ function Metric({ Icon, value, label, desc, index = 0 }) {
   );
 }
 
+// ============================================================
+// DEMO SEED — specimen activity fired once on mount.
+//
+// Why this is needed: buildRuntime() counts DISTINCT log fields
+// (e.human, e.workshop, e.component). ActivityEngine publishes one
+// SEED_STREAM event on mount and one more every 4.2s, so the counts
+// legitimately start at 1 — and useCountUp floors a target of 1 to "0"
+// for almost its whole 1400ms animation. That is the "five zeros".
+// This burst gives the runtime a populated log immediately.
+//
+// PROVENANCE: these are SPECIMEN values, not survey data. The field
+// names below are deliberately the ones buildRuntime actually reads —
+// an event carrying `person:` instead of `human:` increments nothing.
+// ============================================================
+const DEMO_EVENTS = [
+  { type:EVENT.MACHINE_STARTED,      hub:"kaduna",       machine:"sheetBrake",      component:"CHS-014", human:"Ibrahim Danladi", role:"WELDER",    variant:"M", workshop:"Kaduna Heavy Industry",     text:"Chassis rail fold started" },
+  { type:EVENT.COMPONENT_RECEIVED,   hub:"kano",         machine:"lathe",           component:"CRS-101", human:"Halima Yusuf",    role:"ENGINEER",  variant:"F", workshop:"Kano Metal Works",          text:"Cross-member blanks received" },
+  { type:EVENT.MACHINE_STARTED,      hub:"nnewi",        machine:"cncMill",         component:"HUB-002", human:"Chike Nwosu",     role:"ENGINEER",  variant:"M", workshop:"Nnewi Precision Works",     text:"Wheel hub machining started" },
+  { type:EVENT.DRAWING_APPROVED,     hub:"abuja",        machine:"workbench",       component:"BRK-007", human:"Ngozi Bello",     role:"ENGINEER",  variant:"F", workshop:"NASENI Abuja",              text:"Axle bracket drawing approved" },
+  { type:EVENT.MACHINE_STARTED,      hub:"aba",          machine:"migWelder",       component:"PNL-021", human:"Uche Chikelu",    role:"WELDER",    variant:"M", workshop:"Aba SME Cluster",           text:"Panel seam weld started" },
+  { type:EVENT.INSPECTION_COMPLETED, hub:"lagos",        machine:"inspectionTable", component:"CHS-014", human:"Amina Suleiman",  role:"INSPECTOR", variant:"F", workshop:"Forge Quality Office",      text:"Chassis rail inspection completed" },
+  { type:EVENT.QUALITY_VERIFIED,     hub:"lagos",        machine:"inspectionTable", component:"HUB-002", human:"Amina Suleiman",  role:"INSPECTOR", variant:"F", workshop:"Forge Quality Office",      text:"Wheel hub verified to FTT-HB-001" },
+  { type:EVENT.MACHINE_STARTED,      hub:"warri",        machine:"migWelder",       component:"CHS-015", human:"Adaeze Okoro",    role:"WELDER",    variant:"F", workshop:"Warri Fabrication Co-op",   text:"Second chassis rail started" },
+  { type:EVENT.COMPONENT_RECEIVED,   hub:"onitsha",      machine:"pressBrake",      component:"PNL-022", human:"Emeka Obi",       role:"ENGINEER",  variant:"M", workshop:"Onitsha Assembly Yard",     text:"Panel set received for assembly" },
+  { type:EVENT.DRAWING_APPROVED,     hub:"ilorin",       machine:"workbench",       component:"SPR-003", human:"Folake Adeyemi",  role:"ENGINEER",  variant:"F", workshop:"Ilorin Polytechnic",        text:"Leaf spring specification approved" },
+  { type:EVENT.MACHINE_STARTED,      hub:"ibadan",       machine:"lathe",           component:"SPR-003", human:"Tunde Bakare",    role:"ENGINEER",  variant:"M", workshop:"Ibadan Technical College",  text:"Spring pin turning started" },
+  { type:EVENT.INSPECTION_COMPLETED, hub:"enugu",        machine:"inspectionTable", component:"BRK-007", human:"Chinaza Eze",     role:"INSPECTOR", variant:"F", workshop:"Enugu Inspection Cell",     text:"Bracket dimensional check completed" },
+  { type:EVENT.MACHINE_STARTED,      hub:"jos",          machine:"hydraulicPress",  component:"MNT-011", human:"Danjuma Bala",    role:"WELDER",    variant:"M", workshop:"Jos Fabrication Unit",      text:"Engine mount pressing started" },
+  { type:EVENT.COMPONENT_RECEIVED,   hub:"benin",        machine:"foundryLadle",    component:"CST-004", human:"Godwin Ejime",    role:"ENGINEER",  variant:"M", workshop:"Benin Foundry",             text:"Cast housing batch received" },
+  { type:EVENT.QUALITY_VERIFIED,     hub:"asaba",        machine:"inspectionTable", component:"PNL-021", human:"Rita Okonkwo",    role:"INSPECTOR", variant:"F", workshop:"Asaba Quality Bench",       text:"Panel verified, released to assembly" },
+  { type:EVENT.SHIPMENT_DISPATCHED,  hub:"portharcourt", machine:"forklift",        component:"HUB-002", human:"Yusuf Musa",      role:"ENGINEER",  variant:"M", workshop:"Port Harcourt Logistics",   text:"Hub set dispatched to Onitsha" },
+  { type:EVENT.MACHINE_STARTED,      hub:"makurdi",      machine:"bandSaw",         component:"FRM-008", human:"Terhemba Akpa",   role:"WELDER",    variant:"M", workshop:"Makurdi Workshop",          text:"Frame stock cutting started" },
+  { type:EVENT.COMPONENT_RECEIVED,   hub:"owerri",       machine:"workbench",       component:"WIR-016", human:"Ijeoma Nwafor",   role:"ENGINEER",  variant:"F", workshop:"Owerri Electrical Shop",    text:"Wiring harness set received" },
+  { type:EVENT.MAINTENANCE_OPENED,   hub:"maiduguri",    machine:"hydraulicPress",  component:"—",       human:"Bukar Modu",      role:"ENGINEER",  variant:"M", workshop:"Maiduguri Service Point",   text:"Press maintenance window opened" },
+  { type:EVENT.DRAWING_APPROVED,     hub:"abeokuta",     machine:"workbench",       component:"AXL-005", human:"Segun Ogunlade",  role:"ENGINEER",  variant:"M", workshop:"Abeokuta Design Office",    text:"Axle assembly drawing approved" },
+];
+
 // Studios → real room paths (React Router). name comes from the dictionary.
 const STUDIOS = [
   { path: "/production",  number: "01", nameKey: "studio.manufacturing", desc: "Coordinate distributed SME production", accent: TEAL },
@@ -198,10 +235,23 @@ function RegMarks() {
 
 export default function ArrivalDock() {
   const navigate = useNavigate();
-  const { event, log, hubStates, machineStates } = useForgeActivity();
+  const { event, log, hubStates, machineStates, publish } = useForgeActivity();
   const { lang, t, languages } = useLanguage();
 
   const rt = useMemo(() => buildRuntime({ event, log, hubStates, machineStates }), [event, log, hubStates, machineStates]);
+
+  // Seed the runtime once, only while it is effectively empty, so the burst
+  // never competes with a live feed.
+  useEffect(() => {
+    if (!publish) return;
+    if ((log?.length ?? 0) > DEMO_EVENTS.length) return;
+    let cancelled = false;
+    const timers = DEMO_EVENTS.map((evt, i) =>
+      setTimeout(() => { if (!cancelled) publish(evt); }, i * 110)
+    );
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const ms = rt.manufacturingStatus;
 
   const hubs = Object.entries(hubStates || {});
@@ -293,6 +343,10 @@ export default function ArrivalDock() {
           <Metric index={2} Icon={IconGear}    value={ms.components} label={t("metric.components")} desc="Indigenous parts in development" />
           <Metric index={3} Icon={IconPin}     value={activeCount}   label={t("metric.states")}     desc="Building national capability" />
           <Metric index={4} Icon={IconGlobe}   value={rt.languages.length} label={t("metric.languages")} desc="Knowledge without barriers" />
+          <div style={{ flexBasis: "100%", fontFamily: UI, fontWeight: 700, fontSize: 9,
+            letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginTop: 10 }}>
+            Illustrative · specimen activity · not surveyed
+          </div>
         </div>
       </section>
 
