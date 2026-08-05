@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Forge-A-Truck-Thon coordination platform — showcase, keiretsu build board, and diaspora intake for the NAWEDOAM distributed-manufacturing build.",
+  "description": "Forge-A-Truck-Thon coordination platform \u2014 showcase, keiretsu build board, and diaspora intake for the NAWEDOAM distributed-manufacturing build.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node test/events.consumer.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
