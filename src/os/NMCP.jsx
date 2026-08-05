@@ -20,6 +20,8 @@ import "./NMCP.css";
 
 const META_URL   = "/assets/NMCP/metadata.json";
 const RENDER_URL = "/assets/NMCP/renders/signature.png";
+const FLOW_MP4   = "/assets/NMCP/renders/nmcp_flow.mp4";
+const FLOW_WEBM  = "/assets/NMCP/renders/nmcp_flow.webm";
 
 export default function NMCP() {
   const [meta, setMeta] = useState(null);
@@ -43,12 +45,23 @@ export default function NMCP() {
         {hasRender ? (
           /* Machined Nigeria — static render (no animation, per directive):
              chamfered gold edges, brushed steel texture, 3D city hubs, ~27° slant. */
-          <img
+          /* Supply-flow: a consignment travels the machined corridors —
+             Kaduna (steel) -> Aba (machining) -> Onitsha (assembly) -> Lagos (export),
+             routed through Abuja as national interchange. Blender-rendered, 120f @24fps.
+             Poster is the static signature render, so it degrades honestly. */
+          <video
             className="nmcp-plate-render"
-            src={RENDER_URL}
-            alt="NAWEDOAM Manufacturing Command Plate — machined Nigeria with chamfered gold edges"
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster={RENDER_URL}
+            aria-label="NAWEDOAM Manufacturing Command Plate — a component travelling the national manufacturing network"
             style={{ width: "100%", height: "auto", display: "block" }}
-          />
+          >
+            <source src={FLOW_WEBM} type="video/webm" />
+            <source src={FLOW_MP4} type="video/mp4" />
+          </video>
         ) : (
           /* Honest fallback: the authored cinematic + live LED overlay only if the render is absent. */
           <>
