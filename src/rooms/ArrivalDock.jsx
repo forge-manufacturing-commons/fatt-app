@@ -1,8 +1,8 @@
 // ============================================================
 // FORGE OS — ARRIVAL DOCK  (BUILD-D001, fully multilingual)
 //
-// BUILD-D001 throughout: Forge Black canvas, Ivory text, Sora +
-// Poppins Black, Teal/Amber, Forge geometry (clips + reg marks) on
+// BUILD-D001 throughout: Forge Black canvas, Ivory text, Poppins
+// (Black 900 for headlines), Teal/Amber/Pink, Forge geometry (clips + reg marks) on
 // every panel, metric, portal and divider.
 //
 // Every visible string is requested by key via t(); switching the
@@ -27,7 +27,7 @@ const BLACK = "#0D0D0F", IVORY = "#F5F1E9", TEAL = "#0A7F73", AMBER = "#F5A623";
 const PINK = "#FF2E63";   // BUILD-D001 highlight — momentum, bold initiative
 const METRIC_ACCENTS = [TEAL, PINK, AMBER, PINK, TEAL];
 const SURFACE = "#111418", BORDER = "#1C2128", MUTED = "#8899aa";
-const SORA = "var(--forge-brand-font, 'Sora', system-ui, sans-serif)";
+const UI = "var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY = "var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 
 const HUB_COLOR = {
@@ -77,7 +77,7 @@ const IconGlobe = () => (<svg viewBox="0 0 24 24" {...ic}><circle cx="12" cy="12
 function SectionLabel({ children }) {
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL }}>{children}</div>
+      <div style={{ fontFamily: UI, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL }}>{children}</div>
       <div style={{ width: 40, height: 2, background: PINK, marginTop: 6 }} />
     </div>
   );
@@ -93,7 +93,7 @@ function Divider() {
 
 function StatusRow({ value, text, ok }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "3px 0", fontFamily: SORA, fontSize: 13 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "3px 0", fontFamily: UI, fontSize: 13 }}>
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: ok ? TEAL : PINK, boxShadow: `0 0 6px ${(ok ? TEAL : PINK)}66`, flexShrink: 0 }} />
       {value != null && <b style={{ color: AMBER, fontWeight: 700 }}>{value}</b>}
       <span style={{ color: "rgba(245,241,233,0.82)" }}>{text}</span>
@@ -144,8 +144,8 @@ function Metric({ Icon, value, label, desc, index = 0 }) {
     <div style={{ clipPath: even ? FORGE_CLIPS.panelBR : FORGE_CLIPS.panelTR, background: SURFACE, borderTop: `2px solid ${METRIC_ACCENTS[index % METRIC_ACCENTS.length]}`, padding: "22px 24px", flex: "1 1 180px", minWidth: 160 }}>
       <div style={{ marginBottom: 10 }}><Icon /></div>
       <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 38, color: METRIC_ACCENTS[index % METRIC_ACCENTS.length], lineHeight: 1 }}>{n}</div>
-      <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: TEAL, marginTop: 8 }}>{label}</div>
-      <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 11, color: MUTED, marginTop: 4 }}>{desc}</div>
+      <div style={{ fontFamily: UI, fontWeight: 600, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: TEAL, marginTop: 8 }}>{label}</div>
+      <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 11, color: MUTED, marginTop: 4 }}>{desc}</div>
     </div>
   );
 }
@@ -183,9 +183,9 @@ function StudioPortal({ s, name, onEnter, index, enterLabel }) {
         <span style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 34, lineHeight: 1, color: hover ? s.accent : "rgba(245,241,233,0.12)" }}>{s.number}</span>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.accent }} />
       </div>
-      <div style={{ fontFamily: SORA, fontWeight: 700, fontSize: 16, color: IVORY, marginTop: 16 }}>{name}</div>
-      <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 12, color: MUTED, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{s.desc}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, color: hover ? s.accent : MUTED, fontFamily: SORA, fontWeight: 600, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+      <div style={{ fontFamily: UI, fontWeight: 700, fontSize: 16, color: IVORY, marginTop: 16 }}>{name}</div>
+      <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 12, color: MUTED, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{s.desc}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, color: hover ? s.accent : MUTED, fontFamily: UI, fontWeight: 600, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase" }}>
         {enterLabel} <span style={{ display: "inline-block", transform: hover ? "translateX(5px)" : "none", transition: "transform .2s" }}>→</span>
       </div>
     </div>
@@ -220,12 +220,12 @@ export default function ArrivalDock() {
   const recent = (log || []).slice(0, 20);
 
   const btn = (bg, color, border) => ({
-    fontFamily: SORA, fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase",
+    fontFamily: UI, fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase",
     padding: "14px 28px", cursor: "pointer", background: bg, color, border: border || "none", clipPath: FORGE_CLIPS.button,
   });
 
   return (
-    <div className="forge-brand" style={{ background: BLACK, color: IVORY, fontFamily: SORA, width: "100%" }}>
+    <div className="forge-brand" style={{ background: BLACK, color: IVORY, fontFamily: UI, width: "100%" }}>
       <style>{`@keyframes forgeAssemble{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* ===================== HERO ===================== */}
@@ -236,7 +236,7 @@ export default function ArrivalDock() {
           <div style={{ flex: "1 1 480px", minWidth: 320, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <img src={LOGO_EMBLEM} alt="Forge" height={56} style={{ height: 56, width: "auto", marginBottom: 40, objectFit: "contain", alignSelf: "flex-start" }} />
 
-            <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL, borderLeft: `2px solid ${TEAL}`, paddingLeft: 12, marginBottom: 22 }}>
+            <div style={{ fontFamily: UI, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL, borderLeft: `2px solid ${TEAL}`, paddingLeft: 12, marginBottom: 22 }}>
               {t("hero.label")}
             </div>
 
@@ -246,13 +246,13 @@ export default function ArrivalDock() {
               <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(34px,5vw,54px)", lineHeight: 1.04, letterSpacing: "-0.02em", color: PINK }}>{t("hero.line3")}</div>
             </div>
 
-            <p style={{ fontFamily: SORA, fontWeight: 400, fontSize: 15, color: "rgba(245,241,233,0.7)", maxWidth: 480, lineHeight: 1.6, marginBottom: 24 }}>
+            <p style={{ fontFamily: UI, fontWeight: 400, fontSize: 15, color: "rgba(245,241,233,0.7)", maxWidth: 480, lineHeight: 1.6, marginBottom: 24 }}>
               {t("hero.desc")}
             </p>
 
             {/* LIVE STATUS — real runtime */}
             <div style={{ clipPath: FORGE_CLIPS.panelBR, background: "rgba(245,241,233,0.03)", border: "1px solid rgba(10,127,115,0.30)", padding: "16px 18px", marginBottom: 24, maxWidth: 460 }}>
-              <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL, marginBottom: 10 }}>{t("status.title")}</div>
+              <div style={{ fontFamily: UI, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL, marginBottom: 10 }}>{t("status.title")}</div>
               <StatusRow value={activeCount} text={t("status.hubs")} />
               <StatusRow value={ms.workshops} text={t("status.workshops")} />
               <StatusRow value={ms.people} text={t("status.people")} />
@@ -279,7 +279,7 @@ export default function ArrivalDock() {
           <div style={{ flex: "1 1 460px", minWidth: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ width: "100%", height: "clamp(360px, 50vh, 560px)", position: "relative" }}>
               <TruckViewer />
-              <div style={{ position: "absolute", left: 0, bottom: -6, fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: TEAL }}>
+              <div style={{ position: "absolute", left: 0, bottom: -6, fontFamily: UI, fontWeight: 600, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: TEAL }}>
                 NAWEDOAM · Forge Alpha 001
               </div>
             </div>
@@ -303,9 +303,9 @@ export default function ArrivalDock() {
         <RegMarks />
         <SectionLabel>{t("network.label")}</SectionLabel>
         <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 32, letterSpacing: "-0.03em", color: IVORY }}>{t("network.title")}</div>
-        <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 14, color: MUTED, marginTop: 4 }}>{activeCount} · {t("network.stations")}</div>
+        <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 14, color: MUTED, marginTop: 4 }}>{activeCount} · {t("network.stations")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginTop: 40 }}>
-          {hubs.length === 0 && <div style={{ fontFamily: SORA, fontSize: 13, color: MUTED, fontStyle: "italic" }}>Awaiting first station reports…</div>}
+          {hubs.length === 0 && <div style={{ fontFamily: UI, fontSize: 13, color: MUTED, fontStyle: "italic" }}>Awaiting first station reports…</div>}
           {hubs.map(([id, status]) => {
             const c = hubColor(status);
             const meta = hubMeta[id] || {};
@@ -314,12 +314,12 @@ export default function ArrivalDock() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
-                    <span style={{ fontFamily: SORA, fontWeight: 500, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: c }}>{status}</span>
+                    <span style={{ fontFamily: UI, fontWeight: 500, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: c }}>{status}</span>
                   </span>
-                  <span style={{ fontFamily: SORA, fontWeight: 700, fontSize: 11, color: MUTED }}>{meta.machines || 0} mach.</span>
+                  <span style={{ fontFamily: UI, fontWeight: 700, fontSize: 11, color: MUTED }}>{meta.machines || 0} mach.</span>
                 </div>
-                <div style={{ fontFamily: SORA, fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", color: IVORY, marginTop: 12 }}>{String(id).toUpperCase()}</div>
-                <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 10, color: MUTED, marginTop: 4 }}>{elapsed(meta.lastAt)}</div>
+                <div style={{ fontFamily: UI, fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", color: IVORY, marginTop: 12 }}>{String(id).toUpperCase()}</div>
+                <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 10, color: MUTED, marginTop: 4 }}>{elapsed(meta.lastAt)}</div>
               </div>
             );
           })}
@@ -344,7 +344,7 @@ export default function ArrivalDock() {
       <section style={{ padding: "80px clamp(24px,5vw,60px)", background: BLACK }}>
         <SectionLabel>{t("hands.label")}</SectionLabel>
         <div style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 32, letterSpacing: "-0.03em", color: IVORY }}>{t("hands.title")}</div>
-        <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 14, color: MUTED, marginTop: 6, maxWidth: 620, lineHeight: 1.6 }}>{t("hands.copy")}</div>
+        <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 14, color: MUTED, marginTop: 6, maxWidth: 620, lineHeight: 1.6 }}>{t("hands.copy")}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginTop: 32 }}>
           <HumanTag role="WELDER"    variant="F" name="Adaeze Okoro"   workshop="Warri Fabrication Co-op" task="Chassis rail weld" />
           <HumanTag role="ENGINEER"  variant="M" name="Chike Nwosu"    workshop="Nnewi Precision Works"   task="Wheel hub machining" />
@@ -358,14 +358,14 @@ export default function ArrivalDock() {
       <section style={{ padding: "80px clamp(24px,5vw,60px)", background: BLACK }}>
         <SectionLabel>{t("activity.label")}</SectionLabel>
         <div style={{ marginTop: 24 }}>
-          {recent.length === 0 && <div style={{ fontFamily: SORA, fontSize: 13, color: MUTED, fontStyle: "italic" }}>Awaiting first manufacturing events…</div>}
+          {recent.length === 0 && <div style={{ fontFamily: UI, fontSize: 13, color: MUTED, fontStyle: "italic" }}>Awaiting first manufacturing events…</div>}
           {recent.map((e, i) => (
             <div key={`${e.at}-${i}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 6px", borderBottom: `1px solid ${BORDER}` }}>
               <div>
-                <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 12, color: IVORY }}>{e.type}</div>
-                <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 11, color: MUTED }}>{[e.machine, e.hub, e.component, e.human].filter(Boolean).join(" · ")}</div>
+                <div style={{ fontFamily: UI, fontWeight: 600, fontSize: 12, color: IVORY }}>{e.type}</div>
+                <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 11, color: MUTED }}>{[e.machine, e.hub, e.component, e.human].filter(Boolean).join(" · ")}</div>
               </div>
-              <div style={{ fontFamily: SORA, fontWeight: 400, fontSize: 10, color: MUTED, whiteSpace: "nowrap", marginLeft: 12 }}>{shortTime(e.at)}</div>
+              <div style={{ fontFamily: UI, fontWeight: 400, fontSize: 10, color: MUTED, whiteSpace: "nowrap", marginLeft: 12 }}>{shortTime(e.at)}</div>
             </div>
           ))}
         </div>
@@ -380,9 +380,9 @@ export default function ArrivalDock() {
       <footer style={{ padding: "40px clamp(24px,5vw,60px)", background: BLACK, borderTop: `1px solid ${BORDER}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <img src={LOGO_MARK} alt="" height={26} style={{ height: 26, width: "auto", objectFit: "contain" }} />
-          <span style={{ fontFamily: SORA, fontWeight: 500, fontSize: 10, letterSpacing: "0.1em", color: MUTED }}>{t("footer.commons")}</span>
+          <span style={{ fontFamily: UI, fontWeight: 500, fontSize: 10, letterSpacing: "0.1em", color: MUTED }}>{t("footer.commons")}</span>
         </div>
-        <span style={{ fontFamily: SORA, fontWeight: 500, fontSize: 10, color: TEAL }}>forgeos.org</span>
+        <span style={{ fontFamily: UI, fontWeight: 500, fontSize: 10, color: TEAL }}>forgeos.org</span>
       </footer>
     </div>
   );

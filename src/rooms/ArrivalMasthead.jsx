@@ -9,7 +9,7 @@
 // BUILD-D001 Part 2 applied:
 //   Palette  — Forge Black / Ivory / Teal / Amber / Pink only.
 //              No cyan, no gold, no neon. 60/25/10/3/2 usage.
-//   Type     — Sora (via the .forge-brand surface).
+//   Type     — Poppins (via the .forge-brand surface).
 //   Geometry — existing geo-* primitives, coloured by the brand
 //              via the .forge-brand variable mapping. No one-offs.
 //   Language — a persisted preference (real infrastructure),

@@ -14,7 +14,7 @@ import { FORGE_CLIPS } from "../os/geometry.js";
 
 const BLACK = "#0D0D0F", IVORY = "#F5F1E9", TEAL = "#0A7F73", AMBER = "#F5A623";
 const SURFACE = "#111418", BORDER = "#1C2128", MUTED = "#8899aa";
-const SORA = "var(--forge-brand-font, 'Sora', system-ui, sans-serif)";
+const UI = "var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 
 export default function LanguageRuntime() {
   const { lang, setLang, t, languages } = useLanguage();
@@ -41,7 +41,7 @@ export default function LanguageRuntime() {
 
   return (
     <div>
-      <div style={{ fontFamily: SORA, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL, marginBottom: 10 }}>
+      <div style={{ fontFamily: UI, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: TEAL, marginBottom: 10 }}>
         {t("runtime.title")}
       </div>
 
@@ -57,7 +57,7 @@ export default function LanguageRuntime() {
               style={{
                 display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
                 cursor: "pointer", background: active ? "rgba(10,127,115,0.12)" : "transparent",
-                border: "none", padding: "8px 10px", fontFamily: SORA,
+                border: "none", padding: "8px 10px", fontFamily: UI,
               }}
             >
               <span style={{
@@ -74,7 +74,7 @@ export default function LanguageRuntime() {
 
       {/* boot transition */}
       {phase && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(13,13,15,0.82)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SORA }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(13,13,15,0.82)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: UI }}>
           <div style={{ position: "relative", clipPath: FORGE_CLIPS.panelBR, background: SURFACE, border: `1px solid ${TEAL}`, padding: "28px 34px", minWidth: 300 }}>
             {/* geometry accents */}
             <span style={{ position: "absolute", top: 8, right: 8, width: 8, height: 8, background: AMBER, transform: "rotate(45deg)" }} />

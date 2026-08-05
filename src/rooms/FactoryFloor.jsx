@@ -95,7 +95,7 @@ export default function FactoryFloor() {
             <animate attributeName="opacity" values="0;1;0" dur="0.5s" begin={`${i * 0.12}s`} repeatCount="indefinite" />
           </line>
         ))}
-        <text x="-70" y="44" fontFamily="'Sora', sans-serif" fontSize="11" fontWeight="600" letterSpacing="0.14em" fill={IVORY} opacity="0.5">WELD · WARRI</text>
+        <text x="-70" y="44" fontFamily="'Poppins', sans-serif" fontSize="11" fontWeight="600" letterSpacing="0.14em" fill={IVORY} opacity="0.5">WELD · WARRI</text>
       </g>
 
       {/* ---- INSPECTION station ---- */}
@@ -118,13 +118,13 @@ export default function FactoryFloor() {
           </line>
         </g>
         {/* measurement readout */}
-        <text x="34" y="-52" fontFamily="'Sora', sans-serif" fontSize="12" fontWeight="700" fill={AMBER}>
+        <text x="34" y="-52" fontFamily="'Poppins', sans-serif" fontSize="12" fontWeight="700" fill={AMBER}>
           Ø 82.
           <tspan>
             <animate attributeName="opacity" values="1;0.3;1" dur="1.4s" repeatCount="indefinite" />4
           </tspan>
         </text>
-        <text x="-40" y="44" fontFamily="'Sora', sans-serif" fontSize="11" fontWeight="600" letterSpacing="0.14em" fill={IVORY} opacity="0.5">INSPECT · LAGOS</text>
+        <text x="-40" y="44" fontFamily="'Poppins', sans-serif" fontSize="11" fontWeight="600" letterSpacing="0.14em" fill={IVORY} opacity="0.5">INSPECT · LAGOS</text>
       </g>
 
       {/* ---- CONVEYOR ---- */}
