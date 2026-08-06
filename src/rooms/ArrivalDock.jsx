@@ -345,7 +345,7 @@ export default function ArrivalDock() {
           <Metric index={4} Icon={IconGlobe}   value={rt.languages.length} label={t("metric.languages")} desc="Knowledge without barriers" />
           <div style={{ flexBasis: "100%", fontFamily: UI, fontWeight: 700, fontSize: 9,
             letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginTop: 10 }}>
-            Illustrative · specimen activity · not surveyed
+            Demo mode · seed data · not operational
           </div>
         </div>
       </section>

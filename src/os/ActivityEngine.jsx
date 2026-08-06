@@ -11,6 +11,7 @@
 // ============================================================
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { EVENT_TYPES } from "./events.js";
 
 // ---- Canonical event types (directive §Phase 9 examples)
 export const EVENT = {
@@ -31,6 +32,20 @@ const MACHINE_STATE_FROM = {
   [EVENT.MAINTENANCE_OPENED]:   "maintenance",
   [EVENT.INSPECTION_COMPLETED]: "inspection",
   [EVENT.QUALITY_VERIFIED]:     "inspection",
+
+  // --- Canonical vocabulary (src/os/events.js). ADDITIVE ONLY: every
+  // legacy entry above is untouched, and each canonical type maps onto a
+  // state value that already existed, so no consumer sees a new state.
+  [EVENT_TYPES.MACHINE.START]:            "active",
+  [EVENT_TYPES.MACHINE.RUN]:              "active",
+  [EVENT_TYPES.MACHINE.STOP]:             "idle",
+  [EVENT_TYPES.MACHINE.IDLE]:             "idle",
+  [EVENT_TYPES.MACHINE.COMPLETE]:         "idle",
+  [EVENT_TYPES.MACHINE.MAINTENANCE]:      "maintenance",
+  [EVENT_TYPES.MACHINE.FAULT]:            "maintenance",
+  [EVENT_TYPES.INSPECTION.RECORDED]:      "inspection",
+  [EVENT_TYPES.INSPECTION.PASSED]:        "inspection",
+  [EVENT_TYPES.INSPECTION.FAILED]:        "inspection",
 };
 
 // Which hub state an event implies.
@@ -43,6 +58,27 @@ const HUB_STATE_FROM = {
   [EVENT.SHIPMENT_DISPATCHED]:  "expanding",
   [EVENT.MAINTENANCE_OPENED]:   "maintenance",
   [EVENT.MACHINE_STOPPED]:      "standby",
+
+  // --- Canonical vocabulary (src/os/events.js). ADDITIVE ONLY, and every
+  // value below is one of the six hub states already in use.
+  [EVENT_TYPES.MACHINE.START]:                  "fabricating",
+  [EVENT_TYPES.MACHINE.RUN]:                    "fabricating",
+  [EVENT_TYPES.PRODUCTION.COMPONENT_PRODUCED]:  "fabricating",
+  [EVENT_TYPES.PRODUCTION.STAGE_ADVANCED]:      "fabricating",
+  [EVENT_TYPES.PRODUCTION.ASSEMBLY_JOINED]:     "fabricating",
+  [EVENT_TYPES.ENGINEERING.SPEC_DRAFTED]:       "coordinating",
+  [EVENT_TYPES.ENGINEERING.SPEC_RELEASED]:      "coordinating",
+  [EVENT_TYPES.ENGINEERING.SPEC_REVISED]:       "coordinating",
+  [EVENT_TYPES.ENGINEERING.SPEC_APPROVED]:      "coordinating",
+  [EVENT_TYPES.INSPECTION.RECORDED]:            "verifying",
+  [EVENT_TYPES.INSPECTION.PASSED]:              "verifying",
+  [EVENT_TYPES.INSPECTION.FAILED]:              "verifying",
+  [EVENT_TYPES.INSPECTION.REWORKED]:            "verifying",
+  [EVENT_TYPES.PRODUCTION.PROGRAM_FINISHED]:    "expanding",
+  [EVENT_TYPES.MACHINE.MAINTENANCE]:            "maintenance",
+  [EVENT_TYPES.MACHINE.FAULT]:                  "maintenance",
+  [EVENT_TYPES.MACHINE.STOP]:                   "standby",
+  [EVENT_TYPES.MACHINE.IDLE]:                   "standby",
 };
 
 // ---- Seed stream. Real named people, real hubs, real machines.
