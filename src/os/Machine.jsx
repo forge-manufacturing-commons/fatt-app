@@ -42,12 +42,12 @@ export const MACHINES = {
 
 // Six states. Each maps to a canonical motion — never a bespoke animation.
 export const MACHINE_STATES = {
-  idle:        { label:"IDLE",        accent:"steel",   motion:null,               dot:"#7C8085" },
-  active:      { label:"ACTIVE",      accent:"heat",    motion:"weldFlash",        dot:"#E1602E" },
-  maintenance: { label:"MAINTENANCE", accent:"gold",    motion:"factoryPulse",     dot:"#C89B4A" },
-  inspection:  { label:"INSPECTION",  accent:"cyan",    motion:"inspectionScan",   dot:"#4FC7D6" },
-  offline:     { label:"OFFLINE",     accent:"forged",  motion:null,               dot:"#2B2E33" },
-  booting:     { label:"BOOTING",     accent:"cyan",    motion:"machineBoot",      dot:"#4FC7D6" },
+  idle:        { label:"IDLE",        accent:"steel",   motion:null,               dot:"#8899aa" },
+  active:      { label:"ACTIVE",      accent:"heat",    motion:"weldFlash",        dot:"#F5A623" },
+  maintenance: { label:"MAINTENANCE", accent:"gold",    motion:"factoryPulse",     dot:"#F5A623" },
+  inspection:  { label:"INSPECTION",  accent:"cyan",    motion:"inspectionScan",   dot:"#0A7F73" },
+  offline:     { label:"OFFLINE",     accent:"forged",  motion:null,               dot:"#1C2128" },
+  booting:     { label:"BOOTING",     accent:"cyan",    motion:"machineBoot",      dot:"#0A7F73" },
 };
 
 export default function Machine({ id, state: forced, telemetry = null, label = true, className = "" }) {

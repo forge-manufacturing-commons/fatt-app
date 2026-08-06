@@ -13,13 +13,13 @@
 
 // ---- Design tokens (Forge_Design_Tokens.md, canonical hex values)
 export const STUDIO_TOKENS = {
-  gold:       "#C89B4A",  // primary accent — ownership, verification, ankara warm motif
-  cyan:       "#4FC7D6",  // signal accent — network, inspection
-  emerald:    "#2E8F72",  // secondary accent — growth, SME-assigned state
-  heat:       "#E1602E",  // hot accent — fabrication, welding, alerts
-  steel:      "#7C8085",  // primary neutral — body metal
-  steelDark:  "#2B2E33",  // deep neutral — panels, backgrounds
-  cream:      "#F2EEE6",  // light neutral — labels, edge highlights
+  gold:       "#F5A623",  // primary accent — ownership, verification, ankara warm motif
+  cyan:       "#0A7F73",  // signal accent — network, inspection
+  emerald:    "#1a7a4a",  // secondary accent — growth, SME-assigned state
+  heat:       "#F5A623",  // hot accent — fabrication, welding, alerts
+  steel:      "#8899aa",  // primary neutral — body metal
+  steelDark:  "#1C2128",  // deep neutral — panels, backgrounds
+  cream:      "#F5F1E9",  // light neutral — labels, edge highlights
 };
 
 // ---- Asset URL builder — assets are at /forge-studio/lib/{category}/{file}.svg

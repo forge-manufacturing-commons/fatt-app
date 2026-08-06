@@ -19,6 +19,7 @@
 // ============================================================
 
 import { useMemo, useState } from "react";
+import { T } from "../os/forge.js";
 import { useForgeActivity } from "../os/ActivityEngine.jsx";
 import { useIdentity } from "../os/ForgeIdentity.jsx";
 import { specificationState } from "../domains/engineering/state.js";
@@ -33,8 +34,10 @@ import { MISSIONS } from "../os/missions.js";
 import OperationsFeed from "../os/OperationsFeed.jsx";
 import StateGraph from "../os/StateGraph.jsx";
 
-const BLACK="#0D0D0F", IVORY="#F5F1E9", TEAL="#0A7F73", AMBER="#F5A623", PINK="#FF2E63";
-const SURFACE="#111418", BORDER="#1C2128", MUTED="#8899aa", GREEN="#1a7a4a";
+// Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
+const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
+        surface:SURFACE_T, border:BORDER_T, grey:GREY_T, green:GREEN_T } = T;
+const SURFACE=SURFACE_T, BORDER=BORDER_T, MUTED=GREY_T, GREEN=GREEN_T;
 const UI="var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY="var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 const MONO="var(--forge-mono, ui-monospace, monospace)";

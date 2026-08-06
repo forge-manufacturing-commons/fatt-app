@@ -8,13 +8,16 @@
 // ============================================================
 
 import { useState } from "react";
+import { T } from "../os/forge.js";
 import { useNavigate } from "react-router-dom";
 import { useIdentity } from "../os/ForgeIdentity.jsx";
 import { ROLES } from "../os/Roles.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
 
-const BLACK="#0D0D0F", IVORY="#F5F1E9", TEAL="#0A7F73", AMBER="#F5A623", PINK="#FF2E63";
-const SURFACE="#111418", BORDER="#1C2128", MUTED="#8899aa";
+// Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
+const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
+        surface:SURFACE_T, border:BORDER_T, grey:GREY_T, green:GREEN_T } = T;
+const SURFACE=SURFACE_T, BORDER=BORDER_T, MUTED=GREY_T, GREEN=GREEN_T;
 const UI="var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY="var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 const NG_STATES=["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",

@@ -94,7 +94,7 @@
   display:inline-flex;align-items:center;gap:10px;
   font-family:var(--forge-mono);font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;
   padding:15px 26px;border:none;cursor:pointer;
-  background:var(--forge-gold);color:var(--forge-black,#060606);
+  background:var(--forge-gold);color:var(--forge-black,#0D0D0F);
   clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   transition:filter .2s ease, transform .2s ease;
   position:relative;

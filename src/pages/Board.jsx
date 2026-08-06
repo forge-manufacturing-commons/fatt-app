@@ -59,7 +59,7 @@ export default function Board() {
               <div className="col" key={s} onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); setStage(Number(e.dataTransfer.getData('id')), s) }}>
                 <div className="colh"><span>{lbl}</span><span>{items.length}</span></div>
-                {items.length === 0 && <div className="js" style={{textAlign:'center',padding:8,color:'#b0a596'}}>—</div>}
+                {items.length === 0 && <div className="js" style={{textAlign:'center',padding:8,color:'#8899aa'}}>—</div>}
                 {items.map(j => (
                   <div className="job" key={j.id} draggable
                     onDragStart={e => e.dataTransfer.setData('id', j.id)} onClick={() => advance(j.id)}>

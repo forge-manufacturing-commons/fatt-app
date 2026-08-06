@@ -1,5 +1,5 @@
 export default function Mandala() {
-  const cols = ['#E01A5A', '#D98C0F', '#0E7360', '#EDE0C4']
+  const cols = ['#FF2E63', '#F5A623', '#0A7F73', '#F5F1E9']
   const circles = []
   for (let ring = 1; ring < 26; ring++) {
     const rad = ring * 10

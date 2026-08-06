@@ -1,13 +1,13 @@
 .forge-locator{ display:flex; align-items:center; gap:12px; padding:6px 24px;
-  background:rgba(10,9,8,.96); border-bottom:1px solid var(--forge-rule,#2A2521);
+  background:rgba(10,9,8,.96); border-bottom:1px solid var(--forge-rule,#1C2128);
   font:600 10px/1 var(--forge-mono,monospace); letter-spacing:.1em; overflow-x:auto; }
-.forge-locator-room{ color:var(--forge-gold,#C89B4A); white-space:nowrap; }
-.forge-locator-sep{ color:var(--forge-rule,#2A2521); }
-.forge-locator-name{ color:var(--forge-cream,#F2EEE6); white-space:nowrap; }
+.forge-locator-room{ color:var(--forge-gold,#F5A623); white-space:nowrap; }
+.forge-locator-sep{ color:var(--forge-rule,#1C2128); }
+.forge-locator-name{ color:var(--forge-cream,#F5F1E9); white-space:nowrap; }
 .forge-locator-state{ display:flex; align-items:center; gap:6px; white-space:nowrap; margin-left:4px; }
 .forge-locator-state i{ width:6px; height:6px; border-radius:50%; display:block; }
-.forge-locator-state--operational{ color:var(--forge-emerald,#2E8F72); }
-.forge-locator-state--operational i{ background:var(--forge-emerald,#2E8F72); box-shadow:0 0 6px rgba(46,143,114,.7); }
-.forge-locator-state--commissioning{ color:var(--forge-gold,#C89B4A); }
-.forge-locator-state--commissioning i{ background:var(--forge-gold,#C89B4A); }
-.forge-locator-of{ margin-left:auto; color:var(--forge-muted,#8A857C); white-space:nowrap; }
+.forge-locator-state--operational{ color:var(--forge-emerald,#1a7a4a); }
+.forge-locator-state--operational i{ background:var(--forge-emerald,#1a7a4a); box-shadow:0 0 6px rgba(46,143,114,.7); }
+.forge-locator-state--commissioning{ color:var(--forge-gold,#F5A623); }
+.forge-locator-state--commissioning i{ background:var(--forge-gold,#F5A623); }
+.forge-locator-of{ margin-left:auto; color:var(--forge-muted,#8899aa); white-space:nowrap; }

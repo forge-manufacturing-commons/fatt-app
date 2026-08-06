@@ -79,7 +79,7 @@ function FlowRoute({ stages, tone }) {
 }
 
 export default function SupplyFlowLayer() {
-  const tones = ["#E07B39", "#4FC7D6", "#D9A441"];
+  const tones = ["#F5A623", "#0A7F73", "#F5A623"];
   return (
     <g className="supply-flow">
       {SUPPLY_FLOWS.map((f,i) => <FlowRoute key={f.id} stages={f.stages} tone={tones[i%3]} />)}

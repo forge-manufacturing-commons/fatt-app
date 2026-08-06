@@ -13,14 +13,14 @@
 
 /* ---- 1. TOKEN OVERRIDE (canonical hex values) --------------- */
 :root{
-  --forge-gold:       #C89B4A;
-  --forge-cyan:       #4FC7D6;
-  --forge-emerald:    #2E8F72;
-  --forge-heat:       #E1602E;
-  --forge-steel:      #7C8085;
-  --forge-steel-dark: #2B2E33;
-  --cream:            #F2EEE6;
-  --forge-black:      #0A0908;
+  --forge-gold:       var(--forge-amber);
+  --forge-cyan:       var(--forge-teal);
+  --forge-emerald:    var(--forge-green);
+  --forge-heat:       var(--forge-amber);
+  --forge-steel:      var(--forge-grey);
+  --forge-steel-dark: var(--forge-border);
+  --cream:            var(--forge-ivory);
+  --forge-black:      var(--forge-black);
 }
 
 /* ---- 2. MOTION VOCABULARY (16 canonical keyframes) ---------- */

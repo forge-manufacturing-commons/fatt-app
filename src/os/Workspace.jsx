@@ -13,12 +13,15 @@
 // ============================================================
 
 import { useNavigate } from "react-router-dom";
+import { T } from "./forge.js";
 import { useIdentity } from "./ForgeIdentity.jsx";
 import { CAPABILITIES, VERIFICATION, VERIFICATION_GATED } from "./Roles.js";
 import { FORGE_CLIPS } from "./geometry.js";
 
-const BLACK="#0D0D0F", IVORY="#F5F1E9", TEAL="#0A7F73", AMBER="#F5A623", PINK="#FF2E63";
-const SURFACE="#111418", BORDER="#1C2128", MUTED="#8899aa", GREEN="#1a7a4a";
+// Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
+const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
+        surface:SURFACE_T, border:BORDER_T, grey:GREY_T, green:GREEN_T } = T;
+const SURFACE=SURFACE_T, BORDER=BORDER_T, MUTED=GREY_T, GREEN=GREEN_T;
 const UI="var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY="var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 

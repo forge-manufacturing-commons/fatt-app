@@ -151,7 +151,7 @@ function OSRail() {
                     role="menu"
                     style={{
                       position: "absolute", top: "100%", left: 0, zIndex: 60,
-                      minWidth: 240, background: "#0d141d", border: "1px solid #1c2733",
+                      minWidth: 240, background: "#111418", border: "1px solid #1C2128",
                       borderRadius: 8, padding: 6, boxShadow: "0 14px 34px rgba(0,0,0,.55)",
                     }}
                   >

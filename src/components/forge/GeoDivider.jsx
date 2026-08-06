@@ -4,7 +4,7 @@
 // Six variants alternate via the flip prop; tone selects Forge gold or
 // system cyan for section-scoped moments.
 export default function GeoDivider({ flip = false, tone = "gold" }) {
-  const col = tone === "cyan" ? "#41E2FF" : "#D4AF37";
+  const col = tone === "cyan" ? "#0A7F73" : "#F5A623";
   const N = 30;
   const W = 900;
   const step = W / N;

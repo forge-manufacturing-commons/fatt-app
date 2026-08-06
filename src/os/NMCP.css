@@ -13,8 +13,8 @@
   width:100%;
   aspect-ratio:16/10;
   min-height:min(68vh, 640px);
-  border:1px solid var(--forge-rule,#2A2521);
-  background:radial-gradient(120% 120% at 50% 35%, #14110f 0%, #0b0a09 60%, #060504 100%);
+  border:1px solid var(--forge-rule,#1C2128);
+  background:radial-gradient(120% 120% at 50% 35%, var(--forge-surface) 0%, var(--forge-black) 60%, #0D0D0F 100%);
   overflow:hidden;
   display:flex; align-items:center; justify-content:center;
   box-shadow:inset 0 0 120px rgba(0,0,0,.6);
@@ -25,15 +25,15 @@
 /* corner registration marks — frames the plate like an instrument under inspection */
 .nmcp-stage::before,.nmcp-stage::after{
   content:"";position:absolute;width:26px;height:26px;pointer-events:none;
-  border:1px solid var(--forge-gold,#C89B4A);opacity:.5;
+  border:1px solid var(--forge-gold,#F5A623);opacity:.5;
 }
 .nmcp-stage::before{ top:16px;left:16px;border-right:0;border-bottom:0; }
 .nmcp-stage::after{ bottom:16px;right:16px;border-left:0;border-top:0; }
 
 .nmcp-socket{ padding:40px; text-align:left; max-width:60ch; }
-.nmcp-socket span{ color:var(--forge-gold,#C89B4A); display:block; margin-bottom:10px; }
-.nmcp-socket p{ color:var(--forge-muted,#8A857C); margin:0; }
-.nmcp-socket code{ color:var(--forge-cyan,#4FC7D6); }
+.nmcp-socket span{ color:var(--forge-gold,#F5A623); display:block; margin-bottom:10px; }
+.nmcp-socket p{ color:var(--forge-muted,#8899aa); margin:0; }
+.nmcp-socket code{ color:var(--forge-cyan,#0A7F73); }
 
 .nmcp-leds{ position:absolute; inset:0; pointer-events:none; }
 .nmcp-led{ position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; }
@@ -42,28 +42,28 @@
    Reads like a control-panel readout. Supports the object; never competes. */
 .nmcp-strip{
   display:flex; flex-wrap:wrap; align-items:stretch; gap:1px;
-  margin-top:2px; background:var(--forge-rule,#2A2521);
-  border:1px solid var(--forge-rule,#2A2521); border-top:0;
+  margin-top:2px; background:var(--forge-rule,#1C2128);
+  border:1px solid var(--forge-rule,#1C2128); border-top:0;
 }
 .nmcp-strip > div{
-  flex:1 1 130px; background:var(--forge-street-2,#141110); padding:11px 16px;
+  flex:1 1 130px; background:var(--forge-street-2,#111418); padding:11px 16px;
   display:flex; flex-direction:column; gap:4px;
 }
-.nmcp-strip dt{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.2em; color:var(--forge-muted,#8A857C); }
-.nmcp-strip dd{ margin:0; font:600 13px/1 var(--forge-mono,monospace); color:var(--forge-cream,#F2EEE6); }
-.nmcp-strip dd em{ font-style:normal; font-size:9px; color:var(--forge-muted,#8A857C); margin-left:5px; }
-.nmcp-strip .live dd{ color:var(--forge-emerald,#2E8F72); }
-.nmcp-strip .cert dd{ color:var(--forge-gold,#C89B4A); }
+.nmcp-strip dt{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.2em; color:var(--forge-muted,#8899aa); }
+.nmcp-strip dd{ margin:0; font:600 13px/1 var(--forge-mono,monospace); color:var(--forge-cream,#F5F1E9); }
+.nmcp-strip dd em{ font-style:normal; font-size:9px; color:var(--forge-muted,#8899aa); margin-left:5px; }
+.nmcp-strip .live dd{ color:var(--forge-emerald,#1a7a4a); }
+.nmcp-strip .cert dd{ color:var(--forge-gold,#F5A623); }
 
 /* serial ID line — small, top-left over the plate, like an equipment tag */
 .nmcp-tag{
   position:absolute; top:16px; left:52px; z-index:3;
   display:flex; align-items:baseline; gap:10px;
 }
-.nmcp-tag .id{ font:700 13px/1 var(--forge-mono,monospace); letter-spacing:.14em; color:var(--forge-cream,#F2EEE6); }
-.nmcp-tag .cert{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.16em; color:var(--forge-emerald,#2E8F72); }
+.nmcp-tag .id{ font:700 13px/1 var(--forge-mono,monospace); letter-spacing:.14em; color:var(--forge-cream,#F5F1E9); }
+.nmcp-tag .cert{ font:700 8px/1 var(--forge-mono,monospace); letter-spacing:.16em; color:var(--forge-emerald,#1a7a4a); }
 
-.nmcp-provenance{ color:var(--forge-muted,#8A857C); font-size:10px; margin:12px 0 0; letter-spacing:.04em; }
+.nmcp-provenance{ color:var(--forge-muted,#8899aa); font-size:10px; margin:12px 0 0; letter-spacing:.04em; }
 
 
 /* ============================================================
@@ -72,12 +72,12 @@
    ============================================================ */
 .room-nmcp .forge-room-floor{ max-width:1240px; }
 .nmcp-room-head{ margin:0 0 18px; }
-.nmcp-room-seq{ display:block; color:var(--forge-gold,#C89B4A); letter-spacing:.22em; font-size:11px; margin-bottom:8px; }
-.nmcp-room-seq::before{ content:""; display:inline-block; width:26px; height:1px; background:var(--forge-gold,#C89B4A); vertical-align:middle; margin-right:10px; }
-.nmcp-room-lede{ margin:0; max-width:64ch; color:var(--forge-muted,#8A857C); font-size:14px; line-height:1.5; }
+.nmcp-room-seq{ display:block; color:var(--forge-gold,#F5A623); letter-spacing:.22em; font-size:11px; margin-bottom:8px; }
+.nmcp-room-seq::before{ content:""; display:inline-block; width:26px; height:1px; background:var(--forge-gold,#F5A623); vertical-align:middle; margin-right:10px; }
+.nmcp-room-lede{ margin:0; max-width:64ch; color:var(--forge-muted,#8899aa); font-size:14px; line-height:1.5; }
 .room-nmcp .nmcp-stage{ aspect-ratio:16/9; min-height:min(74vh, 720px); }
 .nmcp-room-cta{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-top:20px; }
-.nmcp-room-cta .forge-technical{ color:var(--forge-muted,#8A857C); }
+.nmcp-room-cta .forge-technical{ color:var(--forge-muted,#8899aa); }
 @media(min-width:1100px){ .room-nmcp .nmcp-stage{ min-height:min(78vh, 760px); } }
 
 
@@ -108,21 +108,21 @@
 }
 .room-nmcp--command .nmcp-room-headline{ max-width:60ch; }
 .room-nmcp--command .nmcp-room-seq{
-  display:block; color:var(--forge-gold,#C89B4A); letter-spacing:.22em;
+  display:block; color:var(--forge-gold,#F5A623); letter-spacing:.22em;
   font-size:10px; margin-bottom:6px; opacity:.85;
 }
 .room-nmcp--command .nmcp-room-seq::before{
   content:""; display:inline-block; width:22px; height:1px;
-  background:var(--forge-gold,#C89B4A); vertical-align:middle; margin-right:9px;
+  background:var(--forge-gold,#F5A623); vertical-align:middle; margin-right:9px;
 }
 .room-nmcp--command .nmcp-room-lede{
-  margin:0; color:var(--forge-muted,#8A857C); font-size:13px; line-height:1.5;
+  margin:0; color:var(--forge-muted,#8899aa); font-size:13px; line-height:1.5;
 }
 /* navigation (priority 5) */
 .room-nmcp--command .nmcp-room-cta{
   display:flex; gap:14px; flex-direction:column; align-items:flex-end; text-align:right;
 }
-.room-nmcp--command .nmcp-room-cta .forge-technical{ color:var(--forge-muted,#8A857C); font-size:10px; }
+.room-nmcp--command .nmcp-room-cta .forge-technical{ color:var(--forge-muted,#8899aa); font-size:10px; }
 @media(max-width:760px){
   .room-nmcp--command .nmcp-room-foot{ flex-direction:column; align-items:flex-start; }
   .room-nmcp--command .nmcp-room-cta{ align-items:flex-start; text-align:left; }
@@ -151,7 +151,7 @@
   min-height:92vh;
   border:0;                               /* no box */
   box-shadow:none;
-  background:radial-gradient(140% 120% at 50% 42%, #14110f 0%, #0a0908 55%, #040302 100%);
+  background:radial-gradient(140% 120% at 50% 42%, var(--forge-surface) 0%, var(--forge-black) 55%, var(--forge-black) 100%);
 }
 /* remove the corner registration marks — no framing */
 .room-nmcp--command .nmcp-stage::before,
@@ -171,7 +171,7 @@
   width:min(1100px, 92vw);
   margin:-56px auto 0;                    /* rides UP onto the exhibit */
   z-index:4;
-  border:1px solid var(--forge-rule,#2A2521);
+  border:1px solid var(--forge-rule,#1C2128);
   background:rgba(10,9,8,.82);
   backdrop-filter:blur(6px);
 }
@@ -197,35 +197,35 @@
    ============================================================ */
 .nmcp-plate-id{
   width:min(1100px, 92vw); margin:18px auto 0;
-  border:1px solid var(--rule,#2A2521);
+  border:1px solid var(--rule,#1C2128);
   background:rgba(10,9,8,.72); backdrop-filter:blur(6px);
   padding:18px 22px;
 }
 .nmcp-id-row{
   display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
-  padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid var(--rule,#2A2521);
+  padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid var(--rule,#1C2128);
 }
 .nmcp-serial{
   font-family:var(--forge-mono,monospace); font-weight:900;
   font-size:15px; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--cream,#F2EEE6);
+  color:var(--cream,#F5F1E9);
 }
 .nmcp-cert{
   font-family:var(--forge-mono,monospace); font-weight:700;
   font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--forge-emerald,#2E8F72);
+  color:var(--forge-emerald,#1a7a4a);
   border:1px solid rgba(46,143,114,.4); padding:3px 9px;
 }
 .nmcp-name{
   font-family:var(--forge-mono,monospace); font-weight:600;
   font-size:11px; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--muted,#8A857C); margin-left:auto;
+  color:var(--muted,#8899aa); margin-left:auto;
 }
 /* the spec grid — labelled data fields, engineering style */
 .nmcp-spec{
   display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-  gap:1px; margin:0; background:var(--rule,#2A2521);
-  border:1px solid var(--rule,#2A2521);
+  gap:1px; margin:0; background:var(--rule,#1C2128);
+  border:1px solid var(--rule,#1C2128);
 }
 .nmcp-spec > div{
   background:rgba(10,9,8,.9); padding:10px 12px;
@@ -234,20 +234,20 @@
 .nmcp-spec dt{
   font-family:var(--forge-mono,monospace); font-weight:700;
   font-size:8.5px; letter-spacing:.22em; text-transform:uppercase;
-  color:var(--muted,#8A857C); margin:0;
+  color:var(--muted,#8899aa); margin:0;
 }
 .nmcp-spec dd{
   font-family:var(--forge-mono,monospace); font-weight:900;
   font-size:13px; letter-spacing:.04em; text-transform:uppercase;
-  color:var(--forge-gold,#C89B4A); margin:0;
+  color:var(--forge-gold,#F5A623); margin:0;
 }
 .nmcp-spec dd em{
   font-style:normal; font-weight:600; font-size:9px;
-  color:var(--muted,#8A857C); margin-left:5px; letter-spacing:.1em;
+  color:var(--muted,#8899aa); margin-left:5px; letter-spacing:.1em;
 }
 .nmcp-provenance{
   font-family:var(--forge-mono,monospace);
-  color:var(--muted,#8A857C); font-size:9px; letter-spacing:.06em;
+  color:var(--muted,#8899aa); font-size:9px; letter-spacing:.06em;
   text-transform:uppercase; margin:14px 0 0; line-height:1.6;
 }
 
@@ -263,8 +263,8 @@
 .nmcp-mobile-launch{
   position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
   font:900 10px/1 var(--forge-mono,monospace); letter-spacing:.16em; text-transform:uppercase;
-  color:var(--cream,#F2EEE6); background:rgba(10,9,8,.78); backdrop-filter:blur(6px);
-  border:1px solid var(--forge-gold,#C89B4A); padding:11px 18px; cursor:pointer;
+  color:var(--cream,#F5F1E9); background:rgba(10,9,8,.78); backdrop-filter:blur(6px);
+  border:1px solid var(--forge-gold,#F5A623); padding:11px 18px; cursor:pointer;
   transition:background .2s;
 }
 .nmcp-mobile-launch:hover, .nmcp-mobile-launch:active{ background:rgba(200,155,74,.22); }

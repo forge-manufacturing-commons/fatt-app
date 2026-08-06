@@ -15,13 +15,16 @@
 // ============================================================
 
 import { useMemo, useState } from "react";
+import { T } from "../os/forge.js";
 import { useForgeActivity } from "../os/ActivityEngine.jsx";
 import { useLanguage } from "../os/useLanguage.js";
 import { translations, SUPPORTED_LANGUAGES } from "../os/i18n.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
 
-const BLACK="#0D0D0F", IVORY="#F5F1E9", TEAL="#0A7F73", AMBER="#F5A623", PINK="#FF2E63";
-const SURFACE="#111418", BORDER="#1C2128", MUTED="#8899aa", GREEN="#1a7a4a";
+// Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
+const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
+        surface:SURFACE_T, border:BORDER_T, grey:GREY_T, green:GREEN_T } = T;
+const SURFACE=SURFACE_T, BORDER=BORDER_T, MUTED=GREY_T, GREEN=GREEN_T;
 const UI="var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY="var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 

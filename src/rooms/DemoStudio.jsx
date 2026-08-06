@@ -54,9 +54,9 @@ const WORKFLOW = [
 ];
 
 const STATE_COLOR = {
-  active: "#2f9e44", fabricating: "#2f9e44", idle: "#868e96", standby: "#868e96",
-  maintenance: "#f08c00", inspection: "#1c7ed6", verifying: "#1c7ed6",
-  coordinating: "#0A7F73", expanding: "#1098ad", unknown: "#adb5bd",
+  active: "#1a7a4a", fabricating: "#1a7a4a", idle: "#8899aa", standby: "#8899aa",
+  maintenance: "#F5A623", inspection: "#0A7F73", verifying: "#0A7F73",
+  coordinating: "#0A7F73", expanding: "#0A7F73", unknown: "#8899aa",
 };
 const shortTime = (at) => { try { return new Date(at).toLocaleTimeString([], { hour12: false }); } catch { return ""; } };
 
@@ -120,9 +120,9 @@ export default function DemoStudio() {
             return (
               <span key={step.key} className="forge-technical" style={{
                 padding: "5px 11px", borderRadius: 999, fontSize: 12,
-                border: "1px solid " + (state === "active" ? "#2f9e44" : "rgba(255,255,255,.18)"),
-                background: state === "done" ? "rgba(47,158,68,.16)" : state === "active" ? "#2f9e44" : "transparent",
-                color: state === "active" ? "#0b0b0c" : "inherit",
+                border: "1px solid " + (state === "active" ? "#1a7a4a" : "rgba(255,255,255,.18)"),
+                background: state === "done" ? "rgba(47,158,68,.16)" : state === "active" ? "#1a7a4a" : "transparent",
+                color: state === "active" ? "#0D0D0F" : "inherit",
               }}>{i + 1}. {step.label}</span>
             );
           })}
@@ -183,7 +183,7 @@ export default function DemoStudio() {
             {runtime.forgeObjects.length
               ? runtime.forgeObjects.slice(0, 10).map((o, i) => (
                   <div key={i} style={row}>
-                    <span><span style={dot("#495057")} />{o.id} · <span style={{ opacity: .6 }}>{o.class}</span></span>
+                    <span><span style={dot("#3a4a5a")} />{o.id} · <span style={{ opacity: .6 }}>{o.class}</span></span>
                     <span style={{ fontSize: 12, opacity: .7 }}>{o.state}</span>
                   </div>
                 ))

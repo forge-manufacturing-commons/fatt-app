@@ -1,16 +1,16 @@
 const colors = {
 
-  background: "#0B0F14",
+  background: "#0D0D0F",
 
-  surface: "#131A22",
+  surface: "#111418",
 
-  panel: "#18222C",
+  panel: "#111418",
 
-  border: "#28323C",
+  border: "#1C2128",
 
-  text: "#F5F7FA",
+  text: "#F5F1E9",
 
-  muted: "#A3AFBF",
+  muted: "#8899aa",
 
   primary: "#0A7F73",
 
@@ -18,17 +18,17 @@ const colors = {
 
   gold: "#F5A623",
 
-  success: "#2DD36F",
+  success: "#1a7a4a",
 
-  warning: "#FFC409",
+  warning: "#F5A623",
 
-  danger: "#EB445A",
+  danger: "#FF2E63",
 
-  steel: "#607080",
+  steel: "#3a4a5a",
 
-  white: "#FFFFFF",
+  white: "#F5F1E9",
 
-  black: "#000000",
+  black: "#0D0D0F",
 
 }
 

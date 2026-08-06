@@ -1,7 +1,7 @@
 /* NMCP cinematic — the plate is the hero; never traps scroll. */
 .nmcp-cine{
   position:relative; width:100%; aspect-ratio:4/3; max-height:84vh;
-  background:radial-gradient(140% 120% at 50% 42%, #14110f 0%, #0a0908 55%, #040302 100%);
+  background:radial-gradient(140% 120% at 50% 42%, var(--forge-surface) 0%, var(--forge-black) 55%, var(--forge-black) 100%);
   overflow:hidden;
 }
 .nmcp-cine-video,
