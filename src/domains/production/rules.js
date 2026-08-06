@@ -8,6 +8,7 @@ import { createRule, createRuleBook } from "../../os/rules.js";
 
 export const inspectionBeforeAssembly = createRule({
   id: "production.inspectionBeforeAssembly",
+  code: "ASM-001",
   because: "A component may not enter assembly until inspection has passed.",
   appliesTo: (c) => c.transition === "assemble",
   permits: (c) => c.inspectionResult === "pass",
@@ -15,6 +16,7 @@ export const inspectionBeforeAssembly = createRule({
 
 export const noProductionOnFaultedMachine = createRule({
   id: "production.noProductionOnFaultedMachine",
+  code: "MCH-002",
   because: "Work may not be booked to a machine that is in fault or under maintenance.",
   appliesTo: (c) => Boolean(c.machine),
   permits: (c) => !["fault", "maintenance"].includes(c.machineState),
@@ -22,6 +24,7 @@ export const noProductionOnFaultedMachine = createRule({
 
 export const certifiedWorkshopForPressure = createRule({
   id: "production.certifiedWorkshopForPressure",
+  code: "PV-002",
   because: "Pressure-retaining components require an ASME-certified workshop.",
   appliesTo: (c) => c.componentClass === "pressure-vessel",
   permits: (c) => (c.workshopCertifications || []).includes("ASME"),
@@ -29,6 +32,7 @@ export const certifiedWorkshopForPressure = createRule({
 
 export const specificationMustBeReleased = createRule({
   id: "production.specificationMustBeReleased",
+  code: "SPC-001",
   because: "A component may not be manufactured against a specification that is not released.",
   appliesTo: (c) => c.transition === "release" && Boolean(c.specification),
   permits: (c) => ["released", "approved"].includes(c.specificationState),

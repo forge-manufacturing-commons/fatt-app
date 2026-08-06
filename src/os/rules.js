@@ -20,9 +20,11 @@
 
 export class RuleViolation extends Error {
   constructor(violations, context) {
+    // Industrial phrasing. An operator should read a manufacturing constraint
+    // and a rule number, not "validation failed".
     super(
-      `Manufacturing rules refuse this action: ` +
-      violations.map((v) => `[${v.id}] ${v.because}`).join(" | ")
+      `Manufacturing constraint: ` +
+      violations.map((v) => `${v.because} (Rule ${v.code ?? v.id})`).join(" | ")
     );
     this.name = "RuleViolation";
     this.violations = violations;
@@ -32,15 +34,16 @@ export class RuleViolation extends Error {
 
 /**
  * @param id        stable identifier, cited in refusals and audits
+ * @param code       short industrial rule number an operator can quote (e.g. PV-002)
  * @param because   why the domain refuses — written for the operator, not the developer
  * @param appliesTo (context) => boolean   narrow the rule to the cases it governs
  * @param permits   (context) => boolean   whether the domain allows it
  */
-export function createRule({ id, because, appliesTo = () => true, permits }) {
+export function createRule({ id, code, because, appliesTo = () => true, permits }) {
   if (!id) throw new Error("createRule: `id` is required");
   if (typeof permits !== "function") throw new Error(`createRule(${id}): "permits" must be a function`);
   if (!because) throw new Error(`createRule(${id}): "because" is required — a refusal with no reason is not auditable`);
-  return Object.freeze({ id, because, appliesTo, permits });
+  return Object.freeze({ id, code: code ?? id, because, appliesTo, permits });
 }
 
 export function createRuleBook(rules = []) {
@@ -48,6 +51,7 @@ export function createRuleBook(rules = []) {
   const api = Object.freeze({
     rules: () => book,
     ids: () => book.map((r) => r.id),
+    codes: () => book.map((r) => r.code),
 
     /** Never throws. Returns the full picture, including which rules were in scope. */
     evaluate(context = {}) {
@@ -60,7 +64,7 @@ export function createRuleBook(rules = []) {
         applied.push(rule.id);
         let allowed = false;
         try { allowed = Boolean(rule.permits(context)); } catch { allowed = false; }
-        if (!allowed) violations.push({ id: rule.id, because: rule.because });
+        if (!allowed) violations.push({ id: rule.id, code: rule.code, because: rule.because });
       }
       return { permitted: violations.length === 0, applied, violations };
     },

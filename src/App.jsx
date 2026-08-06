@@ -18,10 +18,11 @@ import Room from "./os/Room.jsx";
 import RoomLocator from "./os/RoomLocator.jsx";
 import "./os/ForgeOS.css";
 
-import { ArrivalDock, NationalGrid, EngineeringBay, ProductionLine,
+import { ArrivalDock, NationalGrid, ProductionLine,
          InspectionHangar, ControlRoom, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
 import DemoStudio from "./rooms/DemoStudio.jsx";
 import LanguageStudio from "./rooms/LanguageStudio.jsx";
+import EngineeringBay from "./rooms/EngineeringBay.jsx";
 import Join from "./pages/Join.jsx";
 import { PLATFORM } from "./constants/site.js";
 import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
