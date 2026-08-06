@@ -97,6 +97,12 @@ export const SEED_STREAM = [
 
 const TICK_MS = 4200;
 
+// Monotonic publish counter. Previously an event without an explicit `seq`
+// defaulted to 0, so every emitter-produced event collided at 0 and the log
+// carried no ordering information of its own.
+let SEQ = 0;
+const nextSeq = () => ++SEQ;
+
 const Ctx = createContext(null);
 
 export function ForgeActivityProvider({ children, stream = SEED_STREAM, disabled = false, tickMs = TICK_MS }) {
@@ -105,9 +111,19 @@ export function ForgeActivityProvider({ children, stream = SEED_STREAM, disabled
   const subs = useRef(new Set());
 
   const publish = useCallback((evt) => {
-    const stamped = { ...evt, at: Date.now(), seq: (evt.seq ?? 0) };
+    // `at` is PRESERVED when supplied. Overwriting it unconditionally destroyed
+    // provenance: a queued offline event flushed an hour later would be recorded
+    // as happening at flush time, making replay, audit and hydration impossible.
+    // Live events still receive now(), because they arrive without a timestamp.
+    const stamped = {
+      ...evt,
+      at: evt.at ?? Date.now(),
+      seq: evt.seq ?? nextSeq(),
+    };
     setLog(l => [stamped, ...l].slice(0, 40));
     subs.current.forEach(fn => { try { fn(stamped); } catch (e) { console.error("[FORGE OS] subscriber failed", e); } });
+    // Returned so a producer can read what was actually recorded.
+    return stamped;
   }, []);
 
   useEffect(() => {

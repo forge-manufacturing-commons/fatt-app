@@ -20,7 +20,24 @@
 
 import { FORGE_OBJECT } from "./ForgeRuntime.js";
 
-export const EVENT_SCHEMA_VERSION = "1.0.0";
+export const EVENT_SCHEMA_VERSION = "1.1.0";
+
+// ---------- EVENT IDENTITY ----------
+// Every event gets a permanent id at creation. Added now rather than later:
+// retrofitting identity onto a populated stream is not possible, because the
+// events already written have none.
+export function makeEventId() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch { /* fall through */ }
+  // RFC4122-shaped fallback for environments without WebCrypto.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
 
 // ---------- STATUS VOCABULARY ----------
 export const STATUS = Object.freeze({
@@ -159,7 +176,9 @@ export const CLASS_FIELDS = Object.freeze({
   [FORGE_OBJECT.SPECIFICATION]: ["specification", "spec", "drawing"],
   [FORGE_OBJECT.COMPONENT]:     ["component", "part"],
   [FORGE_OBJECT.ASSEMBLY]:      ["assembly"],
-  [FORGE_OBJECT.PROGRAM]:       ["program", "mission"],
+  // program / mission / workPackage are the strategic hierarchy. They are in
+  // the vocabulary from the outset even though V1 does not populate them.
+  [FORGE_OBJECT.PROGRAM]:       ["program", "mission", "workPackage"],
   [FORGE_OBJECT.KNOWLEDGE]:     ["knowledge", "document"],
   [FORGE_OBJECT.COMPETENCY]:    ["competency", "skill"],
   [FORGE_OBJECT.INSTITUTION]:   ["institution", "organisation", "organization"],
@@ -209,12 +228,12 @@ const META_TYPE_PREFIXES = ["navigation.", "system."];
 // component produced a warning and published anyway. In a traceability
 // system that record is worse than useless, so these are ERRORS.
 const REQUIRED_FIELDS_BY_TYPE_PREFIX = Object.freeze({
-  "machine.":     ["machine"],
-  "production.":  ["component"],
-  "inspection.":  ["component", "result"],
-  "engineering.": ["specification"],
-  "person.":      ["person"],
-  "knowledge.":   ["knowledge"],
+  "machine.":     ["machine", "summary"],
+  "production.":  ["component", "summary"],
+  "inspection.":  ["component", "result", "summary"],
+  "engineering.": ["specification", "summary"],
+  "person.":      ["person", "summary"],
+  "knowledge.":   ["knowledge", "summary"],
   "navigation.":  ["studio"],
 });
 
@@ -230,29 +249,61 @@ function compact(fields) {
 }
 
 // ---------- CORE FACTORY ----------
-export function createEvent({ type, at, ...fields }) {
+export function createEvent({ type, at, eventId, correlationId, ...fields }) {
   if (!type || typeof type !== "string") {
     throw new Error("createEvent: `type` is required and must be a string");
   }
-  return { type, at: at ?? Date.now(), schema: EVENT_SCHEMA_VERSION, ...compact(fields) };
+  return {
+    type,
+    at: at ?? Date.now(),
+    eventId: eventId ?? makeEventId(),
+    // Explicitly null rather than absent: "not correlated" is a fact, and it
+    // lets a consumer distinguish it from an older event that predates the field.
+    correlationId: correlationId ?? null,
+    schema: EVENT_SCHEMA_VERSION,
+    ...compact(fields),
+  };
 }
 
+// `summary` is the canonical human-readable line. `text` carries the same value
+// for V1 only: ForgeRuntime.deriveRecommendations and four UI components read
+// e.text today. Remove `text` once those consume `summary`.
+function narrate(summary) {
+  return { summary, text: summary };
+}
+
+
+const STATUS_WORD = Object.freeze({
+  [STATUS.RUNNING]: "running", [STATUS.IDLE]: "idle", [STATUS.FAULT]: "in fault",
+  [STATUS.MAINTENANCE]: "under maintenance", [STATUS.BLOCKED]: "blocked",
+  [STATUS.COMPLETE]: "complete", [STATUS.PENDING]: "pending", [STATUS.UNKNOWN]: "in an unknown state",
+});
+
 // ---------- DOMAIN FACTORIES ----------
-export function machineEvent({ machine, hub, type = EVENT_TYPES.MACHINE.RUN, status, ...extra }) {
+export function machineEvent({ machine, hub, type = EVENT_TYPES.MACHINE.RUN, status, summary, ...extra }) {
   if (machine == null) throw new Error("machineEvent: `machine` is required");
-  return createEvent({ type, machine, hub, status: status ?? intendedStatus(type) ?? undefined, ...extra });
+  const resolvedStatus = status ?? intendedStatus(type) ?? undefined;
+  return createEvent({
+    type, machine, hub, status: resolvedStatus,
+    ...narrate(summary ?? `${machine} ${STATUS_WORD[resolvedStatus] ?? "reported"}`),
+    ...extra,
+  });
 }
 
 export function productionEvent({
-  component, specification, machine, hub, person, assembly, program,
+  component, specification, machine, hub, person, assembly, program, summary,
   type = EVENT_TYPES.PRODUCTION.COMPONENT_PRODUCED, ...extra
 }) {
   if (component == null) throw new Error("productionEvent: `component` is required");
-  return createEvent({ type, component, specification, machine, hub, person, assembly, program, ...extra });
+  return createEvent({
+    type, component, specification, machine, hub, person, assembly, program,
+    ...narrate(summary ?? `${component} produced`),
+    ...extra,
+  });
 }
 
 export function inspectionEvent({
-  component, specification, machine, person, hub, result, type, ...extra
+  component, specification, machine, person, hub, result, type, summary, ...extra
 }) {
   if (component == null) throw new Error("inspectionEvent: `component` is required");
   if (result == null) throw new Error("inspectionEvent: `result` is required");
@@ -264,27 +315,45 @@ export function inspectionEvent({
       : result === INSPECTION_RESULT.PASS
         ? EVENT_TYPES.INSPECTION.PASSED
         : EVENT_TYPES.INSPECTION.RECORDED);
-  return createEvent({ type: resolved, component, specification, machine, person, hub, result, ...extra });
+  return createEvent({
+    type: resolved, component, specification, machine, person, hub, result,
+    ...narrate(summary ?? `${component} inspection ${result}`),
+    ...extra,
+  });
 }
 
 // hub is NOT defaulted (closes C20). Hardcoding 'engineering' invented a
 // hub that does not exist in this deployment, where hubs are geographic.
 export function engineeringEvent({
-  specification, program, person, knowledge, hub,
+  specification, program, person, knowledge, hub, summary,
   type = EVENT_TYPES.ENGINEERING.SPEC_RELEASED, ...extra
 }) {
   if (specification == null) throw new Error("engineeringEvent: `specification` is required");
-  return createEvent({ type, specification, program, person, knowledge, hub, ...extra });
+  return createEvent({
+    type, specification, program, person, knowledge, hub,
+    ...narrate(summary ?? `${specification} ${type.split(".").pop()}`),
+    ...extra,
+  });
 }
 
-export function personEvent({ person, competency, hub, institution, type = EVENT_TYPES.PERSON.ARRIVED, ...extra }) {
+export function personEvent({ person, competency, hub, institution, summary,
+  type = EVENT_TYPES.PERSON.ARRIVED, ...extra }) {
   if (person == null) throw new Error("personEvent: `person` is required");
-  return createEvent({ type, person, competency, hub, institution, ...extra });
+  return createEvent({
+    type, person, competency, hub, institution,
+    ...narrate(summary ?? `${person} ${type.split(".").slice(1).join(" ")}`),
+    ...extra,
+  });
 }
 
-export function knowledgeEvent({ knowledge, language, person, hub, specification, type = EVENT_TYPES.KNOWLEDGE.PUBLISHED, ...extra }) {
+export function knowledgeEvent({ knowledge, language, person, hub, specification, summary,
+  type = EVENT_TYPES.KNOWLEDGE.PUBLISHED, ...extra }) {
   if (knowledge == null) throw new Error("knowledgeEvent: `knowledge` is required");
-  return createEvent({ type, knowledge, language, person, hub, specification, ...extra });
+  return createEvent({
+    type, knowledge, language, person, hub, specification,
+    ...narrate(summary ?? `${knowledge}${language ? ` (${language})` : ""} ${type.split(".").pop()}`),
+    ...extra,
+  });
 }
 
 // hub may legitimately be null when a studio is not in the topology.
@@ -364,6 +433,7 @@ export function assertEvent(event) {
 
 const Events = Object.freeze({
   SCHEMA_VERSION: EVENT_SCHEMA_VERSION,
+  makeEventId,
   STATUS,
   INSPECTION_RESULT,
   TYPES: EVENT_TYPES,
