@@ -5,8 +5,8 @@
 // would create a workshop that does not exist.
 // ============================================================
 
-import Events, { EVENT_TYPES } from "../events.js";
-import { emit, bridgeActor } from "./base.js";
+import Events, { EVENT_TYPES } from "../../os/events.js";
+import { emit, bridgeActor } from "../../os/pipeline.js";
 
 export function createEngineeringEmitter({ publish, actor = null, hub = null, policy = null, correlationId = null }) {
   const common = { hub, correlationId, ...bridgeActor(actor) };

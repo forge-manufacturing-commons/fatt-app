@@ -5,8 +5,8 @@
 // be published through this emitter.
 // ============================================================
 
-import Events, { EVENT_TYPES, INSPECTION_RESULT } from "../events.js";
-import { emit, bridgeActor } from "./base.js";
+import Events, { EVENT_TYPES, INSPECTION_RESULT } from "../../os/events.js";
+import { emit, bridgeActor } from "../../os/pipeline.js";
 
 export function createInspectionEmitter({ publish, actor = null, hub = null, policy = null, correlationId = null }) {
   const common = { hub, correlationId, ...bridgeActor(actor) };

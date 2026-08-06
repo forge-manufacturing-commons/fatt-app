@@ -3,8 +3,8 @@
 // Domain commands, named as manufacturing rather than CRUD.
 // ============================================================
 
-import Events, { EVENT_TYPES } from "../events.js";
-import { emit, bridgeActor } from "./base.js";
+import Events, { EVENT_TYPES } from "../../os/events.js";
+import { emit, bridgeActor } from "../../os/pipeline.js";
 
 export function createProductionEmitter({ publish, actor = null, hub = null, policy = null, correlationId = null }) {
   const common = { hub, correlationId, ...bridgeActor(actor) };
