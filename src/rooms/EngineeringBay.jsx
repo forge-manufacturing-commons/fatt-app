@@ -28,6 +28,10 @@ import { createPolicy, requireActor, PolicyViolation } from "../os/policy.js";
 import { RuleViolation } from "../os/rules.js";
 import { IllegalTransition } from "../os/state.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
+import { project } from "../os/projections.js";
+import { MISSIONS } from "../os/missions.js";
+import OperationsFeed from "../os/OperationsFeed.jsx";
+import StateGraph from "../os/StateGraph.jsx";
 
 const BLACK="#0D0D0F", IVORY="#F5F1E9", TEAL="#0A7F73", AMBER="#F5A623", PINK="#FF2E63";
 const SURFACE="#111418", BORDER="#1C2128", MUTED="#8899aa", GREEN="#1a7a4a";
@@ -43,13 +47,18 @@ const ACTORS = [
   { id: "eng-folake", name: "Folake Adeyemi", competencies: ["engineering-level-3"] },
 ];
 
-// Controlled documents under authorship. Seeded, marked as such.
-const SEED_SPECS = [
-  { id: "FTT-CR-001", title: "Chassis rail, 2.0mm CR steel", author: "eng-ngozi",  state: "draft",    revision: "A.01" },
-  { id: "FTT-HB-001", title: "Wheel hub, machined billet",   author: "eng-tunde",  state: "review",   revision: "A.03" },
-  { id: "FTT-BR-007", title: "Axle bracket, folded plate",   author: "eng-folake", state: "approved", revision: "B.01" },
-  { id: "FTT-PV-002", title: "Air receiver, pressure vessel", author: "eng-ngozi", state: "released", revision: "C.02" },
+// The documents that exist. Their STATE is not stored here — it is folded
+// from the event log by projections.js, which is what lets every other room
+// see the same reality without shared component state.
+const DECLARED_SPECS = [
+  { id: "FTT-CR-001", title: "Chassis rail, 2.0mm CR steel",  author: "eng-ngozi",  revision: "A.01" },
+  { id: "FTT-HB-001", title: "Wheel hub, machined billet",    author: "eng-tunde",  revision: "A.03" },
+  { id: "FTT-BR-007", title: "Axle bracket, folded plate",    author: "eng-folake", revision: "B.01" },
+  { id: "FTT-PV-002", title: "Air receiver, pressure vessel", author: "eng-ngozi",  revision: "C.02" },
 ];
+
+// The order a specification travels, for the lifecycle strip.
+const SPEC_ORDER = ["draft", "review", "approved", "released", "deprecated"];
 
 // Transitions offered to an operator, with the verb they actually mean.
 const ACTION_LABEL = {
@@ -81,14 +90,25 @@ export default function EngineeringBay() {
   const { publish, log } = useForgeActivity();
   const { profile } = useIdentity();
 
-  const [specs, setSpecs] = useState(SEED_SPECS);
   const [actorId, setActorId] = useState("eng-ngozi");
   const [selected, setSelected] = useState("FTT-CR-001");
   const [refusal, setRefusal] = useState(null);
   const [chain, setChain] = useState([]);   // event -> consequence -> decision
 
   const actor = ACTORS.find((a) => a.id === actorId);
-  const spec = specs.find((s) => s.id === selected) || specs[0];
+
+  // THE CONNECTED KERNEL: every room folds the same log. Nothing about a
+  // specification is stored in this component, so approving it here is
+  // immediately visible to the Operations Centre and to mission progress.
+  const view = useMemo(() => project(log, MISSIONS), [log]);
+
+  const specs = useMemo(() => DECLARED_SPECS.map((d) => ({
+    ...d,
+    state: view.specifications[d.id]?.state ?? specificationState.initial,
+    history: view.specifications[d.id]?.history ?? [],
+  })), [view]);
+
+  const spec = specs.find((x) => x.id === selected) || specs[0];
 
   // Policy is composed here; the room does not decide what it means.
   const policy = useMemo(() => createPolicy([requireActor]), []);
@@ -134,20 +154,24 @@ export default function EngineeringBay() {
                    release: emitter.releaseSpecification,
                    revise: emitter.reviseSpecification }[transition];
 
+      // `transition` travels ON the event. The producer knows what it intended;
+      // the projection applies it through the state graph. That is what makes
+      // the decision reconstructable by any consumer, including Forge AI.
       const event = fn
-        ? fn({ specification: spec.id, revision: spec.revision,
+        ? fn({ specification: spec.id, revision: spec.revision, transition,
                summary: `${spec.id} ${ACTION_LABEL[transition].toLowerCase()}` })
         : null;
-
-      setSpecs((prev) => prev.map((s) => s.id === spec.id ? { ...s, state: toState } : s));
 
       // Three layers. Consequence and decision are derived, not authored.
       setChain((prev) => [{
         at: Date.now(),
         event: event?.type ?? `engineering.${transition}`,
         summary: event?.summary ?? `${spec.id} ${transition}`,
+        subject: spec.id,
         consequence: `${spec.id}: ${spec.state} → ${toState}`,
         decision: nextDecision(toState, spec.id),
+        fromState: spec.state,
+        toState,
         eventId: event?.eventId,
       }, ...prev].slice(0, 8));
     } catch (e) {
@@ -175,10 +199,6 @@ export default function EngineeringBay() {
     }
   }
 
-  const specEvents = useMemo(
-    () => (log || []).filter((e) => typeof e.type === "string" && e.type.startsWith("engineering.")).slice(0, 6),
-    [log]
-  );
 
   return (
     <div className="forge-brand" style={{ background:BLACK, color:IVORY, minHeight:"100%",
@@ -234,7 +254,12 @@ export default function EngineeringBay() {
                   boxShadow:`inset 0 0 0 1px ${on ? TEAL : BORDER}`, borderLeft:`3px solid ${c}`,
                   padding:"14px 16px", marginBottom:8, cursor:"pointer" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"baseline" }}>
-                  <span style={{ fontFamily:MONO, fontSize:12, color:IVORY }}>{s.id}</span>
+                  <span style={{ display:"flex", alignItems:"center", gap:8, minWidth:0 }}>
+                    <span style={{ fontFamily:MONO, fontSize:12, color:IVORY }}>{s.id}</span>
+                    {on && <span style={{ fontFamily:UI, fontWeight:800, fontSize:8.5,
+                      letterSpacing:"0.18em", textTransform:"uppercase", color:BLACK,
+                      background:AMBER, padding:"2px 6px" }}>Active</span>}
+                  </span>
                   <span style={{ fontFamily:UI, fontWeight:700, fontSize:9.5, letterSpacing:"0.14em",
                     textTransform:"uppercase", color:c, border:`1px solid ${c}`, padding:"3px 7px",
                     clipPath:FORGE_CLIPS.buttonSm }}>{s.state}</span>
@@ -253,9 +278,18 @@ export default function EngineeringBay() {
 
         {/* ACTIONS — offered by the state engine, refused by rules */}
         <div>
-          <Label>Available transitions · {spec?.id}</Label>
+          <Label>Current work item · {spec?.id}</Label>
           <div style={{ clipPath:FORGE_CLIPS.panelTR, background:SURFACE,
             borderTop:`2px solid ${TEAL}`, padding:"16px 18px" }}>
+
+            {/* The Manufacturing State Engine, visible. Current glows,
+                reachable illuminated, unreachable dimmed. */}
+            <div style={{ marginBottom:16 }}>
+              <StateGraph machine={specificationState} current={spec?.state} order={SPEC_ORDER} />
+              <div style={{ fontFamily:UI, fontSize:11.5, color:MUTED, marginTop:9, fontStyle:"italic" }}>
+                {specificationState.means(spec?.state)}
+              </div>
+            </div>
             {available.length === 0 ? (
               <div style={{ fontFamily:UI, fontSize:13, color:MUTED }}>
                 {spec?.state} is terminal. This document is closed.
@@ -322,18 +356,40 @@ export default function EngineeringBay() {
                 and what it recommends next.
               </div>
             ) : chain.map((c) => (
-              <div key={c.at} style={{ paddingBottom:12, marginBottom:12,
+              <div key={c.at} style={{ marginBottom:16, paddingBottom:14,
                 borderBottom:`1px solid ${BORDER}` }}>
-                <div style={{ fontFamily:MONO, fontSize:11, color:TEAL }}>{c.event}</div>
-                <div style={{ fontFamily:UI, fontSize:12.5, color:IVORY, marginTop:4 }}>{c.summary}</div>
-                <div style={{ fontFamily:UI, fontSize:12, color:AMBER, marginTop:6 }}>
-                  ↳ {c.consequence}
+                {/* EVENT */}
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontFamily:UI, fontWeight:800, fontSize:8.5, letterSpacing:"0.2em",
+                    textTransform:"uppercase", color:BLACK, background:TEAL, padding:"3px 7px" }}>Event</span>
+                  <span style={{ fontFamily:MONO, fontSize:11, color:TEAL }}>{c.event}</span>
                 </div>
-                <div style={{ fontFamily:UI, fontSize:12, color:"rgba(245,241,233,.72)", marginTop:4 }}>
-                  ↳ Forge OS recommends: {c.decision}
+                <div style={{ fontFamily:UI, fontSize:13, color:IVORY, margin:"7px 0 0 2px" }}>{c.summary}</div>
+
+                {/* CONSEQUENCE — the transition, drawn */}
+                <div style={{ marginTop:12, paddingLeft:12, borderLeft:`2px solid ${AMBER}` }}>
+                  <span style={{ fontFamily:UI, fontWeight:800, fontSize:8.5, letterSpacing:"0.2em",
+                    textTransform:"uppercase", color:AMBER }}>Consequence</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:9, marginTop:6, flexWrap:"wrap" }}>
+                    <span style={{ fontFamily:MONO, fontSize:11.5, color:IVORY }}>{c.subject}</span>
+                    <span style={{ fontFamily:UI, fontWeight:700, fontSize:10, letterSpacing:"0.12em",
+                      textTransform:"uppercase", color:MUTED }}>{c.fromState}</span>
+                    <span style={{ color:AMBER, fontSize:13 }}>→</span>
+                    <span style={{ fontFamily:UI, fontWeight:800, fontSize:10, letterSpacing:"0.12em",
+                      textTransform:"uppercase", color:BLACK, background:AMBER, padding:"3px 7px" }}>{c.toState}</span>
+                  </div>
                 </div>
+
+                {/* DECISION */}
+                <div style={{ marginTop:12, paddingLeft:12, borderLeft:`2px solid ${GREEN}` }}>
+                  <span style={{ fontFamily:UI, fontWeight:800, fontSize:8.5, letterSpacing:"0.2em",
+                    textTransform:"uppercase", color:GREEN }}>Decision</span>
+                  <div style={{ fontFamily:UI, fontSize:12.5, color:"rgba(245,241,233,.85)",
+                    marginTop:6, lineHeight:1.5 }}>{c.decision}</div>
+                </div>
+
                 {c.eventId && (
-                  <div style={{ fontFamily:MONO, fontSize:9.5, color:MUTED, marginTop:6 }}>
+                  <div style={{ fontFamily:MONO, fontSize:9, color:MUTED, marginTop:10, opacity:.7 }}>
                     {c.eventId}
                   </div>
                 )}
@@ -341,21 +397,59 @@ export default function EngineeringBay() {
             ))}
           </div>
 
+          {/* THE RIPPLE — no page change, no reload. These read the same fold
+              the Operations Centre reads, so what changes here changes there. */}
           <div style={{ marginTop:18 }}>
-            <Label>On the bus</Label>
-            <div style={{ clipPath:FORGE_CLIPS.panelTR, background:SURFACE,
-              borderTop:`2px solid ${BORDER}`, padding:"14px 16px" }}>
-              {specEvents.length === 0 ? (
-                <div style={{ fontFamily:UI, fontSize:12, color:MUTED, fontStyle:"italic" }}>
-                  No engineering events published yet.
-                </div>
-              ) : specEvents.map((e, i) => (
-                <div key={`${e.at}-${i}`} style={{ display:"flex", justifyContent:"space-between",
-                  gap:10, padding:"6px 0", borderBottom:`1px solid ${BORDER}` }}>
-                  <span style={{ fontFamily:MONO, fontSize:10.5, color:IVORY }}>{e.type}</span>
-                  <span style={{ fontFamily:UI, fontSize:10.5, color:MUTED }}>{e.specification ?? ""}</span>
+            <Label>Operating system response</Label>
+            <div style={{ clipPath:FORGE_CLIPS.panelBR, background:SURFACE,
+              borderTop:`2px solid ${AMBER}`, padding:"16px 18px" }}>
+              {view.missions.map((m) => (
+                <div key={m.id} style={{ marginBottom:14 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"baseline" }}>
+                    <span style={{ fontFamily:MONO, fontSize:11, color:IVORY }}>{m.id}</span>
+                    <span style={{ fontFamily:UI, fontWeight:700, fontSize:10, letterSpacing:"0.12em",
+                      textTransform:"uppercase", color:TEAL }}>{m.state}</span>
+                  </div>
+                  <div style={{ fontFamily:UI, fontSize:11.5, color:MUTED, marginTop:3 }}>{m.title}</div>
+                  <div style={{ height:4, background:BORDER, marginTop:8 }}>
+                    <div style={{ width:`${m.progress}%`, height:"100%", background:AMBER }} />
+                  </div>
+                  <div style={{ fontFamily:UI, fontSize:10.5, color:MUTED, marginTop:5 }}>
+                    {m.accepted} of {m.target} accepted · {m.progress}%
+                  </div>
                 </div>
               ))}
+
+              <div style={{ borderTop:`1px solid ${BORDER}`, paddingTop:12, marginTop:4 }}>
+                <div style={{ fontFamily:UI, fontWeight:600, fontSize:9.5, letterSpacing:"0.16em",
+                  textTransform:"uppercase", color:TEAL, marginBottom:8 }}>
+                  Forge OS recommends · {view.recommendations.length}
+                </div>
+                {view.recommendations.length === 0 ? (
+                  <div style={{ fontFamily:UI, fontSize:12, color:MUTED, fontStyle:"italic" }}>
+                    Nothing outstanding.
+                  </div>
+                ) : view.recommendations.slice(0, 4).map((r) => {
+                  const c = r.severity === "critical" ? PINK : r.severity === "warning" ? AMBER : TEAL;
+                  return (
+                    <div key={r.id} style={{ display:"flex", gap:9, padding:"6px 0" }}>
+                      <span style={{ width:6, height:6, background:c, marginTop:6, flexShrink:0,
+                        transform:"rotate(45deg)" }} />
+                      <span style={{ fontFamily:UI, fontSize:12, color:"rgba(245,241,233,.85)",
+                        lineHeight:1.45 }}>{r.message}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop:18 }}>
+            <Label>Operations feed</Label>
+            <div style={{ clipPath:FORGE_CLIPS.panelTR, background:SURFACE,
+              borderTop:`2px solid ${BORDER}`, padding:"14px 16px" }}>
+              <OperationsFeed rows={view.feed} limit={8}
+                empty="No operations recorded yet. Act on a specification above." />
             </div>
           </div>
         </div>
