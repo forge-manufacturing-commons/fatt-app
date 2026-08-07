@@ -29,6 +29,25 @@ import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface } from "@kernel/co
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, stateColor, severityColor } from "@kernel/forge.js";
 
+// ============================================================
+// PLATFORM CONTRACT
+// Composed entirely from kernel primitives — this room owns no
+// infrastructure, which is what its declaration asserts.
+// ============================================================
+export const CONTRACT = {
+  roomId: "national-grid",
+  principle: true,
+  roomShell: true,
+  projection: "manufacturing",
+  feed: true,
+  recommendations: true,
+  stateEngine: false,
+  rules: false,
+  policy: false,
+  events: "canonical",
+};
+
+
 export default function NationalGrid() {
   const { log, hubStates } = useForgeActivity();
   const view = useMemo(() => project(log, MISSIONS), [log]);
@@ -110,8 +129,19 @@ export default function NationalGrid() {
                 borderBottom:`1px solid ${T.border}` }}>
                 <span style={{ width:6, height:6, background:severityColor(r.severity), marginTop:6,
                   flexShrink:0, transform:"rotate(45deg)" }} />
-                <span style={{ fontFamily:FONT.ui, fontSize:12, color:T.ivory70, lineHeight:1.45 }}>
-                  {r.message}
+                <span style={{ flex:1, minWidth:0 }}>
+                  <span style={{ fontFamily:FONT.ui, fontSize:12, color:T.ivory70,
+                    lineHeight:1.45, display:"block" }}>{r.message}</span>
+                  {/* WHY — Forge OS explains itself rather than asserting. */}
+                  {r.because?.length > 0 && (
+                    <span style={{ display:"block", marginTop:6, paddingLeft:10,
+                      borderLeft:`1px solid ${T.border}` }}>
+                      {r.because.map((line, i) => (
+                        <span key={i} style={{ display:"block", fontFamily:FONT.ui, fontSize:10.5,
+                          color:T.grey, lineHeight:1.5 }}>{line}</span>
+                      ))}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}

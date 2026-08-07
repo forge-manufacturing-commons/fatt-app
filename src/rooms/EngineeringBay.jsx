@@ -36,6 +36,26 @@ import { MISSIONS } from "../os/missions.js";
 import OperationsFeed from "../os/OperationsFeed.jsx";
 import StateGraph from "../os/StateGraph.jsx";
 
+// ============================================================
+// PLATFORM CONTRACT — what this room guarantees to the platform.
+// Declared as metadata so the kernel audit verifies compliance from the
+// room's own declaration rather than from a hardcoded list. A room cannot
+// simply claim compliance: the audit checks the claim against the source.
+// ============================================================
+export const CONTRACT = {
+  roomId: "engineering-bay",
+  principle: true,
+  roomShell: true,
+  projection: "manufacturing",
+  feed: true,
+  recommendations: true,
+  stateEngine: true,
+  rules: true,
+  policy: true,
+  events: "canonical",
+};
+
+
 // Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
 const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
         surface:SURFACE_T, border:BORDER_T, grey:GREY_T, green:GREEN_T } = T;
@@ -422,8 +442,19 @@ export default function EngineeringBay() {
                     <div key={r.id} style={{ display:"flex", gap:9, padding:"6px 0" }}>
                       <span style={{ width:6, height:6, background:c, marginTop:6, flexShrink:0,
                         transform:"rotate(45deg)" }} />
-                      <span style={{ fontFamily:UI, fontSize:12, color:"rgba(245,241,233,.85)",
-                        lineHeight:1.45 }}>{r.message}</span>
+                      <span style={{ flex:1, minWidth:0 }}>
+                        <span style={{ fontFamily:UI, fontSize:12, color:"rgba(245,241,233,.85)",
+                          lineHeight:1.45, display:"block" }}>{r.message}</span>
+                        {r.because?.length > 0 && (
+                          <span style={{ display:"block", marginTop:5, paddingLeft:9,
+                            borderLeft:`1px solid ${BORDER}` }}>
+                            {r.because.map((line, i) => (
+                              <span key={i} style={{ display:"block", fontFamily:UI, fontSize:10,
+                                color:MUTED, lineHeight:1.5 }}>{line}</span>
+                            ))}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   );
                 })}

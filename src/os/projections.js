@@ -189,29 +189,67 @@ export function project(log = [], missions = []) {
   for (const s of Object.values(specifications)) {
     if (s.state === "review")
       recommendations.push({ id:`rec-spec-${s.id}`, severity:"advisory",
-        message:`${s.id} is awaiting review. Assign a level 3 engineer.`, subject:s.id });
+        message:`${s.id} is awaiting review. Assign a level 3 engineer.`, subject:s.id,
+        // WHY. Forge OS explains itself: a recommendation with no stated
+        // reasoning is indistinguishable from a guess.
+        because:[
+          `Specification ${s.id} holds state "review".`,
+          `Rule ENG-003 requires a level 3 engineering competency to approve.`,
+          `Rule ENG-001 prevents the author approving their own document.`,
+        ]});
     if (s.state === "approved")
       recommendations.push({ id:`rec-spec-${s.id}`, severity:"warning",
-        message:`${s.id} is approved but not released. Production cannot start until it is released.`, subject:s.id });
+        message:`${s.id} is approved but not released. Production cannot start until it is released.`, subject:s.id,
+        because:[
+          `Specification ${s.id} holds state "approved".`,
+          `Rule SPC-001 refuses manufacture against a specification that is not released.`,
+          `The state graph permits "release" from "approved".`,
+        ]});
     if (s.state === "released")
       recommendations.push({ id:`rec-spec-${s.id}`, severity:"advisory",
-        message:`${s.id} is released. Production may be authorised — match a certified workshop.`, subject:s.id });
+        message:`Production may begin against ${s.id}.`, subject:s.id,
+        because:[
+          `Specification ${s.id} has entered "released" state.`,
+          `Engineering constraints satisfied — ENG-001 and ENG-003 passed at approval.`,
+          `Rule SPC-001 is satisfied: the specification is released.`,
+          `Missions depending on ${s.id} are unlocked for production.`,
+        ]});
   }
   for (const c of Object.values(components)) {
     if (c.state === "rework")
       recommendations.push({ id:`rec-comp-${c.id}`, severity:"warning",
-        message:`${c.id} failed inspection and is in rework. Re-submit once corrected.`, subject:c.id });
+        message:`${c.id} failed inspection and is in rework. Re-submit once corrected.`, subject:c.id,
+        because:[
+          `Component ${c.id} holds state "rework" after a failed inspection.`,
+          `The state graph allows only "submitForInspection" or "scrap" from here.`,
+          `Rule ASM-001 refuses assembly until inspection passes.`,
+        ]});
     if (c.state === "blocked")
       recommendations.push({ id:`rec-comp-${c.id}`, severity:"critical",
-        message:`${c.id} is blocked and cannot proceed.`, subject:c.id });
+        message:`${c.id} is blocked and cannot proceed.`, subject:c.id,
+        because:[
+          `Component ${c.id} holds state "blocked".`,
+          `Only "resume" or "scrap" are permitted from this state.`,
+          `Mission progress excludes blocked components.`,
+        ]});
     if (c.state === "assembly")
       recommendations.push({ id:`rec-comp-${c.id}`, severity:"advisory",
-        message:`${c.id} passed inspection and is cleared for assembly.`, subject:c.id });
+        message:`${c.id} passed inspection and is cleared for assembly.`, subject:c.id,
+        because:[
+          `Component ${c.id} holds state "assembly".`,
+          `Rule ASM-001 is satisfied: inspection passed.`,
+          `It now counts toward mission progress.`,
+        ]});
   }
   for (const a of anomalies) {
     recommendations.push({ id:`rec-anom-${a.id}-${a.at}`, severity:"critical",
       message:`Impossible transition recorded: ${a.message}. This indicates data corruption, not a delay.`,
-      subject:a.id });
+      subject:a.id,
+      because:[
+        `An event claimed "${a.attempted}" while ${a.id} held "${a.held}".`,
+        `The ${a.objectClass} state graph does not permit that transition.`,
+        `State was NOT advanced. The event is recorded; the claim is refused.`,
+      ]});
   }
   recommendations.sort((x, y) => (SEVERITY_RANK[y.severity] ?? 0) - (SEVERITY_RANK[x.severity] ?? 0));
   // Returned frozen: rooms READ manufacturing state, they never hold it.

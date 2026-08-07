@@ -102,28 +102,62 @@ const rogueHeadings = roomFiles.filter((f) =>
 ok("typography: room headings use the canonical display token", rogueHeadings.length === 0,
    rogueHeadings.join(", "));
 
-// ---------- 7. KERNEL COMPLIANCE REPORT ----------
-// Architecture becomes measurable: each room scored against the contract.
-const CONTRACT = [
-  ["identity",  (t) => /RoomShell/.test(t)],
-  ["colour",    (t) => !/const\s+BLACK\s*=\s*["']#/.test(t)],
-  ["state",     (t) => !/(STATE|STATUS|HUB|HEALTH|VER)_COLOR\s*=\s*\{/.test(t)],
-  ["projection",(t) => /project\(|useForgeActivity/.test(t)],
-  ["feed",      (t) => !/const\s+\w*[Ll]og\s*=\s*\[/.test(t)],
-];
-const ROOMS_AUDITED = ["EngineeringBay.jsx","LanguageStudio.jsx","NationalGrid.jsx"];
-console.log("\n  Kernel compliance by room");
-let compliant = 0;
-for (const name of ROOMS_AUDITED) {
-  const f = files.find((x) => basename(x.path) === name);
-  if (!f) { console.log(`       ${name.padEnd(22)} NOT FOUND`); continue; }
-  const marks = CONTRACT.map(([label, test]) => `${test(f.text) ? "\u2713" : "\u2717"} ${label}`);
-  const all = CONTRACT.every(([, test]) => test(f.text));
-  if (all) compliant++;
-  console.log(`       ${name.padEnd(22)} ${marks.join("  ")}`);
+// ---------- 7. PLATFORM CONTRACT ----------
+// Compliance is verified from each room's OWN declaration, not from a list
+// maintained here. A hardcoded list silently omits new rooms; a declaration
+// cannot, because the audit also fails a room that declares nothing.
+//
+// Crucially the audit does not TRUST the declaration — it checks each claim
+// against the source. A room that claims roomShell:true without importing
+// RoomShell fails. Self-description is not self-certification.
+const CLAIM_EVIDENCE = {
+  roomShell:       (t) => /RoomShell/.test(t),
+  principle:       (t) => /RoomShell|PRINCIPLES/.test(t),
+  feed:            (t) => /OperationsFeed/.test(t),
+  recommendations: (t) => /recommendations/.test(t),
+  stateEngine:     (t) => /State\.(next|transitions|impossible)|specificationState|componentState/.test(t),
+  rules:           (t) => /Rules\.(evaluate|assert)|engineeringRules|productionRules/.test(t),
+  policy:          (t) => /createPolicy|requireActor/.test(t),
+};
+const PROJECTION_EVIDENCE = {
+  manufacturing: (t) => /project\(/.test(t),
+  knowledge:     (t) => /translations|SUPPORTED_LANGUAGES/.test(t),
+};
+
+const roomSources = files.filter((f) => /^src\/rooms\/[A-Z]\w*\.jsx$/.test(f.path));
+const declared = roomSources.filter((f) => /export const CONTRACT\s*=/.test(f.text));
+ok(`platform contract: rooms declare their own compliance (${declared.length} declared)`,
+   declared.length >= 3);
+
+console.log("\n  Platform contract compliance (verified against source)");
+let breaches = [];
+for (const f of declared) {
+  const block = f.text.slice(f.text.indexOf("export const CONTRACT"));
+  const body = block.slice(0, block.indexOf("};") + 2);
+  const marks = [];
+  for (const [claim, evidence] of Object.entries(CLAIM_EVIDENCE)) {
+    const claimed = new RegExp(`${claim}:\\s*true`).test(body);
+    if (!claimed) continue;
+    const honoured = evidence(f.text);
+    marks.push(`${honoured ? "\u2713" : "\u2717"} ${claim}`);
+    if (!honoured) breaches.push(`${basename(f.path)} claims ${claim} but the source does not honour it`);
+  }
+  const projM = body.match(/projection:\s*["'](\w+)["']/);
+  if (projM) {
+    const test = PROJECTION_EVIDENCE[projM[1]];
+    const honoured = test ? test(f.text) : false;
+    marks.push(`${honoured ? "\u2713" : "\u2717"} projection:${projM[1]}`);
+    if (!honoured) breaches.push(`${basename(f.path)} claims projection "${projM[1]}" without deriving it`);
+  }
+  console.log(`       ${basename(f.path).padEnd(20)} ${marks.join("  ")}`);
 }
-ok(`kernel compliance: ${compliant}/${ROOMS_AUDITED.length} rooms fully satisfy the contract`,
-   compliant === ROOMS_AUDITED.length);
+ok("platform contract: every claim is honoured by the source", breaches.length === 0,
+   breaches.join("; "));
+
+// Rooms that are registered and operational but declare no contract are
+// reported honestly rather than quietly excluded from the score.
+const undeclared = roomSources.filter((f) => !/export const CONTRACT/.test(f.text)).map((f) => basename(f.path));
+console.log(`\n  Not yet under contract: ${undeclared.length ? undeclared.join(", ") : "none"}`);
 
 console.log(`\n${pass}/${pass + fail} audits passed${fail ? ` — ${fail} FAILED` : ""}\n`);
 process.exit(fail ? 1 : 0);

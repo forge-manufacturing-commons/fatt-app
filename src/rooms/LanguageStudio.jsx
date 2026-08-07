@@ -22,6 +22,25 @@ import { translations, SUPPORTED_LANGUAGES } from "../os/i18n.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
 import { RoomShell } from "../os/console.jsx";
 
+// ============================================================
+// PLATFORM CONTRACT
+// Knowledge coverage is counted from the runtime dictionaries, so this room
+// declares no manufacturing projection — and the audit holds it to that.
+// ============================================================
+export const CONTRACT = {
+  roomId: "language-studio",
+  principle: true,
+  roomShell: true,
+  projection: "knowledge",
+  feed: false,
+  recommendations: false,
+  stateEngine: false,
+  rules: false,
+  policy: false,
+  events: "canonical",
+};
+
+
 // Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
 const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
         surface:SURFACE_T, border:BORDER_T, grey:GREY_T, green:GREEN_T } = T;
