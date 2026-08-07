@@ -202,7 +202,7 @@ export default function ArrivalMasthead() {
                     padding: "6px 14px",
                     fontSize: 12,
                     fontWeight: active ? 600 : 500,
-                    fontFamily: "inherit",
+                    fontFamily: "var(--forge-display-font, 'Poppins', system-ui, sans-serif)",
                     color: active ? "var(--forge-black)" : "var(--forge-ivory)",
                     background: active ? "var(--forge-amber)" : "transparent",
                     border: "1px solid " + (active ? "var(--forge-amber)" : "rgba(245,241,233,0.28)"),

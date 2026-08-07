@@ -5,7 +5,7 @@
 // surprises the operator.
 // ============================================================
 
-import { T, FONT, S, FORGE_CLIPS, PRINCIPLES } from "./forge.js";
+import { T, FONT, S, FORGE_CLIPS, PRINCIPLES, stateColor } from "./forge.js";
 
 /** Room shell: canvas, kicker, title in Poppins Black, and the operating principle. */
 export function RoomShell({ roomId, kicker, title, accent, lede, meta, children }) {
@@ -105,4 +105,70 @@ export function Stat({ value, label, note, accent = T.teal }) {
   );
 }
 
-export default { RoomShell, Label, Panel, Badge, Button, Stat };
+/**
+ * NETWORK SURFACE — kernel primitive.
+ *
+ * Added to the kernel rather than to the Grid, per the Kernel First Rule:
+ * a capability network is not Grid-specific. Any room showing connected
+ * nodes uses this.
+ *
+ * Deliberately NOT a map. Geography is one projection of a capability
+ * graph; nodes are laid out radially so no coordinate is invented and no
+ * claim is made about location. Colour comes from stateColor, never local.
+ */
+export function NetworkSurface({ nodes = [], height = 340, label }) {
+  if (!nodes.length) {
+    return (
+      <Panel accent={T.border}>
+        <div style={{ fontFamily:FONT.ui, fontSize:12.5, color:T.grey, fontStyle:"italic" }}>
+          No hubs are reporting. The network surface renders what the runtime knows —
+          it does not draw a map of what it hopes for.
+        </div>
+      </Panel>
+    );
+  }
+  const W = 1000, H = height;
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(W, H) * 0.36;
+  const placed = nodes.map((n, i) => {
+    const a = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
+    return { ...n, x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
+  });
+  return (
+    <div style={{ position:"relative", background:T.surface, clipPath:FORGE_CLIPS.panelBR,
+      borderTop:`2px solid ${T.teal}`, padding:14 }}>
+      {label && (
+        <div style={{ fontFamily:FONT.ui, fontWeight:600, fontSize:9.5, letterSpacing:"0.18em",
+          textTransform:"uppercase", color:T.teal, marginBottom:6 }}>{label}</div>
+      )}
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" style={{ display:"block" }}>
+        {/* every node relates to the interchange; relation lines are typed by state */}
+        {placed.map((n) => (
+          <line key={`e-${n.id}`} x1={cx} y1={cy} x2={n.x} y2={n.y}
+            stroke={stateColor(n.state)} strokeOpacity="0.28" strokeWidth="1" />
+        ))}
+        <circle cx={cx} cy={cy} r="7" fill={T.amber} />
+        <text x={cx} y={cy + 22} textAnchor="middle"
+          style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:10, letterSpacing:"0.14em",
+            textTransform:"uppercase", fill:T.amber }}>Interchange</text>
+        {placed.map((n) => {
+          const c = stateColor(n.state);
+          return (
+            <g key={n.id}>
+              <circle cx={n.x} cy={n.y} r="6" fill={c} />
+              <circle cx={n.x} cy={n.y} r="11" fill="none" stroke={c} strokeOpacity="0.35" />
+              <text x={n.x} y={n.y - 17} textAnchor="middle"
+                style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:10.5,
+                  letterSpacing:"0.08em", fill:T.ivory }}>{String(n.id).toUpperCase()}</text>
+              <text x={n.x} y={n.y + 24} textAnchor="middle"
+                style={{ fontFamily:FONT.ui, fontWeight:600, fontSize:8.5,
+                  letterSpacing:"0.14em", textTransform:"uppercase", fill:c }}>{n.state}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+export default { RoomShell, Label, Panel, Badge, Button, Stat, NetworkSurface };

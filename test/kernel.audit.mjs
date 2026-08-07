@@ -87,5 +87,37 @@ const localState = files.filter((f) => f.path.startsWith("src/rooms/") &&
 ok("projections: rooms derive manufacturing state, never store it", localState.length === 0,
    localState.join(", "));
 
+// ---------- 6. TYPOGRAPHY ----------
+// One question: does every room heading use the canonical display token?
+const roomFiles = files.filter((f) => f.path.startsWith("src/rooms/"));
+const rogueHeadings = roomFiles.filter((f) =>
+  /font-?[Ff]amily\s*[:=]\s*["'](?!var\(--forge)/.test(f.text) ||
+  /fontFamily:\s*["'](?!var\(--forge)/.test(f.text)).map((f) => f.path);
+ok("typography: room headings use the canonical display token", rogueHeadings.length === 0,
+   rogueHeadings.join(", "));
+
+// ---------- 7. KERNEL COMPLIANCE REPORT ----------
+// Architecture becomes measurable: each room scored against the contract.
+const CONTRACT = [
+  ["identity",  (t) => /RoomShell/.test(t)],
+  ["colour",    (t) => !/const\s+BLACK\s*=\s*["']#/.test(t)],
+  ["state",     (t) => !/(STATE|STATUS|HUB|HEALTH|VER)_COLOR\s*=\s*\{/.test(t)],
+  ["projection",(t) => /project\(|useForgeActivity/.test(t)],
+  ["feed",      (t) => !/const\s+\w*[Ll]og\s*=\s*\[/.test(t)],
+];
+const ROOMS_AUDITED = ["EngineeringBay.jsx","LanguageStudio.jsx","NationalGrid.jsx"];
+console.log("\n  Kernel compliance by room");
+let compliant = 0;
+for (const name of ROOMS_AUDITED) {
+  const f = files.find((x) => basename(x.path) === name);
+  if (!f) { console.log(`       ${name.padEnd(22)} NOT FOUND`); continue; }
+  const marks = CONTRACT.map(([label, test]) => `${test(f.text) ? "\u2713" : "\u2717"} ${label}`);
+  const all = CONTRACT.every(([, test]) => test(f.text));
+  if (all) compliant++;
+  console.log(`       ${name.padEnd(22)} ${marks.join("  ")}`);
+}
+ok(`kernel compliance: ${compliant}/${ROOMS_AUDITED.length} rooms fully satisfy the contract`,
+   compliant === ROOMS_AUDITED.length);
+
 console.log(`\n${pass}/${pass + fail} audits passed${fail ? ` — ${fail} FAILED` : ""}\n`);
 process.exit(fail ? 1 : 0);

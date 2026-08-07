@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@kernel/*":  ["src/os/*"],
+      "@ui/*":      ["src/os/*"],
+      "@domains/*": ["src/domains/*"],
+      "@rooms/*":   ["src/rooms/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}
