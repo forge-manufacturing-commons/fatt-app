@@ -104,6 +104,11 @@ export const EVENT_TYPES = Object.freeze({
     TRANSLATED: "knowledge.translated",
     REVIEWED:   "knowledge.reviewed",
   }),
+  MISSION: Object.freeze({
+    CREATED:    "mission.created",
+    AUTHORISED: "mission.authorised",
+    CLOSED:     "mission.closed",
+  }),
   NAVIGATION: Object.freeze({ ENTER: "navigation.enter" }),
   SYSTEM: Object.freeze({
     LANGUAGE_CHANGED: "system.language.changed",
@@ -234,6 +239,7 @@ const REQUIRED_FIELDS_BY_TYPE_PREFIX = Object.freeze({
   "engineering.": ["specification", "summary"],
   "person.":      ["person", "summary"],
   "knowledge.":   ["knowledge", "summary"],
+  "mission.":     ["mission", "summary"],
   "navigation.":  ["studio"],
 });
 
@@ -362,6 +368,16 @@ export function navigationEvent({ studio, hub = null, from = null, person, ...ex
   return createEvent({ type: EVENT_TYPES.NAVIGATION.ENTER, studio, hub, from, person, ...extra });
 }
 
+export function missionEvent({ mission, program, person, hub, summary,
+  type = EVENT_TYPES.MISSION.CREATED, ...extra }) {
+  if (mission == null) throw new Error("missionEvent: `mission` is required");
+  return createEvent({
+    type, mission, program, person, hub,
+    ...narrate(summary ?? `${mission} ${type.split(".").pop()}`),
+    ...extra,
+  });
+}
+
 export function systemEvent({ type = EVENT_TYPES.SYSTEM.BOOTED, ...extra }) {
   return createEvent({ type, ...extra });
 }
@@ -449,6 +465,7 @@ const Events = Object.freeze({
   person: personEvent,
   knowledge: knowledgeEvent,
   navigation: navigationEvent,
+  mission: missionEvent,
   system: systemEvent,
   validate: validateEvent,
   assert: assertEvent,

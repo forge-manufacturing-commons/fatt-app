@@ -35,6 +35,7 @@ import { stateColor } from "../os/forge.js";
 import { MISSIONS } from "../os/missions.js";
 import OperationsFeed from "../os/OperationsFeed.jsx";
 import StateGraph from "../os/StateGraph.jsx";
+import RippleIndicator from "../os/ripple/RippleIndicator.jsx";
 
 // ============================================================
 // PLATFORM CONTRACT — what this room guarantees to the platform.
@@ -230,6 +231,8 @@ export default function EngineeringBay() {
       lede="Every action here passes four gates: the record must be complete, the actor must be permitted, the manufacturing domain must allow it, and the document must be in a state that admits the transition. Refusals name the rule."
       meta="Demo mode · seed specifications · not operational"
     >
+      <RippleIndicator domain="engineering" />
+
       {/* acting-as: two competency levels, so the rules can be seen working */}
       <Label>Acting as</Label>
       <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:28 }}>

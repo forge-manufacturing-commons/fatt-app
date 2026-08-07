@@ -25,6 +25,7 @@ import LanguageStudio from "./rooms/LanguageStudio.jsx";
 import EngineeringBay from "./rooms/EngineeringBay.jsx";
 import NationalGridRoom from "./rooms/NationalGrid.jsx";
 import OperationsCentre from "./rooms/OperationsCentre.jsx";
+import { useEventRipple } from "./os/ripple/useEventRipple.js";
 import Join from "./pages/Join.jsx";
 import { PLATFORM } from "./constants/site.js";
 import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
@@ -104,6 +105,8 @@ const DOMAIN_GROUPS = [
 // ROOMS registry — so it scales to any number of rooms without a horizontal overflow.
 function OSRail() {
   const { event } = useForgeActivity();
+  // Significant events become visible ripples across every station.
+  useEventRipple();
   const { pathname } = useLocation();
   const [openGroup, setOpenGroup] = useState(null);
 

@@ -15,13 +15,15 @@
 // decision taken there is visible here without this room being told.
 // ============================================================
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useForgeActivity } from "@kernel/ActivityEngine.jsx";
 import { project } from "@kernel/projections.js";
 import { MISSIONS } from "@kernel/missions.js";
 import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface } from "@kernel/console.jsx";
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
-import { T, FONT, S, stateColor, severityColor } from "@kernel/forge.js";
+import { T, FONT, S, FORGE_CLIPS, stateColor, severityColor } from "@kernel/forge.js";
+import { MANUFACTURING_STORY, STORY_META } from "@kernel/story.js";
+import RippleIndicator from "@kernel/ripple/RippleIndicator.jsx";
 
 export const CONTRACT = {
   roomId: "control-room",
@@ -37,7 +39,26 @@ export const CONTRACT = {
 };
 
 export default function OperationsCentre() {
-  const { log, hubStates, machineStates } = useForgeActivity();
+  const { log, hubStates, machineStates, publish } = useForgeActivity();
+  const [step, setStep] = useState(0);
+  const [running, setRunning] = useState(false);
+  const timers = useRef([]);
+
+  // One button. Thirteen real events on the real bus, 2.6s apart. Every
+  // consequence below is derived — nothing is animated into place.
+  function runStory() {
+    if (running) return;
+    setRunning(true); setStep(0);
+    timers.current.forEach(clearTimeout);
+    timers.current = MANUFACTURING_STORY.map((s, i) =>
+      setTimeout(() => {
+        publish(s.event);
+        setStep(i + 1);
+        if (i === MANUFACTURING_STORY.length - 1) setRunning(false);
+      }, i * STORY_META.stepMs)
+    );
+  }
+  const current = running && step > 0 ? MANUFACTURING_STORY[step - 1] : null;
   const view = useMemo(() => project(log, MISSIONS), [log]);
 
   const hubs = Object.entries(hubStates || {});
@@ -67,6 +88,64 @@ export default function OperationsCentre() {
       lede="One event log, folded into the national operating picture. Nothing on this screen is stored here — it is derived, which is why a decision taken in the Engineering Bay appears here without this room being notified."
       meta="Demo mode · seed data · not operational"
     >
+      <RippleIndicator domain="operations" />
+
+      {/* ONE MANUFACTURING STORY */}
+      <div style={{ clipPath:FORGE_CLIPS.panelBR, background:T.surface,
+        borderTop:`2px solid ${running ? T.amber : T.teal}`, padding:"18px 20px",
+        marginBottom:S.lg }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
+          gap:12, flexWrap:"wrap" }}>
+          <div>
+            <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:9.5,
+              letterSpacing:"0.2em", textTransform:"uppercase", color:T.teal }}>
+              {STORY_META.mission} · mission demonstration
+            </div>
+            <div style={{ fontFamily:FONT.ui, fontSize:13, color:T.ivory, marginTop:4 }}>
+              A chassis rail from specification to acceptance — including a failed inspection.
+            </div>
+          </div>
+          {running && (
+            <div style={{ fontFamily:FONT.mono, fontSize:11, color:T.amber }}>
+              step {step} / {STORY_META.steps}
+            </div>
+          )}
+        </div>
+
+        {current && (
+          <div style={{ background:T.black, padding:"10px 14px", margin:`${S.md}px 0`,
+            borderLeft:`2px solid ${T.amber}` }}>
+            <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:12, color:T.ivory }}>
+              {current.title}
+            </div>
+            <div style={{ fontFamily:FONT.ui, fontSize:11.5, color:T.grey, marginTop:3 }}>
+              {current.description}
+            </div>
+          </div>
+        )}
+
+        {running && (
+          <div style={{ height:3, background:T.border, marginBottom:S.md }}>
+            <div style={{ width:`${(step / STORY_META.steps) * 100}%`, height:"100%",
+              background:T.amber, transition:"width .5s linear" }} />
+          </div>
+        )}
+
+        <button type="button" onClick={runStory} disabled={running}
+          style={{ width:"100%", fontFamily:FONT.ui, fontWeight:800, fontSize:11.5,
+            letterSpacing:"0.15em", textTransform:"uppercase", padding:"13px 22px",
+            border:"none", clipPath:FORGE_CLIPS.button,
+            background: running ? T.border : T.amber, color: running ? T.greyDark : T.black,
+            cursor: running ? "default" : "pointer" }}>
+          {running ? `Mission in progress · ${step}/${STORY_META.steps}`
+                   : "Run one manufacturing story →"}
+        </button>
+        <div style={{ fontFamily:FONT.ui, fontSize:10, color:T.grey, marginTop:9, lineHeight:1.5 }}>
+          Thirteen real events on the real bus. Every figure below is derived — mission
+          progress is counted from accepted components, never published.
+        </div>
+      </div>
+
       {/* SITUATION */}
       <Label>Situation</Label>
       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:S.lg }}>

@@ -28,6 +28,7 @@ import { MISSIONS } from "@kernel/missions.js";
 import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface } from "@kernel/console.jsx";
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, stateColor, severityColor } from "@kernel/forge.js";
+import RippleIndicator from "@kernel/ripple/RippleIndicator.jsx";
 
 // ============================================================
 // PLATFORM CONTRACT
@@ -76,6 +77,8 @@ export default function NationalGrid() {
       lede="Every figure on this surface is counted from the event log. Nothing is hardcoded, and where the network has not been surveyed the grid says so rather than estimating."
       meta="Demo mode · seed data · not operational"
     >
+      <RippleIndicator domain="grid" />
+
       <Label>National capability</Label>
       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:S.xl }}>
         <Stat value={hubs.length || null}      label="Connected hubs"    note="Reporting to the bus" />
