@@ -155,21 +155,41 @@ export default function OperationsCentre() {
 
       </div>
 
-      {/* SITUATION */}
+      {/* PRIMARY DIRECTIVE — the brightest object on the screen. If Forge OS is
+          making operational decisions, the decision outranks the statistics that
+          informed it. The KPIs below support this; they no longer compete with it. */}
+      {view.recommendations[0] && (
+        <div style={{ marginBottom:S.lg }}>
+          <div style={{ clipPath:FORGE_CLIPS.panelBR, background:T.surface,
+            borderTop:`3px solid ${severityColor(view.recommendations[0].severity)}`,
+            boxShadow:`inset 0 0 0 1px ${severityColor(view.recommendations[0].severity)}33`,
+            padding:"20px 24px" }}>
+            <Recommendation rec={view.recommendations[0]} />
+            {view.recommendations.length > 1 && (
+              <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:9,
+                letterSpacing:"0.16em", textTransform:"uppercase", color:T.grey, marginTop:12 }}>
+                {view.recommendations.length - 1} further directive(s) below
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SITUATION — supporting evidence for the directive above */}
       <Label>Situation</Label>
       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:S.lg }}>
         <Stat value={health.toUpperCase()} label="System health"
               note={critical ? `${critical} critical constraint(s)` : "No critical constraints"}
-              accent={healthColor} />
-        <Stat value={hubs.length || null}   label="Hubs reporting"   note="Live on the bus" reason={cause} />
-        <Stat value={machines.length || null} label="Machines"       note="Seen in the stream" reason={cause} />
-        <Stat value={inProduction}          label="In production"    note="Being made or inspected" accent={T.amber} reason={cause} />
-        <Stat value={accepted}              label="Accepted"         note="Through verification" accent={T.green} reason={cause} />
-        <Stat value={awaiting}              label="Awaiting review"  note="Blocking production" accent={T.amber} reason={cause} />
-        <Stat value={released}              label="Released specs"   note="Cleared to manufacture" accent={T.green} reason={cause} />
+              accent={healthColor} order={0} />
+        <Stat value={hubs.length || null}   label="Hubs reporting"   note="Live on the bus" reason={cause} order={1} />
+        <Stat value={machines.length || null} label="Machines"       note="Seen in the stream" reason={cause} order={2} />
+        <Stat value={inProduction}          label="In production"    note="Being made or inspected" accent={T.amber} reason={cause} order={3} />
+        <Stat value={accepted}              label="Accepted"         note="Through verification" accent={T.green} reason={cause} order={4} />
+        <Stat value={awaiting}              label="Awaiting review"  note="Blocking production" accent={T.amber} reason={cause} order={5} />
+        <Stat value={released}              label="Released specs"   note="Cleared to manufacture" accent={T.green} reason={cause} order={6} />
         <Stat value={view.anomalies.length} label="Anomalies"
               note={view.anomalies.length ? "Impossible transitions" : "None detected"}
-              accent={view.anomalies.length ? T.pink : T.teal} />
+              accent={view.anomalies.length ? T.pink : T.teal} order={7} />
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(340px,1fr))", gap:S.lg }}>
@@ -178,11 +198,13 @@ export default function OperationsCentre() {
         <div>
           <Label>Decisions · Forge OS recommends</Label>
           <Panel accent={view.recommendations.length ? T.amber : T.teal}>
-            {view.recommendations.length === 0 ? (
+            {view.recommendations.length <= 1 ? (
               <div style={{ fontFamily:FONT.ui, fontSize:12.5, color:T.grey, fontStyle:"italic" }}>
-                Nothing outstanding. The network is proceeding without intervention.
+                {view.recommendations.length === 0
+                  ? "Nothing outstanding. The network is proceeding without intervention."
+                  : "No further directives."}
               </div>
-            ) : view.recommendations.slice(0, 5).map((r) => (
+            ) : view.recommendations.slice(1, 5).map((r) => (
               <Recommendation key={r.id} rec={r} />
             ))}
           </Panel>

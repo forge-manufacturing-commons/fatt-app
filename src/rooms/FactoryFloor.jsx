@@ -51,7 +51,6 @@ export default function FactoryFloor() {
       {/* rail travelling indicator dots */}
       {[0, 1, 2].map((i) => (
         <circle key={"rd" + i} r="2.5" fill={AMBER} opacity="0.8">
-          <animateMotion dur="6s" begin={`${i * 2}s`} repeatCount="indefinite" path="M120 72 H 1080" />
         </circle>
       ))}
 
@@ -135,7 +134,6 @@ export default function FactoryFloor() {
         ))}
         {[0, 1, 2].map((i) => (
           <g key={"pt" + i}>
-            <animateMotion dur="6s" begin={`${i * 2}s`} repeatCount="indefinite" path="M900 -8 H 1180" />
             <path d="M0 0 h18 l4 4 v10 h-22 z" fill="none" stroke={AMBER} strokeWidth="2" transform="translate(-11 -14)" />
           </g>
         ))}

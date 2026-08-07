@@ -124,11 +124,9 @@ function HeroWireframe() {
     }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
         {edges.map(([a, b], i) => (<line key={i} x1={pts[a].x} y1={pts[a].y} x2={pts[b].x} y2={pts[b].y} stroke={TEAL} strokeOpacity="0.16" strokeWidth="1" />))}
-        {edges.filter((_, i) => i % 9 === 0).map(([a, b], i) => (
-          <circle key={"d" + i} r="2" fill={AMBER} opacity="0.75">
-            <animateMotion dur={`${4 + (i % 4)}s`} repeatCount="indefinite" path={`M${pts[a].x},${pts[a].y} L${pts[b].x},${pts[b].y}`} />
-          </circle>
-        ))}
+        {/* Decorative travelling dots removed: motion in Forge OS means manufacturing
+            changed. An idle loop here competed with the ripple pulses that carry real
+            events, and taught the eye to ignore movement. The static graph remains. */}
         {pts.map((p, i) => (<circle key={"p" + i} cx={p.x} cy={p.y} r={p.hot ? 2.6 : 1.4} fill={p.hot ? AMBER : TEAL} opacity={p.hot ? 0.9 : 0.5} />))}
       </svg>
     </div>

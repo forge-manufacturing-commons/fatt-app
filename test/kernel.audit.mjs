@@ -102,6 +102,21 @@ const rogueHeadings = roomFiles.filter((f) =>
 ok("typography: room headings use the canonical display token", rogueHeadings.length === 0,
    rogueHeadings.join(", "));
 
+// ---------- 6b. MOTION DISCIPLINE ----------
+// Motion must mean manufacturing. An "infinite" animation in a room is
+// decorative by definition, and the brief forbids it.
+const roomFiles2 = files.filter((f) => f.path.startsWith("src/rooms/"));
+const idleMotion = roomFiles2.filter((f) => /animation:[^;"`]*infinite/.test(f.text))
+  .map((f) => basename(f.path));
+ok("motion: no room runs a looping animation", idleMotion.length === 0, idleMotion.join(", "));
+
+// Change indication and ripple pulses are kernel behaviour. A room implementing
+// its own would mean the primitive is not actually inherited.
+const rogueDelta = roomFiles2.filter((f) => /useDelta\s*\(|animateMotion/.test(f.text))
+  .map((f) => basename(f.path));
+ok("motion: change indication and pulses are inherited, not re-implemented",
+   rogueDelta.length === 0, rogueDelta.join(", "));
+
 // ---------- 7. PLATFORM CONTRACT ----------
 // Compliance is verified from each room's OWN declaration, not from a list
 // maintained here. A hardcoded list silently omits new rooms; a declaration

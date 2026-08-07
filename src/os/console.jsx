@@ -5,8 +5,9 @@
 // surprises the operator.
 // ============================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { T, FONT, S, FORGE_CLIPS, PRINCIPLES, stateColor, severityColor } from "./forge.js";
+import { useRippleListener } from "./ripple/useEventRipple.js";
 
 /**
  * KERNEL CHANGE INDICATOR
@@ -22,17 +23,20 @@ import { T, FONT, S, FORGE_CLIPS, PRINCIPLES, stateColor, severityColor } from "
  * The indicator is transient by design. A permanent delta would be noise; a
  * brief one is a signal.
  */
-export function useDelta(value, ttl = 2800) {
+export function useDelta(value, ttl = 2800, order = 0) {
   const prev = useRef(value);
   const [delta, setDelta] = useState(null);
   useEffect(() => {
     const before = prev.current;
     prev.current = value;
     if (typeof value !== "number" || typeof before !== "number" || value === before) return;
-    setDelta(value - before);
-    const t = setTimeout(() => setDelta(null), ttl);
-    return () => clearTimeout(t);
-  }, [value, ttl]);
+    // ORDER creates one wave instead of six simultaneous splashes. Consequences
+    // that follow from each other reveal in sequence, so the eye can follow the
+    // chain rather than seeing everything flash at once.
+    const lead = setTimeout(() => setDelta(value - before), order * 190);
+    const clear = setTimeout(() => setDelta(null), order * 190 + ttl);
+    return () => { clearTimeout(lead); clearTimeout(clear); };
+  }, [value, ttl, order]);
   return delta;
 }
 
@@ -139,10 +143,10 @@ export function Button({ children, onClick, tone = "primary", disabled = false, 
 }
 
 /** A projection-driven statistic. Never hardcoded, and honest when unknown. */
-export function Stat({ value, label, note, accent = T.teal, reason }) {
+export function Stat({ value, label, note, accent = T.teal, reason, order = 0 }) {
   const unknown = value === null || value === undefined;
   // Inherited from the kernel: no room implements change indication.
-  const delta = useDelta(typeof value === "number" ? value : null);
+  const delta = useDelta(typeof value === "number" ? value : null, 2800, order);
   return (
     <div style={{ clipPath:FORGE_CLIPS.panelBR, background:T.surface,
       borderTop:`2px solid ${accent}`, padding:"18px 20px", flex:"1 1 160px", minWidth:150 }}>
@@ -223,6 +227,16 @@ export function Recommendation({ rec }) {
  * claim is made about location. Colour comes from stateColor, never local.
  */
 export function NetworkSurface({ nodes = [], height = 340, label }) {
+  // The capability network is the operating system's nervous system: a pulse
+  // travels from the interchange to the affected hub when an event arrives, and
+  // at no other time. There is no idle animation — motion means manufacturing.
+  const [pulse, setPulse] = useState(null);
+  const onRipple = useCallback((r) => {
+    setPulse({ id: r.id, hub: r.hub, color: r.color, label: r.label });
+    setTimeout(() => setPulse((cur) => (cur && cur.id === r.id ? null : cur)), 1800);
+  }, []);
+  useRippleListener(onRipple);
+
   if (!nodes.length) {
     return (
       <Panel accent={T.border}>
@@ -257,12 +271,33 @@ export function NetworkSurface({ nodes = [], height = 340, label }) {
         <text x={cx} y={cy + 22} textAnchor="middle"
           style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:10, letterSpacing:"0.14em",
             textTransform:"uppercase", fill:T.amber }}>Interchange</text>
+        {/* travelling pulse: interchange -> affected hub, once per event */}
+        {pulse && placed.some((n) => n.id === pulse.hub) && (() => {
+          const target = placed.find((n) => n.id === pulse.hub);
+          const tone = pulse.color === "pink" ? T.pink : pulse.color === "amber" ? T.amber : T.teal;
+          return (
+            <g key={pulse.id}>
+              <line x1={cx} y1={cy} x2={target.x} y2={target.y}
+                stroke={tone} strokeWidth="2" strokeOpacity="0.9" />
+              <circle r="5" fill={tone}>
+                <animateMotion dur="0.9s" repeatCount="1" fill="freeze"
+                  path={`M${cx},${cy} L${target.x},${target.y}`} />
+              </circle>
+              <circle cx={target.x} cy={target.y} r="6" fill="none" stroke={tone} strokeWidth="2">
+                <animate attributeName="r" from="6" to="24" dur="1.1s" begin="0.7s" fill="freeze" />
+                <animate attributeName="opacity" from="0.9" to="0" dur="1.1s" begin="0.7s" fill="freeze" />
+              </circle>
+            </g>
+          );
+        })()}
         {placed.map((n) => {
           const c = stateColor(n.state);
+          const hot = pulse && pulse.hub === n.id;
           return (
             <g key={n.id}>
-              <circle cx={n.x} cy={n.y} r="6" fill={c} />
-              <circle cx={n.x} cy={n.y} r="11" fill="none" stroke={c} strokeOpacity="0.35" />
+              <circle cx={n.x} cy={n.y} r={hot ? 8 : 6} fill={c} />
+              <circle cx={n.x} cy={n.y} r="11" fill="none" stroke={c}
+                strokeOpacity={hot ? 0.9 : 0.35} />
               <text x={n.x} y={n.y - 17} textAnchor="middle"
                 style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:10.5,
                   letterSpacing:"0.08em", fill:T.ivory }}>{String(n.id).toUpperCase()}</text>
