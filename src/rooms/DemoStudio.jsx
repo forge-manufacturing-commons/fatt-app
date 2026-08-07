@@ -20,6 +20,7 @@
 // ============================================================
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { stateColor } from "../os/forge.js";
 import Room from "../os/Room.jsx";
 import { useForgeActivity, EVENT } from "../os/ActivityEngine.jsx";
 import { buildRuntime } from "../os/ForgeRuntime.js";
@@ -53,11 +54,6 @@ const WORKFLOW = [
              human: "Adaeze Okoro", role: "WELDER", variant: "F", workshop: "Demo Cell", text: "Demo weld complete" } },
 ];
 
-const STATE_COLOR = {
-  active: "#1a7a4a", fabricating: "#1a7a4a", idle: "#8899aa", standby: "#8899aa",
-  maintenance: "#F5A623", inspection: "#0A7F73", verifying: "#0A7F73",
-  coordinating: "#0A7F73", expanding: "#0A7F73", unknown: "#8899aa",
-};
 const shortTime = (at) => { try { return new Date(at).toLocaleTimeString([], { hour12: false }); } catch { return ""; } };
 
 const box = { border: "1px solid rgba(255,255,255,.14)", borderRadius: 10, padding: 14, background: "rgba(255,255,255,.03)" };
@@ -143,8 +139,8 @@ export default function DemoStudio() {
             {Object.keys(machineStates).length
               ? Object.entries(machineStates).map(([id, st]) => (
                   <div key={id} style={row}>
-                    <span><span style={dot(STATE_COLOR[st] || STATE_COLOR.unknown)} />{id}</span>
-                    <span style={{ color: STATE_COLOR[st] || STATE_COLOR.unknown, fontWeight: 600, fontSize: 12 }}>{st}</span>
+                    <span><span style={dot(stateColor(st))} />{id}</span>
+                    <span style={{ color: stateColor(st), fontWeight: 600, fontSize: 12 }}>{st}</span>
                   </div>
                 ))
               : <div style={{ opacity: .5, fontSize: 12 }}>Press Run to bring machines under load.</div>}
@@ -154,8 +150,8 @@ export default function DemoStudio() {
             {Object.keys(hubStates).length
               ? Object.entries(hubStates).map(([id, st]) => (
                   <div key={id} style={row}>
-                    <span><span style={dot(STATE_COLOR[st] || STATE_COLOR.unknown)} />{id}</span>
-                    <span style={{ color: STATE_COLOR[st] || STATE_COLOR.unknown, fontWeight: 600, fontSize: 12 }}>{st}</span>
+                    <span><span style={dot(stateColor(st))} />{id}</span>
+                    <span style={{ color: stateColor(st), fontWeight: 600, fontSize: 12 }}>{st}</span>
                   </div>
                 ))
               : <div style={{ opacity: .5, fontSize: 12 }}>No hubs reporting yet.</div>}

@@ -30,6 +30,8 @@ import { RuleViolation } from "../os/rules.js";
 import { IllegalTransition } from "../os/state.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
 import { project } from "../os/projections.js";
+import { RoomShell, Label as KLabel, Panel, Badge } from "../os/console.jsx";
+import { stateColor } from "../os/forge.js";
 import { MISSIONS } from "../os/missions.js";
 import OperationsFeed from "../os/OperationsFeed.jsx";
 import StateGraph from "../os/StateGraph.jsx";
@@ -74,10 +76,6 @@ const ACTION_LABEL = {
   abandon: "Abandon",
 };
 
-const STATE_COLOR = {
-  draft: MUTED, review: AMBER, approved: TEAL,
-  released: GREEN, deprecated: PINK, withdrawn: PINK,
-};
 
 function Label({ children }) {
   return (
@@ -204,28 +202,14 @@ export default function EngineeringBay() {
 
 
   return (
-    <div className="forge-brand" style={{ background:BLACK, color:IVORY, minHeight:"100%",
-      padding:"clamp(24px,4vw,48px)", fontFamily:UI, boxSizing:"border-box" }}>
-
-      <div style={{ fontFamily:UI, fontWeight:600, fontSize:10, letterSpacing:"0.2em",
-        textTransform:"uppercase", color:TEAL, borderLeft:`2px solid ${TEAL}`,
-        paddingLeft:12, marginBottom:16 }}>Forge OS · Engineering Bay</div>
-
-      <h1 style={{ fontFamily:DISPLAY, fontWeight:900, fontSize:"clamp(26px,3.6vw,40px)",
-        letterSpacing:"-0.03em", lineHeight:0.98, margin:"0 0 10px" }}>
-        Nothing is manufactured against an <span style={{ color:PINK }}>unapproved specification</span>.
-      </h1>
-      <p style={{ color:"rgba(245,241,233,0.72)", fontSize:14.5, maxWidth:680,
-        lineHeight:1.6, margin:"0 0 8px" }}>
-        Every action here passes four gates: the record must be complete, the actor must be
-        permitted, the manufacturing domain must allow it, and the document must be in a state
-        that admits the transition. Refusals name the rule.
-      </p>
-      <div style={{ fontFamily:UI, fontWeight:700, fontSize:9, letterSpacing:"0.2em",
-        textTransform:"uppercase", color:MUTED, marginBottom:28 }}>
-        Demo mode · seed specifications · not operational
-      </div>
-
+    <RoomShell
+      roomId="engineering-bay"
+      kicker="Forge OS · Engineering Bay"
+      title="Nothing is manufactured against an"
+      accent="unapproved specification."
+      lede="Every action here passes four gates: the record must be complete, the actor must be permitted, the manufacturing domain must allow it, and the document must be in a state that admits the transition. Refusals name the rule."
+      meta="Demo mode · seed specifications · not operational"
+    >
       {/* acting-as: two competency levels, so the rules can be seen working */}
       <Label>Acting as</Label>
       <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:28 }}>
@@ -250,7 +234,7 @@ export default function EngineeringBay() {
           <Label>Controlled documents</Label>
           {specs.map((s) => {
             const on = s.id === selected;
-            const c = STATE_COLOR[s.state] ?? MUTED;
+            const c = stateColor(s.state);
             return (
               <div key={s.id} onClick={() => { setSelected(s.id); setRefusal(null); }}
                 style={{ clipPath:FORGE_CLIPS.panelBR, background: on ? "rgba(10,127,115,0.10)" : SURFACE,
@@ -457,6 +441,6 @@ export default function EngineeringBay() {
           </div>
         </div>
       </div>
-    </div>
+    </RoomShell>
   );
 }

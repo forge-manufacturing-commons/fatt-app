@@ -6,6 +6,7 @@
 // ============================================================
 
 import Room from "../os/Room.jsx";
+import { stateColor } from "../os/forge.js";
 import Machine, { MACHINES } from "../os/Machine.jsx";
 import { SerialPlate, LaserRuler, VerificationSeal } from "../os/Engineering.jsx";
 import { useMemo } from "react";
@@ -140,7 +141,8 @@ export function InspectionHangar() {
 // system now knows). buildRuntime() existed in ForgeRuntime.js but nothing rendered
 // it until here — this is the OS thinking, made visible.
 const CTRL_MACHINE_COLOR = { active:"#1a7a4a", inspection:"#0A7F73", maintenance:"#F5A623", idle:"#3a4a5a" };
-const CTRL_HUB_COLOR = { fabricating:"#1a7a4a", verifying:"#0A7F73", coordinating:"#0A7F73", expanding:"#0A7F73", maintenance:"#F5A623", standby:"#3a4a5a" };
+// Hub status colour comes from the kernel, not from this room.
+const CTRL_HUB_COLOR = new Proxy({}, { get: (_, k) => stateColor(String(k)) });
 const ctrlDot = (c) => ({ display:"inline-block", width:8, height:8, borderRadius:999, marginRight:8, background:c || "#3a4a5a", verticalAlign:"middle" });
 
 function CtrlMetric({ label, value }) {

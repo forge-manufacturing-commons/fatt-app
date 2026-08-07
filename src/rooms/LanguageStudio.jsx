@@ -20,6 +20,7 @@ import { useForgeActivity } from "../os/ActivityEngine.jsx";
 import { useLanguage } from "../os/useLanguage.js";
 import { translations, SUPPORTED_LANGUAGES } from "../os/i18n.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
+import { RoomShell } from "../os/console.jsx";
 
 // Palette is NOT declared here. Canonical tokens only — see src/os/forge.js.
 const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER, pink:PINK,
@@ -119,28 +120,13 @@ export default function LanguageStudio() {
   );
 
   return (
-    <div className="forge-brand" style={{ background:BLACK, color:IVORY, minHeight:"100%",
-      padding:"clamp(24px,4vw,48px)", fontFamily:UI, boxSizing:"border-box" }}>
-
-      <div style={{ fontFamily:UI, fontWeight:600, fontSize:10, letterSpacing:"0.2em",
-        textTransform:"uppercase", color:TEAL, borderLeft:`2px solid ${TEAL}`,
-        paddingLeft:12, marginBottom:16 }}>Forge OS · Language Studio</div>
-
-      <h1 style={{ fontFamily:DISPLAY, fontWeight:900, fontSize:"clamp(26px,3.6vw,40px)",
-        letterSpacing:"-0.03em", lineHeight:0.98, margin:"0 0 12px" }}>
-        Knowledge without a <span style={{ color:PINK }}>language barrier</span>.
-      </h1>
-      <p style={{ color:"rgba(245,241,233,0.72)", fontSize:14.5, maxWidth:660,
-        lineHeight:1.6, margin:"0 0 8px" }}>
-        Coverage below is counted from the runtime dictionaries at render time.
-        A specification a machinist cannot read is not a specification.
-      </p>
-      <p style={{ fontFamily:UI, fontWeight:600, fontSize:11, color:MUTED,
-        letterSpacing:"0.04em", margin:"0 0 30px" }}>
-        {totalKeys} interface strings · {fullyCovered} of {stats.length} languages complete ·{" "}
-        <span style={{ color: outstanding ? AMBER : GREEN }}>{outstanding} translations outstanding</span>
-      </p>
-
+    <RoomShell
+      roomId="language-studio"
+      kicker="Forge OS · Language Studio"
+      title="Knowledge without a"
+      accent="language barrier."
+      lede="Coverage below is counted from the runtime dictionaries at render time. A specification a machinist cannot read is not a specification."
+    >
       <Label>Runtime languages</Label>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",
         gap:10, marginBottom:34 }}>
@@ -226,6 +212,6 @@ export default function LanguageStudio() {
           </div>
         </div>
       </div>
-    </div>
+    </RoomShell>
   );
 }

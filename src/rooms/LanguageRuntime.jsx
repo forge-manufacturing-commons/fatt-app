@@ -9,11 +9,13 @@
 // ============================================================
 
 import { useState, useRef } from "react";
+import { T, stateColor } from "../os/forge.js";
 import { useLanguage } from "../os/useLanguage.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
 
-const BLACK = "#0D0D0F", IVORY = "#F5F1E9", TEAL = "#0A7F73", AMBER = "#F5A623";
-const SURFACE = "#111418", BORDER = "#1C2128", MUTED = "#8899aa";
+// Palette is NOT declared here — canonical tokens only (src/os/forge.js).
+const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER } = T;
+const { surface:SURFACE, border:BORDER, grey:MUTED } = T;
 const UI = "var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 
 export default function LanguageRuntime() {

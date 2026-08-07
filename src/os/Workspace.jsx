@@ -13,7 +13,7 @@
 // ============================================================
 
 import { useNavigate } from "react-router-dom";
-import { T } from "./forge.js";
+import { T, stateColor } from "./forge.js";
 import { useIdentity } from "./ForgeIdentity.jsx";
 import { CAPABILITIES, VERIFICATION, VERIFICATION_GATED } from "./Roles.js";
 import { FORGE_CLIPS } from "./geometry.js";
@@ -25,7 +25,7 @@ const SURFACE=SURFACE_T, BORDER=BORDER_T, MUTED=GREY_T, GREEN=GREEN_T;
 const UI="var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY="var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 
-const VER_COLOR = { verified:GREEN, pending:AMBER, unverified:MUTED, rejected:PINK };
+// Verification standing is a state — it uses the one semantic mapping.
 
 function Label({ children }) {
   return (
@@ -94,7 +94,7 @@ export default function Workspace() {
   }
 
   const ver = profile?.verification ?? "unverified";
-  const vc = VER_COLOR[ver] ?? MUTED;
+  const vc = stateColor(ver);
 
   return shell(
     <>

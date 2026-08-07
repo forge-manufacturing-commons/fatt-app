@@ -11,6 +11,7 @@
 // ============================================================
 
 import { useState, useEffect, useMemo } from "react";
+import { T, stateColor } from "../os/forge.js";
 import { useNavigate } from "react-router-dom";
 import { useForgeActivity, EVENT } from "../os/ActivityEngine.jsx";
 import { buildRuntime } from "../os/ForgeRuntime.js";
@@ -23,18 +24,16 @@ import { HumanTag } from "../humans/HumanGlyphLibrary.jsx";
 import LanguageRuntime from "./LanguageRuntime.jsx";
 
 // --- BUILD-D001 palette -------------------------------------------------------
-const BLACK = "#0D0D0F", IVORY = "#F5F1E9", TEAL = "#0A7F73", AMBER = "#F5A623";
-const PINK = "#FF2E63";   // BUILD-D001 highlight — momentum, bold initiative
+// Palette is NOT declared here — canonical tokens only (src/os/forge.js).
+const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER } = T;
+const PINK = T.pink;      // BUILD-D001 highlight — momentum, bold initiative
 const METRIC_ACCENTS = [TEAL, PINK, AMBER, PINK, TEAL];
-const SURFACE = "#111418", BORDER = "#1C2128", MUTED = "#8899aa";
+const { surface:SURFACE, border:BORDER, grey:MUTED } = T;
 const UI = "var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const DISPLAY = "var(--forge-display-font, 'Poppins', system-ui, sans-serif)";
 
-const HUB_COLOR = {
-  fabricating: TEAL, coordinating: TEAL, verifying: TEAL,
-  expanding: AMBER, maintenance: PINK, standby: BORDER,
-};
-const hubColor = (s) => HUB_COLOR[s] || SURFACE;
+// One semantic mapping for the whole OS — no room-local status colours.
+const hubColor = (s) => stateColor(s);
 
 // --- helpers ------------------------------------------------------------------
 function shortTime(at) {
