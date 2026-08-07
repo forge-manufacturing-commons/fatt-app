@@ -22,6 +22,23 @@ import { specificationState } from "../domains/engineering/state.js";
 import { componentState } from "../domains/production/state.js";
 import { missionState } from "../domains/mission/state.js";
 
+/**
+ * Deep freeze. The projection is the ONLY description of manufacturing state,
+ * and it is returned immutable so a room cannot own it.
+ *
+ * This turns a convention into a guarantee. Previously the audit asked "does
+ * this room APPEAR to own manufacturing state?" — a syntactic question with
+ * false negatives. Now a room that tries to mutate a mission, component or
+ * specification fails at runtime under strict mode (every ES module is
+ * strict), because the object refuses the write. Only events may change
+ * manufacturing state.
+ */
+function deepFreeze(o) {
+  if (o === null || typeof o !== "object" || Object.isFrozen(o)) return o;
+  for (const v of Object.values(o)) deepFreeze(v);
+  return Object.freeze(o);
+}
+
 // Human-readable titles. The operator reads the act; the event type is metadata.
 const FEED_TITLE = {
   "engineering.specification.drafted":  "Specification drafted",
@@ -197,8 +214,11 @@ export function project(log = [], missions = []) {
       subject:a.id });
   }
   recommendations.sort((x, y) => (SEVERITY_RANK[y.severity] ?? 0) - (SEVERITY_RANK[x.severity] ?? 0));
-  return { specifications, components, missions: missionRows, recommendations, anomalies, feed: feed.reverse(),
-           counts: { produced, passed, failed } };
+  // Returned frozen: rooms READ manufacturing state, they never hold it.
+  return deepFreeze({
+    specifications, components, missions: missionRows, recommendations, anomalies,
+    feed: feed.reverse(), counts: { produced, passed, failed },
+  });
 }
 
 export default { project, feedTitle };

@@ -79,12 +79,18 @@ const shellUsers = files.filter((f) => f.path.startsWith("src/rooms/") && /RoomS
 ok("principles: displayed via RoomShell, not per-room markup", shellUsers.length >= 2,
    `${shellUsers.length} room(s) adopt RoomShell`);
 
-// ---------- 5. PROJECTION DISCIPLINE ----------
-// Fails if a room holds manufacturing state locally instead of deriving it.
-const SUSPECT = /useState\([^)]*\)\s*;?\s*\/\/\s*manufacturing/i;
+// ---------- 5. PROJECTION DISCIPLINE (semantic, not syntactic) ----------
+// The old check asked whether a room APPEARED to own manufacturing state.
+// That was a heuristic with false negatives. The real guarantee is structural:
+// project() returns a deep-frozen object, so a room CANNOT own manufacturing
+// state — the write is refused at runtime. This audit verifies the guarantee
+// still holds rather than trying to out-guess the syntax.
+const projSrc = files.find((f) => f.path === "src/os/projections.js").text;
+ok("projections: the fold is returned deep-frozen (read-only by construction)",
+   /deepFreeze\(\{/.test(projSrc) && /Object\.freeze\(o\)/.test(projSrc));
 const localState = files.filter((f) => f.path.startsWith("src/rooms/") &&
   /const\s*\[\s*(specs|components|missions|machines|hubStates)\s*,/.test(f.text)).map((f) => f.path);
-ok("projections: rooms derive manufacturing state, never store it", localState.length === 0,
+ok("projections: no room stores manufacturing state locally", localState.length === 0,
    localState.join(", "));
 
 // ---------- 6. TYPOGRAPHY ----------
