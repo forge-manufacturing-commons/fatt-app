@@ -33,7 +33,12 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
       transition: "release", person: "Folake" })]), MISSIONS);
   ok("one more event moves it to released", released.specifications["FTT-CR-001"].state === "released");
   ok("released produces a production recommendation",
-     released.recommendations.some((r) => /Production may be authorised/.test(r.message)));
+     released.recommendations.some((r) => /Production may begin/.test(r.message)));
+  ok("the recommendation explains WHY it was made",
+     released.recommendations.filter((r) => /Production may begin/.test(r.message))
+       .every((r) => Array.isArray(r.because) && r.because.length >= 3));
+  ok("the reasoning cites the rule that was satisfied",
+     released.recommendations.some((r) => (r.because || []).some((b) => /SPC-001/.test(b))));
 }
 
 // --- THE RIPPLE: approving changes what another room would render ---
