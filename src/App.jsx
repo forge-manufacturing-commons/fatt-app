@@ -19,11 +19,12 @@ import RoomLocator from "./os/RoomLocator.jsx";
 import "./os/ForgeOS.css";
 
 import { ArrivalDock, ProductionLine,
-         InspectionHangar, ControlRoom, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
+         InspectionHangar, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
 import DemoStudio from "./rooms/DemoStudio.jsx";
 import LanguageStudio from "./rooms/LanguageStudio.jsx";
 import EngineeringBay from "./rooms/EngineeringBay.jsx";
 import NationalGridRoom from "./rooms/NationalGrid.jsx";
+import OperationsCentre from "./rooms/OperationsCentre.jsx";
 import Join from "./pages/Join.jsx";
 import { PLATFORM } from "./constants/site.js";
 import { DocsIndex, Constitution, Governance, Whitepaper, Licenses, Partners, Research }
@@ -39,7 +40,7 @@ const BUILT = {
   "engineering-bay":  EngineeringBay,
   "production-line":  ProductionLine,
   "inspection-hangar":InspectionHangar,
-  "control-room":     ControlRoom,
+  "control-room":     OperationsCentre,
   "impact-dashboard": ImpactDashboard,
   "build-board":      BuildBoard,
   "demo-studio":      DemoStudio,
