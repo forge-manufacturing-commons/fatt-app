@@ -25,7 +25,7 @@ import { useMemo } from "react";
 import { useForgeActivity } from "@kernel/ActivityEngine.jsx";
 import { project } from "@kernel/projections.js";
 import { MISSIONS } from "@kernel/missions.js";
-import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface } from "@kernel/console.jsx";
+import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface, Recommendation } from "@kernel/console.jsx";
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, stateColor, severityColor } from "@kernel/forge.js";
 import RippleIndicator from "@kernel/ripple/RippleIndicator.jsx";
@@ -60,6 +60,10 @@ export default function NationalGrid() {
   const specs = Object.values(view.specifications);
 
   // Counted, never asserted.
+  const cause = view.feed[0]
+    ? `${view.feed[0].title}${view.feed[0].subject ? ` · ${view.feed[0].subject}` : ""}`
+    : null;
+
   const activeMissions = view.missions.filter((m) => m.state !== "closed").length;
   const inProduction   = comps.filter((c) => ["manufacturing", "inspection"].includes(c.state)).length;
   const accepted       = comps.filter((c) => ["assembly", "completed", "installed"].includes(c.state)).length;
@@ -82,12 +86,12 @@ export default function NationalGrid() {
       <Label>National capability</Label>
       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:S.xl }}>
         <Stat value={hubs.length || null}      label="Connected hubs"    note="Reporting to the bus" />
-        <Stat value={workshops || null}        label="Workshops"          note="Seen in the stream" />
-        <Stat value={people || null}           label="People connected"   note="Named in events" />
-        <Stat value={activeMissions}           label="Active missions"    note="Not yet closed" accent={T.amber} />
-        <Stat value={released}                 label="Released specs"     note="Cleared for manufacture" accent={T.green} />
-        <Stat value={inProduction}             label="In production"      note="Being made or inspected" accent={T.amber} />
-        <Stat value={accepted}                 label="Accepted"           note="Through verification" accent={T.green} />
+        <Stat value={workshops || null}        label="Workshops"          note="Seen in the stream" reason={cause} />
+        <Stat value={people || null}           label="People connected"   note="Named in events" reason={cause} />
+        <Stat value={activeMissions}           label="Active missions"    note="Not yet closed" accent={T.amber} reason={cause} />
+        <Stat value={released}                 label="Released specs"     note="Cleared for manufacture" accent={T.green} reason={cause} />
+        <Stat value={inProduction}             label="In production"      note="Being made or inspected" accent={T.amber} reason={cause} />
+        <Stat value={accepted}                 label="Accepted"           note="Through verification" accent={T.green} reason={cause} />
         <Stat value={constraints}              label="Critical constraints"
               note={constraints ? "Require intervention" : "None outstanding"}
               accent={constraints ? T.pink : T.teal} />
@@ -127,26 +131,8 @@ export default function NationalGrid() {
               <div style={{ fontFamily:FONT.ui, fontSize:12.5, color:T.grey, fontStyle:"italic" }}>
                 Nothing outstanding across the national grid.
               </div>
-            ) : view.recommendations.slice(0, 6).map((r) => (
-              <div key={r.id} style={{ display:"flex", gap:9, padding:"7px 0",
-                borderBottom:`1px solid ${T.border}` }}>
-                <span style={{ width:6, height:6, background:severityColor(r.severity), marginTop:6,
-                  flexShrink:0, transform:"rotate(45deg)" }} />
-                <span style={{ flex:1, minWidth:0 }}>
-                  <span style={{ fontFamily:FONT.ui, fontSize:12, color:T.ivory70,
-                    lineHeight:1.45, display:"block" }}>{r.message}</span>
-                  {/* WHY — Forge OS explains itself rather than asserting. */}
-                  {r.because?.length > 0 && (
-                    <span style={{ display:"block", marginTop:6, paddingLeft:10,
-                      borderLeft:`1px solid ${T.border}` }}>
-                      {r.because.map((line, i) => (
-                        <span key={i} style={{ display:"block", fontFamily:FONT.ui, fontSize:10.5,
-                          color:T.grey, lineHeight:1.5 }}>{line}</span>
-                      ))}
-                    </span>
-                  )}
-                </span>
-              </div>
+            ) : view.recommendations.slice(0, 5).map((r) => (
+              <Recommendation key={r.id} rec={r} />
             ))}
           </Panel>
         </div>

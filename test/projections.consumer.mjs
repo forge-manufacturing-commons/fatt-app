@@ -39,6 +39,11 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
        .every((r) => Array.isArray(r.because) && r.because.length >= 3));
   ok("the reasoning cites the rule that was satisfied",
      released.recommendations.some((r) => (r.because || []).some((b) => /SPC-001/.test(b))));
+  // Recommendation authority: an operating system issues instructions.
+  const prod = released.recommendations.find((r) => /Production may begin/.test(r.message));
+  ok("the recommendation carries an imperative action", prod.action === "Authorise production");
+  ok("the recommendation cites its rule", prod.rule === "SPC-001");
+  ok("the recommendation states its impact", typeof prod.impact === "string" && prod.impact.length > 10);
 }
 
 // --- THE RIPPLE: approving changes what another room would render ---

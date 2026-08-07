@@ -190,6 +190,8 @@ export function project(log = [], missions = []) {
     if (s.state === "review")
       recommendations.push({ id:`rec-spec-${s.id}`, severity:"advisory",
         message:`${s.id} is awaiting review. Assign a level 3 engineer.`, subject:s.id,
+        action:"Assign a reviewer", rule:"ENG-003",
+        impact:"Production cannot be authorised until review completes.",
         // WHY. Forge OS explains itself: a recommendation with no stated
         // reasoning is indistinguishable from a guess.
         because:[
@@ -200,6 +202,8 @@ export function project(log = [], missions = []) {
     if (s.state === "approved")
       recommendations.push({ id:`rec-spec-${s.id}`, severity:"warning",
         message:`${s.id} is approved but not released. Production cannot start until it is released.`, subject:s.id,
+        action:"Release for production", rule:"SPC-001",
+        impact:"Manufacture is blocked while the specification is unreleased.",
         because:[
           `Specification ${s.id} holds state "approved".`,
           `Rule SPC-001 refuses manufacture against a specification that is not released.`,
@@ -208,6 +212,8 @@ export function project(log = [], missions = []) {
     if (s.state === "released")
       recommendations.push({ id:`rec-spec-${s.id}`, severity:"advisory",
         message:`Production may begin against ${s.id}.`, subject:s.id,
+        action:"Authorise production", rule:"SPC-001",
+        impact:"Missions depending on this specification are unlocked.",
         because:[
           `Specification ${s.id} has entered "released" state.`,
           `Engineering constraints satisfied — ENG-001 and ENG-003 passed at approval.`,
@@ -219,6 +225,8 @@ export function project(log = [], missions = []) {
     if (c.state === "rework")
       recommendations.push({ id:`rec-comp-${c.id}`, severity:"warning",
         message:`${c.id} failed inspection and is in rework. Re-submit once corrected.`, subject:c.id,
+        action:"Complete rework and re-inspect", rule:"ASM-001",
+        impact:"The component cannot enter assembly and does not count toward the mission.",
         because:[
           `Component ${c.id} holds state "rework" after a failed inspection.`,
           `The state graph allows only "submitForInspection" or "scrap" from here.`,
@@ -227,6 +235,8 @@ export function project(log = [], missions = []) {
     if (c.state === "blocked")
       recommendations.push({ id:`rec-comp-${c.id}`, severity:"critical",
         message:`${c.id} is blocked and cannot proceed.`, subject:c.id,
+        action:"Clear the block or scrap", rule:"MCH-002",
+        impact:"Mission progress excludes blocked components.",
         because:[
           `Component ${c.id} holds state "blocked".`,
           `Only "resume" or "scrap" are permitted from this state.`,
@@ -235,6 +245,8 @@ export function project(log = [], missions = []) {
     if (c.state === "assembly")
       recommendations.push({ id:`rec-comp-${c.id}`, severity:"advisory",
         message:`${c.id} passed inspection and is cleared for assembly.`, subject:c.id,
+        action:"Proceed to assembly", rule:"ASM-001",
+        impact:"Counts toward mission progress.",
         because:[
           `Component ${c.id} holds state "assembly".`,
           `Rule ASM-001 is satisfied: inspection passed.`,
@@ -244,7 +256,8 @@ export function project(log = [], missions = []) {
   for (const a of anomalies) {
     recommendations.push({ id:`rec-anom-${a.id}-${a.at}`, severity:"critical",
       message:`Impossible transition recorded: ${a.message}. This indicates data corruption, not a delay.`,
-      subject:a.id,
+      subject:a.id, action:"Investigate data corruption",
+      impact:"The claim was refused; state was not advanced.",
       because:[
         `An event claimed "${a.attempted}" while ${a.id} held "${a.held}".`,
         `The ${a.objectClass} state graph does not permit that transition.`,

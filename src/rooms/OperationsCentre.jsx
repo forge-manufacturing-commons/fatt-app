@@ -19,7 +19,7 @@ import { useMemo, useRef, useState } from "react";
 import { useForgeActivity } from "@kernel/ActivityEngine.jsx";
 import { project } from "@kernel/projections.js";
 import { MISSIONS } from "@kernel/missions.js";
-import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface } from "@kernel/console.jsx";
+import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface, Recommendation } from "@kernel/console.jsx";
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, FORGE_CLIPS, stateColor, severityColor } from "@kernel/forge.js";
 import { MANUFACTURING_STORY, STORY_META } from "@kernel/story.js";
@@ -74,6 +74,10 @@ export default function OperationsCentre() {
     : "nominal";
   const healthColor = health === "critical" ? T.pink : health === "degraded" ? T.amber : T.green;
 
+  const cause = view.feed[0]
+    ? `${view.feed[0].title}${view.feed[0].subject ? ` · ${view.feed[0].subject}` : ""}`
+    : null;
+
   const inProduction = comps.filter((c) => ["manufacturing", "inspection"].includes(c.state)).length;
   const accepted = comps.filter((c) => ["assembly", "completed", "installed"].includes(c.state)).length;
   const awaiting = specs.filter((s) => s.state === "review").length;
@@ -113,14 +117,22 @@ export default function OperationsCentre() {
         </div>
 
         {current && (
-          <div style={{ background:T.black, padding:"10px 14px", margin:`${S.md}px 0`,
-            borderLeft:`2px solid ${T.amber}` }}>
-            <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:12, color:T.ivory }}>
-              {current.title}
-            </div>
-            <div style={{ fontFamily:FONT.ui, fontSize:11.5, color:T.grey, marginTop:3 }}>
-              {current.description}
-            </div>
+          /* Industrial status, not prose. Operators scan; they do not read. */
+          <div style={{ background:T.black, padding:"12px 14px", margin:`${S.md}px 0`,
+            borderLeft:`2px solid ${T.amber}`, display:"grid",
+            gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:12 }}>
+            {[["Current operation", current.title],
+              ["Object", current.event.component || current.event.specification
+                       || current.event.machine || current.event.mission || "—"],
+              ["Location", (current.event.hub || "—").toString().toUpperCase()],
+              ["Next action", current.description]].map(([k, v]) => (
+              <div key={k}>
+                <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8,
+                  letterSpacing:"0.18em", textTransform:"uppercase", color:T.grey }}>{k}</div>
+                <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:12, color:T.ivory,
+                  marginTop:3, lineHeight:1.35 }}>{v}</div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -140,10 +152,7 @@ export default function OperationsCentre() {
           {running ? `Mission in progress · ${step}/${STORY_META.steps}`
                    : "Run one manufacturing story →"}
         </button>
-        <div style={{ fontFamily:FONT.ui, fontSize:10, color:T.grey, marginTop:9, lineHeight:1.5 }}>
-          Thirteen real events on the real bus. Every figure below is derived — mission
-          progress is counted from accepted components, never published.
-        </div>
+
       </div>
 
       {/* SITUATION */}
@@ -152,12 +161,12 @@ export default function OperationsCentre() {
         <Stat value={health.toUpperCase()} label="System health"
               note={critical ? `${critical} critical constraint(s)` : "No critical constraints"}
               accent={healthColor} />
-        <Stat value={hubs.length || null}   label="Hubs reporting"   note="Live on the bus" />
-        <Stat value={machines.length || null} label="Machines"       note="Seen in the stream" />
-        <Stat value={inProduction}          label="In production"    note="Being made or inspected" accent={T.amber} />
-        <Stat value={accepted}              label="Accepted"         note="Through verification" accent={T.green} />
-        <Stat value={awaiting}              label="Awaiting review"  note="Blocking production" accent={T.amber} />
-        <Stat value={released}              label="Released specs"   note="Cleared to manufacture" accent={T.green} />
+        <Stat value={hubs.length || null}   label="Hubs reporting"   note="Live on the bus" reason={cause} />
+        <Stat value={machines.length || null} label="Machines"       note="Seen in the stream" reason={cause} />
+        <Stat value={inProduction}          label="In production"    note="Being made or inspected" accent={T.amber} reason={cause} />
+        <Stat value={accepted}              label="Accepted"         note="Through verification" accent={T.green} reason={cause} />
+        <Stat value={awaiting}              label="Awaiting review"  note="Blocking production" accent={T.amber} reason={cause} />
+        <Stat value={released}              label="Released specs"   note="Cleared to manufacture" accent={T.green} reason={cause} />
         <Stat value={view.anomalies.length} label="Anomalies"
               note={view.anomalies.length ? "Impossible transitions" : "None detected"}
               accent={view.anomalies.length ? T.pink : T.teal} />
@@ -173,29 +182,8 @@ export default function OperationsCentre() {
               <div style={{ fontFamily:FONT.ui, fontSize:12.5, color:T.grey, fontStyle:"italic" }}>
                 Nothing outstanding. The network is proceeding without intervention.
               </div>
-            ) : view.recommendations.slice(0, 6).map((r) => (
-              <div key={r.id} style={{ padding:"10px 0", borderBottom:`1px solid ${T.border}` }}>
-                <div style={{ display:"flex", gap:9, alignItems:"flex-start" }}>
-                  <span style={{ width:6, height:6, background:severityColor(r.severity), marginTop:6,
-                    flexShrink:0, transform:"rotate(45deg)" }} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:12.5,
-                      color:T.ivory, lineHeight:1.45 }}>{r.message}</div>
-                    {r.because?.length > 0 && (
-                      <div style={{ marginTop:6, paddingLeft:10, borderLeft:`1px solid ${T.border}` }}>
-                        <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8.5,
-                          letterSpacing:"0.18em", textTransform:"uppercase",
-                          color:severityColor(r.severity), marginBottom:4 }}>Reason</div>
-                        {r.because.map((line, i) => (
-                          <div key={i} style={{ fontFamily:FONT.ui, fontSize:10.5, color:T.grey,
-                            lineHeight:1.55 }}>{line}</div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <Badge color={severityColor(r.severity)}>{r.severity}</Badge>
-                </div>
-              </div>
+            ) : view.recommendations.slice(0, 5).map((r) => (
+              <Recommendation key={r.id} rec={r} />
             ))}
           </Panel>
         </div>
