@@ -21,6 +21,7 @@
 import { specificationState } from "../domains/engineering/state.js";
 import { componentState } from "../domains/production/state.js";
 import { missionState } from "../domains/mission/state.js";
+import { deriveConsequences } from "./causality/causalMap.js";
 
 /**
  * Deep freeze. The projection is the ONLY description of manufacturing state,
@@ -86,6 +87,7 @@ const SEVERITY_RANK = { critical: 3, warning: 2, advisory: 1 };
 export function project(log = [], missions = []) {
   const ordered = [...log].reverse();          // oldest first, so state folds forward
 
+  const consequences = [];   // derived facts, each carrying what caused it
   const specifications = {};
   const components = {};
   const anomalies = [];
@@ -159,6 +161,10 @@ export function project(log = [], missions = []) {
       if (e.type === "inspection.passed" || e.type === "quality.verified") passed++;
       if (e.type === "inspection.failed") failed++;
     }
+
+    // ---- causal provenance: what this event made TRUE ----
+    // Derived, never published. The event log stays the only source of truth.
+    for (const c of deriveConsequences(e)) consequences.push(c);
 
     // ---- operations feed: what a person would say happened ----
     feed.push({
@@ -268,6 +274,7 @@ export function project(log = [], missions = []) {
   // Returned frozen: rooms READ manufacturing state, they never hold it.
   return deepFreeze({
     specifications, components, missions: missionRows, recommendations, anomalies,
+    consequences: consequences.slice(-50).reverse(),   // bounded, newest first
     feed: feed.reverse(), counts: { produced, passed, failed },
   });
 }

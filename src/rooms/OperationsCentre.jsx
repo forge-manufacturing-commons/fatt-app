@@ -24,6 +24,7 @@ import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, FORGE_CLIPS, stateColor, severityColor } from "@kernel/forge.js";
 import { MANUFACTURING_STORY, STORY_META } from "@kernel/story.js";
 import RippleIndicator from "@kernel/ripple/RippleIndicator.jsx";
+import { CausalChain, CausalInspector, useCausalInspector } from "@kernel/causality/CausalChain.jsx";
 
 export const CONTRACT = {
   roomId: "control-room",
@@ -40,6 +41,7 @@ export const CONTRACT = {
 
 export default function OperationsCentre() {
   const { log, hubStates, machineStates, publish } = useForgeActivity();
+  const insp = useCausalInspector();
   const [step, setStep] = useState(0);
   const [running, setRunning] = useState(false);
   const timers = useRef([]);
@@ -93,6 +95,7 @@ export default function OperationsCentre() {
       meta="Demo mode · seed data · not operational"
     >
       <RippleIndicator domain="operations" />
+      <CausalInspector consequence={insp.selected} onClose={insp.close} />
 
       {/* ONE MANUFACTURING STORY */}
       <div style={{ clipPath:FORGE_CLIPS.panelBR, background:T.surface,
@@ -208,6 +211,23 @@ export default function OperationsCentre() {
               <Recommendation key={r.id} rec={r} />
             ))}
           </Panel>
+        </div>
+
+        {/* CAUSAL CHAIN — what caused what. Click any fact to trace it. */}
+        <div>
+          <Label>Causation</Label>
+          {view.consequences?.length ? (
+            <CausalChain consequences={view.consequences} limit={6}
+              correlationId={view.consequences[0]?.correlationId}
+              onInspect={insp.inspect} />
+          ) : (
+            <Panel accent={T.border}>
+              <div style={{ fontFamily:FONT.ui, fontSize:12.5, color:T.grey, fontStyle:"italic" }}>
+                No derived consequences yet. Run the story, then click any fact to
+                trace it back to the event that caused it.
+              </div>
+            </Panel>
+          )}
         </div>
 
         {/* WORK IN PROGRESS — components with their live state */}
