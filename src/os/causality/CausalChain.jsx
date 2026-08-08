@@ -107,9 +107,40 @@ export function CausalInspector({ consequence, onClose }) {
   );
 }
 
+/**
+ * CONSEQUENCE DEPARTURE — the visual bridge out of a room.
+ * When a decision here makes something true elsewhere, the fact is shown
+ * leaving. Uses the same derived consequence as everything else; it is not a
+ * room-specific animation.
+ */
+export function ConsequenceDeparture({ consequence, from = "RELEASED" }) {
+  if (!consequence) return null;
+  const col = tone(consequence.consequence);
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:0, margin:"14px 0",
+      animation:"forgeChainIn .35s cubic-bezier(.16,1,.3,1)" }}>
+      <span style={{ background:col, color:T.black, padding:"7px 13px",
+        clipPath:FORGE_CLIPS.buttonSm, fontFamily:FONT.ui, fontWeight:800, fontSize:10,
+        letterSpacing:"0.14em", textTransform:"uppercase", flexShrink:0 }}>{from}</span>
+      <span style={{ flex:1, height:1, minWidth:24,
+        background:`linear-gradient(to right, ${col}, ${T.border})` }} />
+      <span style={{ color:col, fontSize:11, flexShrink:0, marginRight:6 }}>&#9654;</span>
+      <span style={{ background:T.surface, boxShadow:`inset 0 0 0 1px ${col}`, color:col,
+        padding:"7px 13px", clipPath:FORGE_CLIPS.panelTL, flexShrink:0 }}>
+        <span style={{ display:"block", fontFamily:FONT.ui, fontWeight:800, fontSize:10,
+          letterSpacing:"0.14em", textTransform:"uppercase" }}>{label(consequence.consequence)}</span>
+        {consequence.next && (
+          <span style={{ display:"block", fontFamily:FONT.ui, fontSize:10, color:T.grey,
+            marginTop:3 }}>{consequence.next}</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
 export function useCausalInspector() {
   const [selected, setSelected] = useState(null);
   return { selected, inspect: setSelected, close: () => setSelected(null) };
 }
 
-export default { CausalChain, CausalInspector, useCausalInspector };
+export default { CausalChain, CausalInspector, ConsequenceDeparture, useCausalInspector };

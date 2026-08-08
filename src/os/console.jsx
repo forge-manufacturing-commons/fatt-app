@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { T, FONT, S, FORGE_CLIPS, PRINCIPLES, stateColor, severityColor } from "./forge.js";
 import { useRippleListener } from "./ripple/useEventRipple.js";
+import { resolveCause } from "./causality/causalMap.js";
 
 /**
  * KERNEL CHANGE INDICATOR
@@ -40,7 +41,7 @@ export function useDelta(value, ttl = 2800, order = 0) {
   return delta;
 }
 
-function DeltaBadge({ delta, reason }) {
+function DeltaBadge({ delta, cause }) {
   if (delta === null || delta === 0) return null;
   const up = delta > 0;
   const c = up ? T.teal : T.amber;
@@ -49,12 +50,16 @@ function DeltaBadge({ delta, reason }) {
       <style>{`@keyframes forgeDeltaIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <span style={{ fontFamily:FONT.ui, fontWeight:800, fontSize:11, letterSpacing:"0.08em",
         color:c }}>{up ? "\u25B2" : "\u25BC"} {up ? "+" : ""}{delta}</span>
-      {reason && (
+      {cause && (
         <span style={{ display:"block", marginTop:3 }}>
           <span style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8, letterSpacing:"0.18em",
-            textTransform:"uppercase", color:T.grey }}>Reason</span>
+            textTransform:"uppercase", color:T.grey }}>Caused by</span>
           <span style={{ display:"block", fontFamily:FONT.ui, fontSize:10.5, color:c,
-            lineHeight:1.4, marginTop:1 }}>{reason}</span>
+            lineHeight:1.4, marginTop:1 }}>{cause.phrase}</span>
+          {cause.subject && (
+            <span style={{ display:"block", fontFamily:FONT.mono, fontSize:9.5,
+              color:T.grey, marginTop:1 }}>{cause.subject}</span>
+          )}
         </span>
       )}
     </div>
@@ -143,10 +148,17 @@ export function Button({ children, onClick, tone = "primary", disabled = false, 
 }
 
 /** A projection-driven statistic. Never hardcoded, and honest when unknown. */
-export function Stat({ value, label, note, accent = T.teal, reason, order = 0 }) {
+/**
+ * A room supplies WHAT it is showing (`metric`) and the projection's
+ * consequences. The KERNEL resolves WHY the value moved. There is deliberately
+ * no `reason` prop: a room cannot supply explanatory provenance, because a
+ * room-written explanation is not derived and could contradict the log.
+ */
+export function Stat({ value, label, note, accent = T.teal, metric, consequences, order = 0 }) {
   const unknown = value === null || value === undefined;
   // Inherited from the kernel: no room implements change indication.
   const delta = useDelta(typeof value === "number" ? value : null, 2800, order);
+  const cause = delta ? resolveCause(metric, consequences) : null;
   return (
     <div style={{ clipPath:FORGE_CLIPS.panelBR, background:T.surface,
       borderTop:`2px solid ${accent}`, padding:"18px 20px", flex:"1 1 160px", minWidth:150 }}>
@@ -157,7 +169,7 @@ export function Stat({ value, label, note, accent = T.teal, reason, order = 0 })
       {note && <div style={{ fontFamily:FONT.ui, fontSize:11, color:T.grey, marginTop:4 }}>{note}</div>}
       {unknown && <div style={{ fontFamily:FONT.ui, fontSize:9.5, letterSpacing:"0.12em",
         textTransform:"uppercase", color:T.grey, marginTop:4 }}>Not surveyed</div>}
-      <DeltaBadge delta={delta} reason={reason} />
+      <DeltaBadge delta={delta} cause={cause} />
     </div>
   );
 }
@@ -180,18 +192,31 @@ export function Recommendation({ rec }) {
         <span style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8.5, letterSpacing:"0.16em",
           textTransform:"uppercase", color:c }}>{rec.severity}</span>
       </div>
-      <div style={{ fontFamily:FONT.display, fontWeight:900, fontSize:16, letterSpacing:"-0.01em",
-        textTransform:"uppercase", color:c, lineHeight:1.1 }}>
-        {rec.action ?? rec.message}
-      </div>
+      {/* WHY — derived from the state that produced the recommendation */}
       {rec.because?.length > 0 && (
-        <div style={{ marginTop:9, paddingLeft:10, borderLeft:`1px solid ${T.border}` }}>
-          <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8, letterSpacing:"0.18em",
-            textTransform:"uppercase", color:T.grey, marginBottom:3 }}>Reason</div>
+        <div style={{ marginBottom:10, paddingLeft:10, borderLeft:`1px solid ${T.border}` }}>
+          <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8, letterSpacing:"0.2em",
+            textTransform:"uppercase", color:T.greyDark, marginBottom:3 }}>Why</div>
           {rec.because.map((l, i) => (
             <div key={i} style={{ fontFamily:FONT.ui, fontSize:11, color:T.ivory70,
               lineHeight:1.5 }}>{l}</div>
           ))}
+        </div>
+      )}
+      {/* WHAT — the instruction */}
+      <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8, letterSpacing:"0.2em",
+        textTransform:"uppercase", color:T.greyDark, marginBottom:3 }}>What</div>
+      <div style={{ fontFamily:FONT.display, fontWeight:900, fontSize:16, letterSpacing:"-0.01em",
+        textTransform:"uppercase", color:c, lineHeight:1.1 }}>
+        {rec.action ?? rec.message}
+      </div>
+      {/* NEXT — derived from the consequence, never written in a room */}
+      {rec.next && (
+        <div style={{ marginTop:10, paddingLeft:10, borderLeft:`1px solid ${T.teal}` }}>
+          <div style={{ fontFamily:FONT.ui, fontWeight:700, fontSize:8, letterSpacing:"0.2em",
+            textTransform:"uppercase", color:T.greyDark, marginBottom:3 }}>Next</div>
+          <div style={{ fontFamily:FONT.ui, fontWeight:600, fontSize:11.5, color:T.teal,
+            lineHeight:1.5 }}>{rec.next}</div>
         </div>
       )}
       <div style={{ display:"flex", flexWrap:"wrap", gap:14, marginTop:9 }}>

@@ -76,9 +76,6 @@ export default function OperationsCentre() {
     : "nominal";
   const healthColor = health === "critical" ? T.pink : health === "degraded" ? T.amber : T.green;
 
-  const cause = view.feed[0]
-    ? `${view.feed[0].title}${view.feed[0].subject ? ` · ${view.feed[0].subject}` : ""}`
-    : null;
 
   const inProduction = comps.filter((c) => ["manufacturing", "inspection"].includes(c.state)).length;
   const accepted = comps.filter((c) => ["assembly", "completed", "installed"].includes(c.state)).length;
@@ -183,16 +180,16 @@ export default function OperationsCentre() {
       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:S.lg }}>
         <Stat value={health.toUpperCase()} label="System health"
               note={critical ? `${critical} critical constraint(s)` : "No critical constraints"}
-              accent={healthColor} order={0} />
-        <Stat value={hubs.length || null}   label="Hubs reporting"   note="Live on the bus" reason={cause} order={1} />
-        <Stat value={machines.length || null} label="Machines"       note="Seen in the stream" reason={cause} order={2} />
-        <Stat value={inProduction}          label="In production"    note="Being made or inspected" accent={T.amber} reason={cause} order={3} />
-        <Stat value={accepted}              label="Accepted"         note="Through verification" accent={T.green} reason={cause} order={4} />
-        <Stat value={awaiting}              label="Awaiting review"  note="Blocking production" accent={T.amber} reason={cause} order={5} />
-        <Stat value={released}              label="Released specs"   note="Cleared to manufacture" accent={T.green} reason={cause} order={6} />
+              accent={healthColor} order={0} metric="health" consequences={view.consequences} />
+        <Stat value={hubs.length || null}   label="Hubs reporting"   note="Live on the bus" order={1} metric="hubs" consequences={view.consequences} />
+        <Stat value={machines.length || null} label="Machines"       note="Seen in the stream" order={2} metric="machines" consequences={view.consequences} />
+        <Stat value={inProduction}          label="In production"    note="Being made or inspected" accent={T.amber} order={3} metric="in-production" consequences={view.consequences} />
+        <Stat value={accepted}              label="Accepted"         note="Through verification" accent={T.green} order={4} metric="accepted" consequences={view.consequences} />
+        <Stat value={awaiting}              label="Awaiting review"  note="Blocking production" accent={T.amber} order={5} metric="awaiting-review" consequences={view.consequences} />
+        <Stat value={released}              label="Released specs"   note="Cleared to manufacture" accent={T.green} order={6} metric="released-specs" consequences={view.consequences} />
         <Stat value={view.anomalies.length} label="Anomalies"
               note={view.anomalies.length ? "Impossible transitions" : "None detected"}
-              accent={view.anomalies.length ? T.pink : T.teal} order={7} />
+              accent={view.anomalies.length ? T.pink : T.teal} order={7} metric="anomalies" consequences={view.consequences} />
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(340px,1fr))", gap:S.lg }}>

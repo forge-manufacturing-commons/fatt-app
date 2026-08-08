@@ -60,9 +60,6 @@ export default function NationalGrid() {
   const specs = Object.values(view.specifications);
 
   // Counted, never asserted.
-  const cause = view.feed[0]
-    ? `${view.feed[0].title}${view.feed[0].subject ? ` · ${view.feed[0].subject}` : ""}`
-    : null;
 
   const activeMissions = view.missions.filter((m) => m.state !== "closed").length;
   const inProduction   = comps.filter((c) => ["manufacturing", "inspection"].includes(c.state)).length;
@@ -85,16 +82,16 @@ export default function NationalGrid() {
 
       <Label>National capability</Label>
       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:S.xl }}>
-        <Stat value={hubs.length || null}      label="Connected hubs"    note="Reporting to the bus" order={0} />
-        <Stat value={workshops || null}        label="Workshops"          note="Seen in the stream" reason={cause} order={1} />
-        <Stat value={people || null}           label="People connected"   note="Named in events" reason={cause} order={2} />
-        <Stat value={activeMissions}           label="Active missions"    note="Not yet closed" accent={T.amber} reason={cause} order={3} />
-        <Stat value={released}                 label="Released specs"     note="Cleared for manufacture" accent={T.green} reason={cause} order={4} />
-        <Stat value={inProduction}             label="In production"      note="Being made or inspected" accent={T.amber} reason={cause} order={5} />
-        <Stat value={accepted}                 label="Accepted"           note="Through verification" accent={T.green} reason={cause} order={6} />
+        <Stat value={hubs.length || null}      label="Connected hubs"    note="Reporting to the bus" order={0} metric="hubs" consequences={view.consequences} />
+        <Stat value={workshops || null}        label="Workshops"          note="Seen in the stream" order={1} metric="workshops" consequences={view.consequences} />
+        <Stat value={people || null}           label="People connected"   note="Named in events" order={2} metric="people" consequences={view.consequences} />
+        <Stat value={activeMissions}           label="Active missions"    note="Not yet closed" accent={T.amber} order={3} metric="active-missions" consequences={view.consequences} />
+        <Stat value={released}                 label="Released specs"     note="Cleared for manufacture" accent={T.green} order={4} metric="released-specs" consequences={view.consequences} />
+        <Stat value={inProduction}             label="In production"      note="Being made or inspected" accent={T.amber} order={5} metric="in-production" consequences={view.consequences} />
+        <Stat value={accepted}                 label="Accepted"           note="Through verification" accent={T.green} order={6} metric="accepted" consequences={view.consequences} />
         <Stat value={constraints}              label="Critical constraints"
               note={constraints ? "Require intervention" : "None outstanding"}
-              accent={constraints ? T.pink : T.teal} order={7} />
+              accent={constraints ? T.pink : T.teal} order={7} metric="critical-constraints" consequences={view.consequences} />
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(330px,1fr))", gap:S.lg }}>

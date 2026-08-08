@@ -123,5 +123,46 @@ console.log("  tracing");
   ok("an unmapped event unlocks nothing", findUnlocked("nope.nope").length === 0);
 }
 
+// ---------- G. ROOMS CANNOT SUPPLY PROVENANCE ----------
+console.log("  G · rooms cannot explain, only display");
+{
+  const { readdirSync, readFileSync, statSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+  const walk = (d, out=[]) => { for (const e of readdirSync(d)) { const p = join(d,e);
+    statSync(p).isDirectory() ? walk(p,out) : /\.(jsx|js)$/.test(e) && out.push(p); } return out; };
+  const rooms = walk(join(ROOT,"src","rooms")).map((p)=>({p,t:readFileSync(p,"utf8")}));
+  const supplying = rooms.filter((f) => /reason=/.test(f.t)).map((f)=>f.p.split(/[\\/]/).pop());
+  ok("no room passes an explanatory `reason` prop", supplying.length === 0, supplying.join(", "));
+  const declaring = rooms.filter((f) => /metric="/.test(f.t));
+  ok("rooms declare WHICH metric, kernel resolves WHY", declaring.length >= 2);
+  const inventing = rooms.filter((f) => /CAUSE_PHRASE|Caused by/.test(f.t)).map((f)=>f.p.split(/[\\/]/).pop());
+  ok("no room defines cause phrasing", inventing.length === 0, inventing.join(", "));
+}
+
+// ---------- H. IDENTICAL TRACE ACROSS CONSUMERS ----------
+console.log("  H · one trace, many consumers");
+{
+  const { resolveCause, METRIC_CONSEQUENCES } = await import("../src/os/causality/causalMap.js");
+  const log = [];
+  for (const s of MANUFACTURING_STORY) log.unshift({ ...s.event });
+  const v = project(log, MISSIONS);
+  for (const metric of ["released-specs", "accepted", "in-production"]) {
+    const a = resolveCause(metric, v.consequences);
+    const b = resolveCause(metric, v.consequences);
+    ok(`"${metric}" resolves identically for two consumers`,
+       JSON.stringify(a) === JSON.stringify(b));
+  }
+  const rc = resolveCause("released-specs", v.consequences);
+  ok("a resolved cause carries a human phrase", typeof rc?.phrase === "string");
+  ok("a resolved cause keeps full provenance",
+     Boolean(rc?.causedBy && rc?.eventId && rc?.correlationId));
+  ok("an unmapped metric resolves to nothing", resolveCause("not-a-metric", v.consequences) === null);
+  ok("every declared metric maps to known consequences",
+     Object.values(METRIC_CONSEQUENCES).flat().every((c) => ALL_CONSEQUENCES.includes(c)));
+  ok("recommendations carry a derived NEXT",
+     v.recommendations.some((r) => typeof r.next === "string" && r.next.length > 10));
+}
+
 console.log(`\n${pass}/${pass+fail} assertions passed${fail?` — ${fail} FAILED`:""}\n`);
 process.exit(fail?1:0);

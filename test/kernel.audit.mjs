@@ -117,6 +117,23 @@ const rogueDelta = roomFiles2.filter((f) => /useDelta\s*\(|animateMotion/.test(f
 ok("motion: change indication and pulses are inherited, not re-implemented",
    rogueDelta.length === 0, rogueDelta.join(", "));
 
+// ---------- 6c. KERNEL FREEZE (D.2.1) ----------
+// The kernel is frozen as of D.2.1. This records the primitive surface so a
+// new one cannot be added quietly during product convergence. Growing this
+// list is an architecture decision, not an implementation detail.
+const FROZEN_PRIMITIVES = [
+  "RoomShell","Label","Panel","Badge","Button","Stat","NetworkSurface",
+  "Recommendation","useDelta","CausalChain","CausalInspector",
+  "ConsequenceDeparture","useCausalInspector","OperationsFeed","StateGraph",
+  "RippleIndicator","useEventRipple","useRippleListener","notifyRipple",
+];
+const kernelExports = files
+  .filter((f) => /^src\/os\/(console\.jsx|causality\/CausalChain\.jsx|ripple\/[^/]+\.jsx?|OperationsFeed\.jsx|StateGraph\.jsx)$/.test(f.path))
+  .flatMap((f) => [...f.text.matchAll(/export (?:default )?function (\w+)/g)].map((m) => m[1]));
+const added = kernelExports.filter((e) => !FROZEN_PRIMITIVES.includes(e));
+ok(`kernel freeze: primitive surface unchanged (${FROZEN_PRIMITIVES.length} frozen)`,
+   added.length === 0, added.length ? `new: ${added.join(", ")} — requires architecture review` : "");
+
 // ---------- 7. PLATFORM CONTRACT ----------
 // Compliance is verified from each room's OWN declaration, not from a list
 // maintained here. A hardcoded list silently omits new rooms; a declaration

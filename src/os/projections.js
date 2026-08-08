@@ -270,6 +270,12 @@ export function project(log = [], missions = []) {
         `State was NOT advanced. The event is recorded; the claim is refused.`,
       ]});
   }
+  // NEXT is derived: taken from the consequence that explains the recommendation,
+  // never authored in a room.
+  for (const r of recommendations) {
+    const hit = consequences.find((c) => c.subject === r.subject && c.next);
+    if (hit) r.next = hit.next;
+  }
   recommendations.sort((x, y) => (SEVERITY_RANK[y.severity] ?? 0) - (SEVERITY_RANK[x.severity] ?? 0));
   // Returned frozen: rooms READ manufacturing state, they never hold it.
   return deepFreeze({

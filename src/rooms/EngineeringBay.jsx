@@ -30,6 +30,7 @@ import { RuleViolation } from "../os/rules.js";
 import { IllegalTransition } from "../os/state.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
 import { project } from "../os/projections.js";
+import { ConsequenceDeparture } from "../os/causality/CausalChain.jsx";
 import { RoomShell, Label as KLabel, Panel, Badge } from "../os/console.jsx";
 import { stateColor } from "../os/forge.js";
 import { MISSIONS } from "../os/missions.js";
@@ -291,6 +292,10 @@ export default function EngineeringBay() {
           <Label>Current work item · {spec?.id}</Label>
           <div style={{ clipPath:FORGE_CLIPS.panelTR, background:SURFACE,
             borderTop:`2px solid ${TEAL}`, padding:"16px 18px" }}>
+
+            {/* The consequence leaving this room — the bridge to operations. */}
+            <ConsequenceDeparture from={spec?.state?.toUpperCase()}
+              consequence={view.consequences?.find((c) => c.subject === spec?.id) ?? null} />
 
             {/* The Manufacturing State Engine, visible. Current glows,
                 reachable illuminated, unreachable dimmed. */}

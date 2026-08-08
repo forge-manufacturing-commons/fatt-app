@@ -106,6 +106,60 @@ export function deriveConsequences(event, correlationId = null) {
   }));
 }
 
+/**
+ * Which derived facts explain a change in a given metric.
+ *
+ * This is what lets the KERNEL supply the explanation. Previously a room passed
+ * Stat a `reason` string, which meant the room knew something about causation.
+ * Now the room says only WHICH metric it is showing; the kernel resolves WHY it
+ * moved from the projection's provenance.
+ */
+export const METRIC_CONSEQUENCES = Object.freeze({
+  "released-specs":       ["production.authorised"],
+  "awaiting-review":      ["review.pending", "revision.required"],
+  "in-production":        ["production.authorised", "verification.required", "rework.required"],
+  "accepted":             ["component.accepted"],
+  "mission-progress":     ["component.accepted"],
+  "critical-constraints": ["production.halted", "revision.required"],
+  "anomalies":            [],
+  "hubs":                 ["production.authorised", "component.accepted", "production.halted"],
+  "machines":             ["production.halted", "verification.required"],
+  "workshops":            ["component.accepted"],
+  "people":               ["component.accepted"],
+  "active-missions":      ["mission.opened"],
+  "health":               ["production.halted", "rework.required"],
+});
+
+const CAUSE_PHRASE = {
+  "production.authorised":     "Specification released",
+  "release.permitted":         "Specification approved",
+  "revision.required":         "Specification rejected",
+  "review.pending":            "Specification submitted",
+  "verification.required":     "Component produced",
+  "component.accepted":        "Inspection passed",
+  "rework.required":           "Inspection failed",
+  "reverification.required":   "Component reworked",
+  "production.halted":         "Machine fault",
+  "mission.opened":            "Mission created",
+};
+
+/**
+ * Resolve the most recent derived fact that explains this metric.
+ * Pure: two consumers passing the same projection get the same answer, which is
+ * what makes a causal trace render identically everywhere.
+ */
+export function resolveCause(metric, consequences = []) {
+  const wanted = METRIC_CONSEQUENCES[metric];
+  if (!wanted?.length) return null;
+  // consequences arrive newest-first from the projection
+  const hit = consequences.find((c) => wanted.includes(c.consequence));
+  if (!hit) return null;
+  return Object.freeze({
+    ...hit,
+    phrase: CAUSE_PHRASE[hit.consequence] ?? String(hit.consequence).replace(/\./g, " "),
+  });
+}
+
 /** Trace backward: which events could have made this fact true. */
 export function findCauses(consequence) {
   return Object.entries(CAUSAL_MAP)
@@ -118,4 +172,5 @@ export function findUnlocked(eventType) {
   return (CAUSAL_MAP[eventType] ?? []).map((t) => t.unlocks).filter(Boolean);
 }
 
-export default { CAUSAL_MAP, ALL_CONSEQUENCES, deriveConsequences, findCauses, findUnlocked };
+export default { CAUSAL_MAP, ALL_CONSEQUENCES, METRIC_CONSEQUENCES,
+  deriveConsequences, findCauses, findUnlocked, resolveCause };
