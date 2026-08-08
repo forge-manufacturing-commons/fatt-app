@@ -18,8 +18,11 @@ import Room from "./os/Room.jsx";
 import RoomLocator from "./os/RoomLocator.jsx";
 import "./os/ForgeOS.css";
 
-import { ArrivalDock, ProductionLine,
-         InspectionHangar, ImpactDashboard, BuildBoard } from "./rooms/Rooms.jsx";
+import ArrivalDock from "./rooms/ArrivalDockRoom.jsx";
+import ProductionLine from "./rooms/ProductionLine.jsx";
+import InspectionHangar from "./rooms/InspectionHangar.jsx";
+import ImpactDashboard from "./rooms/ImpactDashboard.jsx";
+import BuildBoard from "./rooms/BuildBoard.jsx";
 import DemoStudio from "./rooms/DemoStudio.jsx";
 import LanguageStudio from "./rooms/LanguageStudio.jsx";
 import EngineeringBay from "./rooms/EngineeringBay.jsx";
