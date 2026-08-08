@@ -21,7 +21,8 @@ import { LOGO_EMBLEM, LOGO_MARK } from "../lib/assets";
 import NmcpArrival from "../components/showcase/NmcpArrival.jsx";
 import TruckViewer from "../components/hero/TruckViewer.jsx";
 import { HumanTag } from "../humans/HumanGlyphLibrary.jsx";
-import LanguageRuntime from "./LanguageRuntime.jsx";
+import LanguageRuntime from "../components/forge/LanguageRuntime.jsx";
+
 
 // --- BUILD-D001 palette -------------------------------------------------------
 // Palette is NOT declared here — canonical tokens only (src/os/forge.js).

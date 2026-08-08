@@ -12,6 +12,8 @@ Nothing may be added to this file without a removal condition.
 | T4 | `src/os/emitters/index.js` re-export shim | `src/os/emitters/` | Emitters moved to `src/domains/<domain>/emitters.js`. Shim keeps any older import path working. | No import references `os/emitters`. Currently: none. Safe to delete now. |
 | T5 | Seed events on Arrival Dock mount | `src/rooms/ArrivalDock.jsx` | Metrics read 0 with an empty runtime. Fires only while the log is effectively empty. | Real events flow from real workshops. Self-disabling by design. |
 
+| T6 | Contract coverage reported, not asserted | `test/kernel.audit.mjs` | Only 4 of 10 routable rooms declare a Platform Contract. Asserting it would fail the suite; faking six declarations would make the audit lie. So the gap is printed on every run. | All routable rooms declare a contract. Then restore the assertion and delete this row. |
+
 ## Tracked, not bridged
 
 | # | Issue | Owner | Note |

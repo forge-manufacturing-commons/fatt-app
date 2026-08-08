@@ -21,8 +21,8 @@
 // ============================================================
 
 import { useState } from "react";
-import { useForgeActivity } from "../os/ActivityEngine.jsx";
-import { STUDIO, LANGUAGE } from "../os/ForgeRuntime.js";
+import { useForgeActivity } from "../../os/ActivityEngine.jsx";
+import { STUDIO, LANGUAGE } from "../../os/ForgeRuntime.js";
 
 const STUDIO_LABEL = {
   vehicle: "Vehicle", specification: "Specification", geometry: "Geometry",

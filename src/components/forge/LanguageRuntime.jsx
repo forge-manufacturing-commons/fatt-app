@@ -9,9 +9,9 @@
 // ============================================================
 
 import { useState, useRef } from "react";
-import { T, stateColor } from "../os/forge.js";
-import { useLanguage } from "../os/useLanguage.js";
-import { FORGE_CLIPS } from "../os/geometry.js";
+import { T, stateColor } from "../../os/forge.js";
+import { useLanguage } from "../../os/useLanguage.js";
+import { FORGE_CLIPS } from "../../os/geometry.js";
 
 // Palette is NOT declared here — canonical tokens only (src/os/forge.js).
 const { black:BLACK, ivory:IVORY, teal:TEAL, amber:AMBER } = T;
