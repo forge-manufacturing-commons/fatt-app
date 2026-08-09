@@ -72,3 +72,25 @@ the obsolete one. Do not add a rule that fights the existing rules.
 E2.2 had three horizontal layout authorities in one room:
 `.forge-room-floor`, `.wrap`, and `RoomShell`. The correction removed two
 constraints rather than adding a third.
+
+---
+
+## R7 — A broken instrument is not evidence
+
+**A verification tool that fails is not a passing result. When the instrument
+breaks, the check stays unverified.**
+
+And source inspection is not a substitute. Confirming that an element exists in
+the source does not establish that it is positioned correctly, unclipped,
+correctly coloured, or undisplaced. Those are separate claims requiring separate
+evidence.
+
+From E2.2 InspectionHangar: the room was structurally converged and green on
+tests, design audit, kernel audits and build — while screenshots failed on a CDP
+parameter error and `Runtime.evaluate` timed out. The correct outcome was
+`VISUAL VERIFICATION BLOCKED`, not a room marked closed. Application code must
+never be modified to compensate for a broken verification instrument.
+
+Corollary, for layout questions: prefer measurement over appearance.
+`getBoundingClientRect()` and `offsetParent` answer "which ancestor establishes
+this coordinate system" definitively, where a screenshot only suggests an answer.
