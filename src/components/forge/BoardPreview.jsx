@@ -79,7 +79,19 @@ const STUDIO_BADGE = {
 // map activity tone → which board rows quietly register a change
 const TONE_STAGE = { fabricate:"fabricating", review:"qa", evidence:"qa", accept:"done" };
 
-export default function BoardPreview() {
+/**
+ * @param {boolean} shell  Opt-in layout mode for a shelled room (E2.2).
+ *
+ * BoardPreview has TWO consumers: BuildBoard (/board, inside RoomShell) and
+ * Showcase (legacy page). Its `.wrap` is the GLOBAL legacy centring class
+ * (max-width:1180px; margin:0 auto; padding:0 24px) shared by nine files, so it
+ * cannot be altered or removed.
+ *
+ * With shell=true the internal wrap is omitted so RoomShell is the room's single
+ * primary horizontal layout authority. Default false leaves Showcase byte-for-byte
+ * unchanged.
+ */
+export default function BoardPreview({ shell = false }) {
   const reduce = useReducedMotion();
   const navigate = useNavigate();
   const { event, phase, tone } = useForgeActivity();
@@ -108,7 +120,7 @@ export default function BoardPreview() {
 
   return (
     <section className="forge-section board-os board-terminal" aria-label="Live build board terminal">
-      <div className="wrap">
+      <div className={shell ? undefined : "wrap"}>
         {/* Room identity removed (E2.2). This is a child component; the room
             owns its own identity via the ROOMS registry, surfaced by RoomShell
             and RoomLocator. The hardcoded "06" was a second identity authority

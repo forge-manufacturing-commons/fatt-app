@@ -6,7 +6,7 @@
 //   Room chrome={false}   registry identity, camera contract, overlays,
 //                         commissioning guard — kept
 //     RoomShell           kicker, Poppins Black title, principle — added
-//       BoardPreview      existing behaviour — untouched
+//       BoardPreview shell  wrap omitted so RoomShell owns geometry
 //
 // Why chrome={false} rather than plain nesting: Room renders its OWN header
 // (sequence, name, purpose, camera plate) and RoomShell renders another
@@ -67,7 +67,7 @@ export default function BuildBoard() {
         title="Work orders, owners,"
         accent="sign-off."
       >
-        <BoardPreview />
+        <BoardPreview shell />
       </RoomShell>
     </Room>
   );
