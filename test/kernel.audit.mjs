@@ -158,12 +158,13 @@ const PROJECTION_EVIDENCE = {
   // than by projections.js. A legitimate fourth category, deliberately built to
   // be HARDER to claim than the others so it cannot become a loophole:
   //   1. must actually call useForgeActivity()
-  //   2. must consume derived operational state from it, not merely import it
+  //   2. must consume DERIVED OPERATIONAL STATE (machineStates / hubStates) — a
+  //      raw event log or an event count is instrumentation, not folded state
   //   3. must NOT keep an independent local copy of that state
   //   4. must NOT publish machine-bearing events merely to feed its own screen
   activity: (t) =>
     /useForgeActivity\s*\(/.test(t) &&
-    /\b(machineStates|hubStates|log)\b/.test(t) &&
+    /\b(machineStates|hubStates)\b/.test(t) &&
     !/const\s*\[\s*(machineStates|hubStates|machines)\s*,/.test(t) &&
     !/publish\(\s*\{[^}]*machine/.test(t),
   // A room may honestly declare that it derives nothing — a thin wrapper that
@@ -186,6 +187,10 @@ const PROJECTION_EVIDENCE = {
       'const { machineStates } = useForgeActivity(); const [machineStates2] = useState({}); const [machineStates, setM] = useState({});', false],
     ["publishes machine-bearing events to feed its own screen",
       'const { machineStates, publish } = useForgeActivity(); publish({ machine: "m1", type: "machine.start" });', false],
+    ["reads only the raw event log (instrumentation, not folded state)",
+      'const { log } = useForgeActivity(); const n = log.length;', false],
+    ["counts events to report on itself",
+      'const { log } = useForgeActivity(); const real = [{ k:"Events", v: log.length }];', false],
     ["genuinely derives operational state from the bus",
       'const { machineStates } = useForgeActivity(); const active = line.filter(m => machineStates[m] === "active").length;', true],
   ];
