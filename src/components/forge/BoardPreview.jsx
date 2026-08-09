@@ -109,11 +109,12 @@ export default function BoardPreview() {
   return (
     <section className="forge-section board-os board-terminal" aria-label="Live build board terminal">
       <div className="wrap">
-        <div className="forge-section-id">
-          <span className="num">06</span>
-          <span className="slash">/</span>
-          <span className="name">Build board</span>
-        </div>
+        {/* Room identity removed (E2.2). This is a child component; the room
+            owns its own identity via the ROOMS registry, surfaced by RoomShell
+            and RoomLocator. The hardcoded "06" was a second identity authority
+            and contradicted the registry, which says sequence 08. Deliberately
+            NOT replaced with a roomById() lookup: a component must not reach
+            upward into its container to redisplay the container's identity. */}
 
         <motion.h2 className="forge-command" style={{ fontSize: "clamp(38px,5.5vw,80px)" }}
           initial={reduce ? false : { opacity: 0, y: 24 }}
