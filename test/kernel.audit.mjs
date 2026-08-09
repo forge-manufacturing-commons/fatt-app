@@ -154,10 +154,45 @@ const CLAIM_EVIDENCE = {
 const PROJECTION_EVIDENCE = {
   manufacturing: (t) => /project\(/.test(t),
   knowledge:     (t) => /translations|SUPPORTED_LANGUAGES/.test(t),
+  // "activity" — operational state folded from the event log by the BUS rather
+  // than by projections.js. A legitimate fourth category, deliberately built to
+  // be HARDER to claim than the others so it cannot become a loophole:
+  //   1. must actually call useForgeActivity()
+  //   2. must consume derived operational state from it, not merely import it
+  //   3. must NOT keep an independent local copy of that state
+  //   4. must NOT publish machine-bearing events merely to feed its own screen
+  activity: (t) =>
+    /useForgeActivity\s*\(/.test(t) &&
+    /\b(machineStates|hubStates|log)\b/.test(t) &&
+    !/const\s*\[\s*(machineStates|hubStates|machines)\s*,/.test(t) &&
+    !/publish\(\s*\{[^}]*machine/.test(t),
   // A room may honestly declare that it derives nothing — a thin wrapper that
   // mounts a screen holds no manufacturing state and should say so.
   none:          () => true,
 };
+
+// ---------- ADVERSARIAL SELF-TEST ----------
+// A new audit category must be able to reject work that merely claims it. These
+// synthetic sources exercise the four conditions above. If any passes, the
+// category is a loophole and this audit fails.
+{
+  const A = PROJECTION_EVIDENCE.activity;
+  const cases = [
+    ["claims activity without calling the hook",
+      'import { useForgeActivity } from "x"; const line = ["a"]; export default function R(){ return null; }', false],
+    ["calls the hook but consumes nothing derived",
+      'const x = useForgeActivity(); export default function R(){ return null; }', false],
+    ["keeps an independent local copy of machine state",
+      'const { machineStates } = useForgeActivity(); const [machineStates2] = useState({}); const [machineStates, setM] = useState({});', false],
+    ["publishes machine-bearing events to feed its own screen",
+      'const { machineStates, publish } = useForgeActivity(); publish({ machine: "m1", type: "machine.start" });', false],
+    ["genuinely derives operational state from the bus",
+      'const { machineStates } = useForgeActivity(); const active = line.filter(m => machineStates[m] === "active").length;', true],
+  ];
+  const wrong = cases.filter(([, srcText, expected]) => A(srcText) !== expected).map(([name]) => name);
+  ok(`projection "activity" cannot be claimed falsely (${cases.length} adversarial cases)`,
+     wrong.length === 0, wrong.join("; "));
+}
 
 // A room is routable if App.jsx imports it from ./rooms. Scoping to the
 // registry rather than the directory is what makes the compliance number mean
