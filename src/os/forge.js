@@ -52,7 +52,7 @@ export const PRINCIPLES = Object.freeze({
   "national-grid":     "Every workshop strengthens the national manufacturing grid.",
   "production-line":   "One SME, one component, one owner.",
   "impact-dashboard":  "Every mission produces measurable industrial capacity.",
-  "build-board":       "Every mission produces measurable industrial capacity.",
+  "build-board":       "Engineering knowledge shall be documented before production begins.",
   "language-studio":   "Knowledge becomes manufacturing capability.",
   "publishing-studio": "Every document becomes institutional memory.",
   "demo-studio":       "Every manufacturing decision is traceable.",

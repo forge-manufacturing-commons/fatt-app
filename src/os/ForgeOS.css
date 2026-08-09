@@ -25,6 +25,16 @@
 
 .forge-room-floor{ position:relative; max-width:1180px; margin:0 auto; padding:0 24px; z-index:2; }
 
+/* SHELLED ROOMS (E2.2).
+   A room whose content is a RoomShell must not be constrained by the legacy
+   floor: RoomShell owns the outer container, paints the canvas and supplies its
+   own clamp padding. Leaving the 1180px max-width in place renders RoomShell as
+   a floating black card with visible edges, and compounds 24px of floor padding
+   with RoomShell's clamp(24px,4vw,48px).
+   Runtime is untouched — camera, overlays, registry binding and the
+   commissioning guard all sit OUTSIDE .forge-room-floor. */
+.forge-room--shelled .forge-room-floor{ max-width:none; padding:0; }
+
 .forge-room-feed{ max-width:1180px; margin:34px auto 0; padding:10px 24px 0; border-top:1px solid var(--forge-rule,#1C2128);
   color:var(--forge-muted,#8899aa); }
 

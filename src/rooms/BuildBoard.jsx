@@ -16,6 +16,10 @@
 // chrome={false} lets Room keep everything structural and hands the header to
 // RoomShell, which is the canonical one.
 //
+// The legacy floor is neutralised for shelled rooms via .forge-room--shelled
+// (ForgeOS.css). Without it RoomShell renders as a 1180px black card with
+// visible edges — confirmed visually before this fix.
+//
 // KNOWN TRADE-OFF: chrome={false} also suppresses Room's footer activity line
 // ([event.type] · HUB). RoomShell has no footer, so BuildBoard loses that line
 // — and thereby matches every already-converged room, none of which has one.
@@ -56,7 +60,7 @@ export const CONTRACT = {
 /* 08 — BUILD BOARD ------------------------------------------ */
 export default function BuildBoard() {
   return (
-    <Room id="build-board" chrome={false}>
+    <Room id="build-board" chrome={false} className="forge-room--shelled">
       <RoomShell
         roomId="build-board"
         kicker="Forge OS · Build Board"
