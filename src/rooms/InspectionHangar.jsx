@@ -62,8 +62,15 @@ export default function InspectionHangar() {
         accent="scan."
       >
         {/* position:relative is the LaserRuler's containing block. It must stay
-            on the machine-floor wrapper, not migrate to RoomShell. */}
-        <div style={{ position:"relative" }}>
+            on the machine-floor wrapper, not migrate to RoomShell.
+            overflow:hidden makes this element own the SCAN BOUNDARY too. The
+            asset is viewBox-only (200x60, no intrinsic size), so width:100%
+            renders it ~427px tall against a ~206px floor — it can never fit.
+            .forge-eng-layer already carries overflow:hidden for the sanctioned
+            scanline overlay; this hand-rolled overlay needs the same clip from
+            its own layer. Do not clip an ancestor, and do not edit fs-mot-scan
+            or forge-inspection-scan — both are shared. */}
+        <div style={{ position:"relative", overflow:"hidden" }}>
           <LaserRuler style={{ position:"absolute", top:0, left:0, width:"100%", opacity:.3 }} />
           <div className="forge-machine-floor">
             <Machine id="inspectionTable" state="inspection" telemetry={{ TOL:"±0.15" }} />
