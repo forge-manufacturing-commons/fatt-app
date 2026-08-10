@@ -9,27 +9,75 @@
 //          -> buildRuntime() (Runtime Engine / operating picture)
 //          -> live UI
 //
-// It authors nothing of its own. Every panel is derived from the
-// Activity Engine and the Runtime Engine. The one button publishes
-// real, canonical EVENT-shaped events through the same bus every
-// other room reads — the factory reacts because work happened.
+// It authors no manufacturing state of its own. Every panel is derived
+// from the Activity Engine and the Runtime Engine. The one button
+// publishes real, canonical EVENT-shaped events through the same bus
+// every other room reads — the factory reacts because work happened.
 //
-// This is also the first place buildRuntime() from ForgeRuntime.js
-// is wired into a live view. Until now the Runtime Engine existed
-// but nothing rendered it.
+// PROJECTION: "harness" — NOT "activity". The distinction is the
+// direction of causation, and it is the whole reason this room exists:
+//
+//   activity (ProductionLine):  bus -> derived state -> room observes
+//   harness  (this room):       room publishes -> real bus
+//                               -> runtime derives -> room observes
+//
+// A room may not claim "activity" while intentionally driving
+// machine-bearing events to populate its own picture; that would make
+// the observation circular. "harness" says the circularity is the point.
+// The kernel audit enforces both halves and proves them mutually
+// exclusive, so flipping this declaration back to "activity" fails.
+//
+// harness + useForgeActivity() + buildRuntime() is INTENTIONAL:
+//   useForgeActivity()  the real bus — publish, log, hubStates, machineStates
+//   buildRuntime()      the operating picture — manufacturingStatus,
+//                       recommendations, languages, forgeObjects
+// buildRuntime is NOT interchangeable with project(). It answers a
+// different question and four panels below render only its output.
+// src/rooms/ArrivalDock.jsx is also a live consumer of it.
 // ============================================================
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { stateColor } from "../os/forge.js";
 import Room from "../os/Room.jsx";
+import { RoomShell, Label, Panel, Badge, Button } from "../os/console.jsx";
+import { T, FONT, stateColor } from "../os/forge.js";
 import { useForgeActivity, EVENT } from "../os/ActivityEngine.jsx";
 import { buildRuntime } from "../os/ForgeRuntime.js";
+import OperationsFeed from "../os/OperationsFeed.jsx";
+import { feedTitle } from "../os/projections.js";
+
+/**
+ * PLATFORM CONTRACT — truthful.
+ *
+ * Reads:      useForgeActivity() -> log, hubStates, machineStates (the real bus)
+ *             buildRuntime()     -> the operating picture
+ * Publishes:  the seven canonical WORKFLOW events, deliberately, on demand
+ * Principle:  PRINCIPLES["demo-studio"], displayed by RoomShell
+ *
+ * projection:"harness" — this room drives the bus and then observes the
+ * consequence. state ✓ — machine and hub state are rendered through
+ * stateColor(), the canonical mapping. causation ⊖ — the room shows WHAT the
+ * runtime derived, not a causal chain; it does not display because/consequences,
+ * so it does not claim causation.
+ */
+export const CONTRACT = {
+  roomId: "demo-studio",
+  principle: true,
+  roomShell: true,
+  projection: "harness",
+  feed: true,
+  recommendations: true,
+  stateEngine: false,
+  rules: false,
+  policy: false,
+  events: "canonical",
+};
 
 const STEP_MS = 900;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // The reference workflow, expressed in this project's real event vocabulary and
 // event shape. Each step publishes one canonical event onto the live bus.
+// STATIC DEMONSTRATION CONTENT — this is the script, not duplicated state.
 const WORKFLOW = [
   { key: "drawing", label: "Drawing Approved",
     event: { type: EVENT.DRAWING_APPROVED, hub: "ilorin", machine: "workbench", component: "DEMO-777",
@@ -54,16 +102,9 @@ const WORKFLOW = [
              human: "Adaeze Okoro", role: "WELDER", variant: "F", workshop: "Demo Cell", text: "Demo weld complete" } },
 ];
 
-const shortTime = (at) => { try { return new Date(at).toLocaleTimeString([], { hour12: false }); } catch { return ""; } };
-
-const box = { border: "1px solid rgba(255,255,255,.14)", borderRadius: 10, padding: 14, background: "rgba(255,255,255,.03)" };
-const h = { fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", opacity: .6, margin: "0 0 10px" };
 const row = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "3px 0" };
 const dot = (c) => ({ width: 8, height: 8, borderRadius: 999, background: c, display: "inline-block", marginRight: 8 });
-
-function Panel({ title, children }) {
-  return <div style={box}><div style={h}>{title}</div>{children}</div>;
-}
+const quiet = { fontFamily: FONT.ui, fontSize: 12, color: T.grey };
 
 export default function DemoStudio() {
   const { event, log, hubStates, machineStates, publish } = useForgeActivity();
@@ -84,127 +125,150 @@ export default function DemoStudio() {
     setActive(null); setRunning(false); busy.current = false;
   }, [publish]);
 
-  // First live consumer of the Runtime Engine — the operating picture.
+  // The operating picture. Not a projection — a different question.
   const runtime = useMemo(
     () => buildRuntime({ event, log, hubStates, machineStates }),
     [event, log, hubStates, machineStates],
   );
   const ms = runtime.manufacturingStatus;
 
+  // PRESENTATION TRANSFORMATION, not state. The canonical OperationsFeed row
+  // shape, built with the canonical feedTitle() so the wording matches every
+  // other feed in the OS. The events themselves are unchanged — this replaced a
+  // hand-rolled second feed implementation, not a second source of truth.
+  const feedRows = useMemo(
+    () => log.map((e) => ({
+      type: e.type,
+      at: e.at,
+      title: feedTitle(e.type),
+      subject: e.component || e.machine || null,
+      actor: e.human || e.person || null,
+      hub: e.hub || null,
+      detail: e.text || null,
+      result: e.result || e.status || null,
+    })),
+    [log],
+  );
+
   return (
-    <Room id="demo-studio">
-      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <p className="forge-human" style={{ maxWidth: "62ch", opacity: .8, margin: 0 }}>
-            One workflow through the whole runtime: the button publishes canonical events onto the
-            live Activity Engine; hub and machine states derive from them; the Runtime Engine assembles
-            the operating picture below. Nothing here is animated — it reacts because work happened.
-          </p>
-          <button
-            onClick={run}
-            disabled={running}
-            className="forge-cta-primary"
-            style={{ cursor: running ? "default" : "pointer", opacity: running ? .6 : 1, whiteSpace: "nowrap" }}
-          >
-            {running ? "Running…" : "▶ Run Manufacturing Workflow"}
-          </button>
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {WORKFLOW.map((step, i) => {
-            const state = active === step.key ? "active" : done.includes(step.key) ? "done" : "idle";
-            return (
-              <span key={step.key} className="forge-technical" style={{
-                padding: "5px 11px", borderRadius: 999, fontSize: 12,
-                border: "1px solid " + (state === "active" ? "#1a7a4a" : "rgba(255,255,255,.18)"),
-                background: state === "done" ? "rgba(47,158,68,.16)" : state === "active" ? "#1a7a4a" : "transparent",
-                color: state === "active" ? "#0D0D0F" : "inherit",
-              }}>{i + 1}. {step.label}</span>
-            );
-          })}
-        </div>
-
-        <Panel title="Manufacturing Status (Runtime Engine)">
-          <div style={{ display: "flex", gap: 22, flexWrap: "wrap", fontSize: 13 }}>
-            <span>Active events: <b>{ms.activeEvents}</b></span>
-            <span>Workshops: <b>{ms.workshops}</b></span>
-            <span>People: <b>{ms.people}</b></span>
-            <span>Machines: <b>{ms.machines}</b></span>
-            <span>Components: <b>{ms.components}</b></span>
+    <Room id="demo-studio" chrome={false} className="forge-room--shelled">
+      <RoomShell
+        roomId="demo-studio"
+        kicker="Forge OS · Demo Studio"
+        title="The whole runtime in one"
+        accent="run."
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <p className="forge-human" style={{ maxWidth: "62ch", color: T.ivory70, margin: 0 }}>
+              One workflow through the whole runtime: the button publishes canonical events onto the
+              live Activity Engine; hub and machine states derive from them; the Runtime Engine assembles
+              the operating picture below. Nothing here is animated — it reacts because work happened.
+            </p>
+            <Button onClick={run} disabled={running}>
+              {running ? "Running…" : "▶ Run Manufacturing Workflow"}
+            </Button>
           </div>
-        </Panel>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
-          <Panel title="Machines (derived)">
-            {Object.keys(machineStates).length
-              ? Object.entries(machineStates).map(([id, st]) => (
-                  <div key={id} style={row}>
-                    <span><span style={dot(stateColor(st))} />{id}</span>
-                    <span style={{ color: stateColor(st), fontWeight: 600, fontSize: 12 }}>{st}</span>
-                  </div>
-                ))
-              : <div style={{ opacity: .5, fontSize: 12 }}>Press Run to bring machines under load.</div>}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {WORKFLOW.map((step, i) => {
+              const state = active === step.key ? "active" : done.includes(step.key) ? "done" : "idle";
+              return (
+                <Badge key={step.key}
+                       color={state === "idle" ? T.greyDark : T.green}
+                       filled={state === "active"}>
+                  {i + 1}. {step.label}
+                </Badge>
+              );
+            })}
+          </div>
+
+          <Panel>
+            <Label>Manufacturing Status (Runtime Engine)</Label>
+            <div style={{ display: "flex", gap: 22, flexWrap: "wrap", fontSize: 13 }}>
+              <span>Active events: <b>{ms.activeEvents}</b></span>
+              <span>Workshops: <b>{ms.workshops}</b></span>
+              <span>People: <b>{ms.people}</b></span>
+              <span>Machines: <b>{ms.machines}</b></span>
+              <span>Components: <b>{ms.components}</b></span>
+            </div>
           </Panel>
 
-          <Panel title="Hubs (derived)">
-            {Object.keys(hubStates).length
-              ? Object.entries(hubStates).map(([id, st]) => (
-                  <div key={id} style={row}>
-                    <span><span style={dot(stateColor(st))} />{id}</span>
-                    <span style={{ color: stateColor(st), fontWeight: 600, fontSize: 12 }}>{st}</span>
-                  </div>
-                ))
-              : <div style={{ opacity: .5, fontSize: 12 }}>No hubs reporting yet.</div>}
-          </Panel>
-
-          <Panel title="Recommendations">
-            {runtime.recommendations.length
-              ? runtime.recommendations.map((r, i) => (
-                  <div key={i} style={{ fontSize: 12, padding: "3px 0" }}>
-                    <b>{r.station}</b> — {r.reason}
-                  </div>
-                ))
-              : <div style={{ opacity: .5, fontSize: 12 }}>None</div>}
-          </Panel>
-
-          <Panel title="Languages (Runtime Engine)">
-            {runtime.languages.map((l) => (
-              <div key={l} style={row}><span><span style={dot("#0A7F73")} />{l}</span></div>
-            ))}
-          </Panel>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <Panel title={`Forge Objects (${runtime.forgeObjects.length})`}>
-            {runtime.forgeObjects.length
-              ? runtime.forgeObjects.slice(0, 10).map((o, i) => (
-                  <div key={i} style={row}>
-                    <span><span style={dot("#3a4a5a")} />{o.id} · <span style={{ opacity: .6 }}>{o.class}</span></span>
-                    <span style={{ fontSize: 12, opacity: .7 }}>{o.state}</span>
-                  </div>
-                ))
-              : <div style={{ opacity: .5, fontSize: 12 }}>No objects yet.</div>}
-          </Panel>
-
-          <Panel title="Live Event Stream">
-            {log.length
-              ? <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 240, overflow: "auto" }}>
-                  {log.slice(0, 12).map((e, i) => (
-                    <div key={`${e.at}-${i}`} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: i === 0 ? 1 : .75 }}>
-                      <span>{e.type}{e.text ? ` · ${e.text}` : ""}</span>
-                      <span style={{ opacity: .5, whiteSpace: "nowrap", marginLeft: 10 }}>{shortTime(e.at)}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
+            <Panel>
+              <Label>Machines (derived)</Label>
+              {Object.keys(machineStates).length
+                ? Object.entries(machineStates).map(([id, st]) => (
+                    <div key={id} style={row}>
+                      <span><span style={dot(stateColor(st))} />{id}</span>
+                      <span style={{ color: stateColor(st), fontWeight: 600, fontSize: 12 }}>{st}</span>
                     </div>
-                  ))}
-                </div>
-              : <div style={{ opacity: .5, fontSize: 12 }}>Awaiting activity.</div>}
-          </Panel>
-        </div>
+                  ))
+                : <div style={quiet}>Press Run to bring machines under load.</div>}
+            </Panel>
 
-        <p className="forge-technical" style={{ opacity: .5, fontSize: 11, margin: 0 }}>
-          Note: the seed stream keeps publishing every few seconds, so the operating picture also
-          reflects background factory activity alongside the demo events.
-        </p>
-      </div>
+            <Panel>
+              <Label>Hubs (derived)</Label>
+              {Object.keys(hubStates).length
+                ? Object.entries(hubStates).map(([id, st]) => (
+                    <div key={id} style={row}>
+                      <span><span style={dot(stateColor(st))} />{id}</span>
+                      <span style={{ color: stateColor(st), fontWeight: 600, fontSize: 12 }}>{st}</span>
+                    </div>
+                  ))
+                : <div style={quiet}>No hubs reporting yet.</div>}
+            </Panel>
+
+            {/* The Runtime Engine's recommendations are {station, reason}. The frozen
+                Recommendation primitive renders the projection's richer
+                {severity, because, consequences} shape, so composing it here would
+                render an empty card. Station and reason are shown as they are. */}
+            <Panel>
+              <Label>Recommendations</Label>
+              {runtime.recommendations.length
+                ? runtime.recommendations.map((r, i) => (
+                    <div key={i} style={{ fontSize: 12, padding: "3px 0" }}>
+                      <b>{r.station}</b> — {r.reason}
+                    </div>
+                  ))
+                : <div style={quiet}>None</div>}
+            </Panel>
+
+            <Panel>
+              <Label>Languages (Runtime Engine)</Label>
+              {runtime.languages.map((l) => (
+                <div key={l} style={row}><span><span style={dot(T.teal)} />{l}</span></div>
+              ))}
+            </Panel>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+            <Panel>
+              <Label>Forge Objects ({runtime.forgeObjects.length})</Label>
+              {runtime.forgeObjects.length
+                ? runtime.forgeObjects.slice(0, 10).map((o, i) => (
+                    <div key={i} style={row}>
+                      <span><span style={dot(T.greyDark)} />{o.id} · <span style={{ color: T.grey }}>{o.class}</span></span>
+                      <span style={{ fontSize: 12, color: T.grey }}>{o.state}</span>
+                    </div>
+                  ))
+                : <div style={quiet}>No objects yet.</div>}
+            </Panel>
+
+            <Panel>
+              <Label>Live Event Stream</Label>
+              <div style={{ maxHeight: 240, overflow: "auto" }}>
+                <OperationsFeed rows={feedRows} limit={12} empty="Awaiting activity." />
+              </div>
+            </Panel>
+          </div>
+
+          <p className="forge-technical" style={{ color: T.grey, fontSize: 11, margin: 0 }}>
+            Note: the seed stream keeps publishing every few seconds, so the operating picture also
+            reflects background factory activity alongside the demo events.
+          </p>
+        </div>
+      </RoomShell>
     </Room>
   );
 }

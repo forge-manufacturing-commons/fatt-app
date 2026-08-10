@@ -151,6 +151,36 @@ const CLAIM_EVIDENCE = {
   rules:           (t) => /Rules\.(evaluate|assert)|engineeringRules|productionRules/.test(t),
   policy:          (t) => /createPolicy|requireActor/.test(t),
 };
+// CODE, NOT PROSE. Every evidence test below runs against the source with
+// comments stripped.
+//
+// Found the hard way, twice. The dead-code check for InspectionHangar matched
+// the very comment documenting the removal; then DemoStudio's comment explaining
+// that "buildRuntime is NOT interchangeable with project()" satisfied
+// /project\(/ and made a FALSE claim of projection:"manufacturing" pass. A room
+// must not be able to earn a capability by describing it. Documentation is not
+// evidence — only the executable text counts.
+const code = (t) => t
+  .replace(/\/\*[\s\S]*?\*\//g, "")   // block comments, incl. JSDoc
+  .replace(/^\s*\/\/.*$/gm, "");      // whole-line comments
+
+// DRIVES MACHINE STATE — the discriminator between "activity" and "harness".
+//
+// A room that publishes machine-bearing events is not observing the factory, it
+// is driving it and then reading its own wake. The original form of this test
+// only matched an INLINE literal:
+//
+//     /publish\(\s*\{[^}]*machine/
+//
+// which DemoStudio evaded by publishing indirectly — publish(step.event), with
+// the machine-bearing objects held in a WORKFLOW const. The claim would have
+// been false while the audit stayed green. Detection is therefore decoupled
+// from the call site: a machine-bearing event object ANYWHERE in the module,
+// combined with ANY publish() call, is sufficient. Indirection through a const,
+// an array, a workflow map or a helper cannot launder it.
+const drivesMachineState = (t) =>
+  /publish\s*\(/.test(t) && /\bmachine\s*:\s*["'`]/.test(t);
+
 const PROJECTION_EVIDENCE = {
   manufacturing: (t) => /project\(/.test(t),
   knowledge:     (t) => /translations|SUPPORTED_LANGUAGES/.test(t),
@@ -166,7 +196,28 @@ const PROJECTION_EVIDENCE = {
     /useForgeActivity\s*\(/.test(t) &&
     /\b(machineStates|hubStates)\b/.test(t) &&
     !/const\s*\[\s*(machineStates|hubStates|machines)\s*,/.test(t) &&
-    !/publish\(\s*\{[^}]*machine/.test(t),
+    !drivesMachineState(t),
+  // "harness" — an executable reference room that INTENTIONALLY publishes
+  // canonical events through the real event bus and observes the resulting
+  // runtime state/consequences.
+  //
+  // Distinguished from "activity" by direction of causation, and the two are
+  // mutually exclusive by construction:
+  //
+  //   activity:  event bus -> derived state -> room observes
+  //   harness:   room publishes -> real bus -> runtime derives -> room observes
+  //
+  // Deliberately not satisfiable by declaration alone. A harness must:
+  //   1. call useForgeActivity() — it uses the REAL bus, not a private mock
+  //   2. actually publish machine-bearing events — a room that publishes
+  //      nothing is not a harness, it is an observer
+  //   3. observe the resulting derived state (machineStates / hubStates)
+  //   4. NOT keep an independent local copy of that state
+  harness: (t) =>
+    /useForgeActivity\s*\(/.test(t) &&
+    drivesMachineState(t) &&
+    /\b(machineStates|hubStates)\b/.test(t) &&
+    !/const\s*\[\s*(machineStates|hubStates|machines)\s*,/.test(t),
   // A room may honestly declare that it derives nothing — a thin wrapper that
   // mounts a screen holds no manufacturing state and should say so.
   none:          () => true,
@@ -178,6 +229,7 @@ const PROJECTION_EVIDENCE = {
 // category is a loophole and this audit fails.
 {
   const A = PROJECTION_EVIDENCE.activity;
+  const OBSERVER = 'const { machineStates } = useForgeActivity(); const active = line.filter(m => machineStates[m] === "active").length;';
   const cases = [
     ["claims activity without calling the hook",
       'import { useForgeActivity } from "x"; const line = ["a"]; export default function R(){ return null; }', false],
@@ -185,18 +237,62 @@ const PROJECTION_EVIDENCE = {
       'const x = useForgeActivity(); export default function R(){ return null; }', false],
     ["keeps an independent local copy of machine state",
       'const { machineStates } = useForgeActivity(); const [machineStates2] = useState({}); const [machineStates, setM] = useState({});', false],
-    ["publishes machine-bearing events to feed its own screen",
+    // A — inline machine-bearing publish
+    ["A. publishes an inline machine-bearing event to feed its own screen",
       'const { machineStates, publish } = useForgeActivity(); publish({ machine: "m1", type: "machine.start" });', false],
-    ["reads only the raw event log (instrumentation, not folded state)",
+    // B — publish(variable) resolving to a machine-bearing event
+    ["B. publishes a machine-bearing event held in a variable",
+      OBSERVER + ' const { publish } = useForgeActivity(); let e = { type: "machine.started", machine: "migWelder" }; publish(e);', false],
+    // C — publish(step.event) from a machine-bearing workflow (the DemoStudio evasion)
+    ["C. publishes step.event from a machine-bearing workflow",
+      OBSERVER + ' const { publish } = useForgeActivity(); const WORKFLOW = [{ key:"started", event:{ type: EVENT.MACHINE_STARTED, machine: "migWelder" } }]; for (const step of WORKFLOW) publish(step.event);', false],
+    // D — machine-bearing object stored in a const, then published
+    ["D. publishes a machine-bearing const",
+      OBSERVER + ' const { publish } = useForgeActivity(); const DEMO = { type: "machine.started", machine: "lathe" }; publish(DEMO);', false],
+    // E — genuine observer (ProductionLine shape) must still be accepted
+    ["E. genuinely derives operational state from the bus", OBSERVER, true],
+    // F — raw log only
+    ["F. reads only the raw event log (instrumentation, not folded state)",
       'const { log } = useForgeActivity(); const n = log.length;', false],
-    ["counts events to report on itself",
+    // G — event count only
+    ["G. counts events to report on itself",
       'const { log } = useForgeActivity(); const real = [{ k:"Events", v: log.length }];', false],
-    ["genuinely derives operational state from the bus",
-      'const { machineStates } = useForgeActivity(); const active = line.filter(m => machineStates[m] === "active").length;', true],
   ];
   const wrong = cases.filter(([, srcText, expected]) => A(srcText) !== expected).map(([name]) => name);
   ok(`projection "activity" cannot be claimed falsely (${cases.length} adversarial cases)`,
      wrong.length === 0, wrong.join("; "));
+}
+
+// ---------- ADVERSARIAL SELF-TEST — "harness" ----------
+// The same discipline applied to the new category. It must reject a room that
+// merely declares harness, and it must be mutually exclusive with activity so
+// the two cannot both be true of one source.
+{
+  const H = PROJECTION_EVIDENCE.harness;
+  const A = PROJECTION_EVIDENCE.activity;
+  const REAL_HARNESS =
+    'const { log, hubStates, machineStates, publish } = useForgeActivity();' +
+    ' const WORKFLOW = [{ key:"started", event:{ type: EVENT.MACHINE_STARTED, machine: "migWelder", hub: "warri" } }];' +
+    ' for (const step of WORKFLOW) publish(step.event);' +
+    ' const rt = buildRuntime({ log, hubStates, machineStates });';
+  const cases = [
+    ["declares harness but publishes nothing (an observer, not a harness)",
+      'const { machineStates } = useForgeActivity(); const active = machineStates["m1"];', false],
+    ["declares harness but never touches the real bus",
+      'const WORKFLOW = [{ event:{ machine: "m1" } }]; publish(WORKFLOW[0].event);', false],
+    ["publishes but observes no derived state (a button, not a harness)",
+      'const { publish } = useForgeActivity(); publish({ type:"machine.started", machine:"m1" });', false],
+    ["publishes non-machine-bearing events only",
+      'const { machineStates, publish } = useForgeActivity(); publish({ type:"language.added", locale:"yo" }); const s = machineStates;', false],
+    ["keeps an independent local copy of the state it claims to observe",
+      REAL_HARNESS + ' const [machineStates, setM] = useState({});', false],
+    ["the genuine executable reference room", REAL_HARNESS, true],
+  ];
+  const wrong = cases.filter(([, srcText, expected]) => H(srcText) !== expected).map(([name]) => name);
+  ok(`projection "harness" cannot be claimed falsely (${cases.length} adversarial cases)`,
+     wrong.length === 0, wrong.join("; "));
+  ok('projection "harness" and "activity" are mutually exclusive',
+     !(H(REAL_HARNESS) && A(REAL_HARNESS)) && H(REAL_HARNESS) && !A(REAL_HARNESS));
 }
 
 // A room is routable if App.jsx imports it from ./rooms. Scoping to the
@@ -223,11 +319,12 @@ let breaches = [];
 for (const f of declared) {
   const block = f.text.slice(f.text.indexOf("export const CONTRACT"));
   const body = block.slice(0, block.indexOf("};") + 2);
+  const src = code(f.text);   // prose cannot honour a claim
   const marks = [];
   for (const [claim, evidence] of Object.entries(CLAIM_EVIDENCE)) {
     const claimed = new RegExp(`${claim}:\\s*true`).test(body);
     if (!claimed) continue;
-    const honoured = evidence(f.text);
+    const honoured = evidence(src);
     marks.push(`${honoured ? "\u2713" : "\u2717"} ${claim}`);
     if (!honoured) breaches.push(`${basename(f.path)} claims ${claim} but the source does not honour it`);
   }
@@ -240,7 +337,7 @@ for (const f of declared) {
   const projM = body.match(/projection:\s*["'](\w+)["']/);
   if (projM) {
     const test = PROJECTION_EVIDENCE[projM[1]];
-    const honoured = test ? test(f.text) : false;
+    const honoured = test ? test(src) : false;
     marks.push(`${honoured ? "\u2713" : "\u2717"} projection:${projM[1]}`);
     if (!honoured) breaches.push(`${basename(f.path)} claims projection "${projM[1]}" without deriving it`);
   }
