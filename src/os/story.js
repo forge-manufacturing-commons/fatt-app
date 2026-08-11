@@ -27,6 +27,10 @@ const SPEC = "FTT-CR-001";
 const COMP = "COMP-CR-0001";
 const MISSION = "FORGE-ALPHA";
 const CID = `mission-${MISSION}`;          // correlationId threads the whole story
+// SEED organisation from src/os/network.js. DEMO-ORG-001 is seed-associated with
+// the lagos hub, which is where this story fabricates, so the demonstration is
+// coherent. Not a real manufacturer.
+const ORG = "DEMO-ORG-001";
 
 // MISSION IDENTITY — preserved, not inferred.
 //
@@ -89,10 +93,22 @@ export const MANUFACTURING_STORY = [
       person: "Adaeze Okoro", human: "Adaeze Okoro", workshop: "Lagos Fabrication Works",
       correlationId: CID, summary: "Mill-03 started — chassis rail fabrication" })),
 
+  // MANUFACTURING RESPONSIBILITY, stated explicitly — and it is SEED.
+  //
+  // `organisation: ORG` is a demonstration identity from src/os/network.js. It is
+  // NOT derived from `workshop: "Lagos Fabrication Works"` — workshop is WHERE and
+  // organisation is WHO, two different Forge Objects, and inferring one from the
+  // other is exactly the thing E5 forbids. The two coexist here on purpose: the
+  // place is narrative, the organisation is the authoritative responsibility fact.
+  //
+  // Only the production step carries it. Inspection was performed by the quality
+  // office, not the fabricator, so attaching the fabricator to it would assert a
+  // responsibility the story does not establish.
   step("Component produced", `${COMP} fabricated against ${SPEC}`,
     Events.production({ component: COMP, specification: SPEC, machine: "mill-03", hub: "lagos",
       person: "Adaeze Okoro", human: "Adaeze Okoro", workshop: "Lagos Fabrication Works",
-      mission: MISSION, correlationId: CID, summary: `${COMP} produced — awaiting inspection` })),
+      organisation: ORG, mission: MISSION, correlationId: CID,
+      summary: `${COMP} produced — awaiting inspection` })),
 
   step("Inspection failed", "Bore diameter outside tolerance — component returned",
     Events.inspection({ component: COMP, specification: SPEC, machine: "cmm-01", hub: "lagos",

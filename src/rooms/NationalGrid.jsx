@@ -29,6 +29,7 @@ import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface, Recommendation } 
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, stateColor, severityColor } from "@kernel/forge.js";
 import RippleIndicator from "@kernel/ripple/RippleIndicator.jsx";
+import { SEED_ORGANISATIONS, capabilitiesOf, hubsOf } from "@kernel/network.js";
 
 // ============================================================
 // PLATFORM CONTRACT
@@ -98,6 +99,48 @@ export default function NationalGrid() {
         <div style={{ gridColumn:"1 / -1" }}>
           <Label>Live manufacturing network</Label>
           <NetworkSurface nodes={nodes} label={`${hubs.length} hubs reporting · state-coloured from the kernel`} />
+        </div>
+
+        {/* MANUFACTURING NETWORK — three separate facts, never merged.
+            CAPABILITY comes from the static seed registry; RESPONSIBILITY comes
+            only from the fold, where an event explicitly named an organisation.
+            Where responsibility is absent it reads UNKNOWN — it is never filled
+            in with an organisation that merely holds the capability. */}
+        <div>
+          <Label>Manufacturing network · seed</Label>
+          <Panel accent={T.teal}>
+            {SEED_ORGANISATIONS.map((o) => {
+              const caps = capabilitiesOf(o.id);
+              const responsible = Object.values(view.components).filter((c) => c.organisation === o.id);
+              return (
+                <div key={o.id} style={{ marginBottom:S.md }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"baseline" }}>
+                    <span style={{ fontFamily:FONT.mono, fontSize:11, color:T.ivory }}>{o.id}</span>
+                    <Badge color={T.grey}>{o.provenance}</Badge>
+                  </div>
+                  <div style={{ fontFamily:FONT.ui, fontSize:11.5, color:T.grey, marginTop:3 }}>{o.name}</div>
+                  <div style={{ fontFamily:FONT.ui, fontSize:10.5, color:T.grey, marginTop:5 }}>
+                    CAN MAKE {caps.length
+                      ? [...new Set(caps.map((c) => c.componentClass))].join(" · ")
+                      : "— nothing recorded"}
+                  </div>
+                  <div style={{ fontFamily:FONT.ui, fontSize:10.5, color:T.grey, marginTop:3 }}>
+                    AT {hubsOf(o.id).join(" · ") || "— no hub recorded"}
+                  </div>
+                  <div style={{ fontFamily:FONT.ui, fontSize:10.5, marginTop:5,
+                    color: responsible.length ? T.teal : T.greyDark }}>
+                    RESPONSIBLE FOR {responsible.length
+                      ? responsible.map((c) => `${c.id} (${c.state}${c.mission ? ` · ${c.mission}` : ""})`).join(" · ")
+                      : "UNKNOWN"}
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ fontFamily:FONT.ui, fontSize:10, color:T.greyDark, marginTop:S.sm }}>
+              Seed identities for demonstration. Not real Forge members, not verified
+              manufacturers, no commercial commitment. Capability is not responsibility.
+            </div>
+          </Panel>
         </div>
 
         <div>

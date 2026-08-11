@@ -98,7 +98,8 @@ export function project(log = [], missions = []) {
     id, state: specificationState.initial, revision: null, author: null, history: [],
   });
   const touchComp = (id) => (components[id] ??= {
-    id, state: componentState.initial, specification: null, mission: null, history: [],
+    id, state: componentState.initial, specification: null, mission: null,
+    organisation: null, history: [],
   });
   // MISSION LIFECYCLE — folded exactly like specifications and components.
   //
@@ -174,6 +175,30 @@ export function project(log = [], missions = []) {
             at: e.at, objectClass: "component", id: c.id,
             attempted: e.mission, held: c.mission, eventId: e.eventId,
             message: `${c.id} already belongs to "${c.mission}" and cannot be claimed by "${e.mission}"`,
+          });
+        }
+      }
+      // MANUFACTURING RESPONSIBILITY — WHO, and only when an event says so.
+      //
+      // `organisation` is already a canonical entity field (FORGE_OBJECT
+      // .INSTITUTION), so responsibility needs no new event type. It is read
+      // ONLY from an event that explicitly carried it. It is never derived from
+      // `workshop` (that is WHERE, a different Forge Object), never from
+      // `owner_org` (family-level commercial catalogue, D1/D3), never from a
+      // role, and never from capability — an organisation that CAN make a class
+      // is not thereby responsible for any instance of it.
+      //
+      // Same authority rule as mission: first writer wins, and a conflicting
+      // claim is recorded rather than discarded. Absent stays absent, which the
+      // surfaces must render as UNKNOWN rather than filling in a capable party.
+      if (e.organisation) {
+        if (c.organisation == null) {
+          c.organisation = e.organisation;
+        } else if (c.organisation !== e.organisation) {
+          anomalies.push({
+            at: e.at, objectClass: "component", id: c.id,
+            attempted: e.organisation, held: c.organisation, eventId: e.eventId,
+            message: `${c.id} is already the responsibility of "${c.organisation}" and cannot be claimed by "${e.organisation}"`,
           });
         }
       }

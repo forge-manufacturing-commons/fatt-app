@@ -4,7 +4,9 @@
 // Run: node test/projections.consumer.mjs
 // ============================================================
 import { project, feedTitle } from "../src/os/projections.js";
-import Events, { EVENT_TYPES, INSPECTION_RESULT } from "../src/os/events.js";
+import Events, { EVENT_TYPES, INSPECTION_RESULT, MISSION_POLICY } from "../src/os/events.js";
+import { CAPABILITIES } from "../src/os/Roles.js";
+import NETWORK from "../src/os/network.js";
 
 let pass = 0, fail = 0;
 const ok = (n, c) => { if (c) { pass++; console.log(`  ok   ${n}`); } else { fail++; console.log(`  FAIL ${n}`); } };
@@ -586,9 +588,145 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
   ]), []);
   ok("H. the fold does not claim a safety-critical fact it cannot source",
      !("safetyCritical" in p.components["C1"]));
+  // Shape guard, updated once in E5 rather than deleted. It fired correctly when
+  // `organisation` was added — that is the guard working, not failing. The point
+  // it defends is unchanged: the fold carries only fields an event can prove, so
+  // `safetyCritical` still has no place here.
   ok("H. the folded component shape stays exactly what the events can prove",
      Object.keys(p.components["C1"]).sort().join(",") ===
-     ["history", "id", "mission", "specification", "state"].join(","));
+     ["history", "id", "mission", "organisation", "specification", "state"].join(","));
+}
+
+// ============================================================
+// MANUFACTURING NETWORK (E5)
+//
+// Three facts that must never substitute for one another:
+//   CAPABILITY      CAN make a class            src/os/network.js (master data)
+//   RESPONSIBILITY  IS responsible for an instance  component.organisation (fold)
+//   HISTORY         DID it                      the event log
+// ============================================================
+{
+  const N = NETWORK;
+  const A = { id: "M-A", title: "a", target: 10, specification: "FTT-CR-001", state: "planning" };
+  const conflicts = (p) => p.anomalies.filter(
+    (x) => x.objectClass === "component" && /is already the responsibility of/.test(x.message));
+  const produce = (component, extra = {}) =>
+    Events.production({ component, specification: "FTT-CR-001", person: "a", ...extra });
+
+  // A + B — seed is explicit, and never dressed as verified
+  ok("A. every seeded organisation is explicitly marked seed",
+     N.SEED_ORGANISATIONS.length === 3 &&
+     N.SEED_ORGANISATIONS.every((o) => o.provenance === N.PROVENANCE.SEED));
+  ok("B. no seeded organisation claims to be verified",
+     N.SEED_ORGANISATIONS.every((o) => o.verification !== "verified"));
+  ok("B. an unknown organisation is not treated as real",
+     N.isSeedOrganisation("DEMO-ORG-001") === true &&
+     N.isSeedOrganisation("SOME-REAL-CO") === false &&
+     N.organisationById("SOME-REAL-CO") === null);
+  ok("S. no capability carries commercial terms",
+     N.SEED_CAPABILITIES.every((c) =>
+       !("price" in c) && !("capacity" in c) && !("sla" in c) && !("stake" in c)));
+
+  // C — capability is not permission
+  ok("C. manufacturing capability is disjoint from the permission vocabulary",
+     Object.values(N.COMPONENT_CLASS).every((cls) => !(cls in CAPABILITIES)) &&
+     !Object.keys(CAPABILITIES).some((p) => Object.values(N.COMPONENT_CLASS).includes(p)));
+
+  // D — capability does not create responsibility
+  {
+    const p = project(asLog([produce("C1")]), [A]);
+    ok("D. a capable organisation does not become responsible",
+       N.organisationsCapableOf(N.COMPONENT_CLASS.CHASSIS_RAIL).length === 2 &&
+       p.components["C1"].organisation === null);
+    ok("N. no organisation claim leaves responsibility UNKNOWN",
+       p.components["C1"].organisation === null);
+  }
+
+  // E — responsibility does not create capability
+  {
+    const p = project(asLog([produce("C1", { organisation: "DEMO-ORG-003" })]), [A]);
+    ok("E. being responsible does not grant a capability record",
+       p.components["C1"].organisation === "DEMO-ORG-003" &&
+       N.isCapableOfSpecification("DEMO-ORG-003", "FTT-CR-001") === false);
+  }
+
+  // F + G — WHERE and commercial owner never become WHO
+  {
+    const p = project(asLog([produce("C1", { workshop: "Lagos Fabrication Works", hub: "lagos" })]), [A]);
+    ok("F. workshop does not become organisation", p.components["C1"].organisation === null);
+    const q = project(asLog([produce("C2", { owner_org: "Sheet-metal SME" })]), [A]);
+    ok("G. owner_org does not become organisation", q.components["C2"].organisation === null);
+  }
+
+  // H + I + J — capability cardinality
+  ok("H. one organisation can hold multiple capabilities",
+     N.capabilitiesOf("DEMO-ORG-001").length === 3);
+  ok("I. two organisations can share a capability",
+     N.organisationsCapableOf(N.COMPONENT_CLASS.CHASSIS_RAIL).sort().join(",") ===
+     "DEMO-ORG-001,DEMO-ORG-002");
+  ok("J. one organisation can operate at multiple hubs",
+     N.hubsOf("DEMO-ORG-001").length === 2 && N.hubsOf("DEMO-ORG-003").length === 1);
+
+  // K + L + M — one authority, conflicts recorded
+  {
+    const p = project(asLog([
+      produce("C1", { organisation: "DEMO-ORG-001" }),
+      produce("C1", { organisation: "DEMO-ORG-002" }),
+    ]), [A]);
+    ok("K. a component has exactly one authoritative organisation",
+       p.components["C1"].organisation === "DEMO-ORG-001");
+    ok("M. the first authoritative organisation is preserved",
+       p.components["C1"].organisation === "DEMO-ORG-001");
+    const c = conflicts(p);
+    ok("L. a conflicting organisation claim is recorded, not discarded",
+       c.length === 1 && c[0].attempted === "DEMO-ORG-002" && c[0].held === "DEMO-ORG-001" &&
+       c[0].objectClass === "component" && c[0].id === "C1", JSON.stringify(c));
+    ok("L. repeating the same organisation is not a conflict",
+       conflicts(project(asLog([
+         produce("C1", { organisation: "DEMO-ORG-001" }),
+         produce("C1", { organisation: "DEMO-ORG-001" }),
+       ]), [A])).length === 0);
+  }
+
+  // component class taxonomy — mapped, or honestly unknown
+  ok("taxonomy maps only the specifications that exist",
+     N.classForSpecification("FTT-CR-001") === "chassis-rail" &&
+     N.classForSpecification("FTT-PV-002") === "pressure-vessel" &&
+     N.classForSpecification("FTT-ZZ-999") === null);
+  ok("taxonomy reuses the identifier production/rules.js already expects",
+     N.COMPONENT_CLASS.PRESSURE_VESSEL === "pressure-vessel");
+  ok("taxonomy did not adopt component_jobs commercial categories",
+     !Object.values(N.COMPONENT_CLASS).some((c) =>
+       ["chassis", "body", "kitchen", "gas", "electrical", "livery"].includes(c)));
+
+  // O + P + Q — E1–E4 intact alongside the new fact
+  {
+    const p = project(asLog([
+      produce("C1", { mission: "M-A", organisation: "DEMO-ORG-001" }),
+      Events.inspection({ component: "C1", specification: "FTT-CR-001", mission: "M-A",
+        result: INSPECTION_RESULT.PASS, person: "b" }),
+    ]), [A]);
+    const m = p.missions[0];
+    ok("O. mission correlation is unaffected by responsibility",
+       p.components["C1"].mission === "M-A" && m.accepted === 1);
+    ok("P. mission lifecycle stays graph-driven, not organisation-driven",
+       m.state === "planning" && m.history.length === 0);
+    ok("Q. component lifecycle remains authoritative",
+       p.components["C1"].state === "assembly");
+    ok("R. the fold shape grew by exactly one field",
+       Object.keys(p.components["C1"]).sort().join(",") ===
+       ["history", "id", "mission", "organisation", "specification", "state"].join(","));
+  }
+
+  // T + U + V — nothing frozen moved
+  {
+    const all = Object.values(EVENT_TYPES).flatMap((d) => Object.values(d));
+    ok("T. no new event type was introduced", all.length === 32);
+    ok("T. no organisation/capability/responsibility event exists",
+       all.filter((t) => /organisation|capabilit|responsib|workorder/i.test(t)).length === 0);
+    ok("U. every canonical event still carries a mission policy",
+       all.every((t) => t in MISSION_POLICY));
+  }
 }
 
 console.log(`\n${pass}/${pass + fail} assertions passed${fail ? ` — ${fail} FAILED` : ""}\n`);
