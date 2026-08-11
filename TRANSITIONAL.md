@@ -19,3 +19,70 @@ Nothing may be added to this file without a removal condition.
 |---|-------|-------|------|
 | R1 | `deriveForgeObjects` classes any event with `machine` as MACHINE, so a production event with both `component` and `machine` is misclassified | registry | Deliberately NOT compensated in emitters. Producers stay truthful; the registry owns interpretation. |
 | C6 | `activeThroughput` counts all events, not manufacturing events | runtime | `events.js` now provides the vocabulary to distinguish meta from domain events. |
+
+## Architectural decisions
+
+These are settled boundaries, not bridges. They are recorded so a future
+contributor does not re-open a question that has already been answered with
+evidence, and so the absences below are understood as deliberate.
+
+### D1 — WORK ORDER NOT NEEDED — CURRENT MODEL
+
+`Mission → Specification → Component` is sufficient for current manufacturing
+truth. Measured, not assumed: a mission aggregates across multiple
+specifications; two missions sharing one specification stay isolated; a
+component belongs to exactly one mission, first-writer-wins, and a later event
+cannot reassign it.
+
+Component membership is authoritative through the event-derived projection —
+`event.mission` → `component.mission` → mission progress — with specification
+matching retained only as a fallback for legacy uncorrelated components.
+
+`component_jobs` is commercial/catalogue workflow data, **not** manufacturing
+authority: its rows are component *families*, it shares no key with the fold,
+and its only writer (`pages/Board.jsx`) is unrouted. `component_jobs.stage`
+must never become component lifecycle authority — a single family-level value
+provably cannot describe components that have diverged, and `componentState`
+already owns that lifecycle with eleven event-backed states.
+
+`builds` / `build_id` is vehicle identity ("one row per truck", for the record
+attempt), not work execution. Declared, never read in executable source.
+
+A Work Order would today duplicate the mission/component relationship without
+adding a justified domain fact. **It may only be introduced if a real
+work-package or assignment requirement emerges that the existing model cannot
+represent** — see D2.
+
+### D2 — COMPONENT MANUFACTURING ASSIGNMENT — deferred domain decision
+
+The repository cannot currently express:
+
+> organisation X is responsible for producing component Y
+
+None of the 32 canonical event types represents assignment: zero mention
+assignment, ownership, order or package. The 32-event freeze is intact and this
+absence is **deliberate**, not an oversight. There is no authoritative
+assignment relation in the system today.
+
+Before any assignment vocabulary is added, the future decision must answer
+whether responsibility attaches to the component, the specification, the
+mission, the hub, the organisation, a capability, or some combination. Those
+questions are open and must not be answered by assumption.
+
+### D3 — COMMERCIAL CATALOGUE STATUS — unverified
+
+`component_jobs` is treated as a commercial/demo catalogue in the application
+architecture: `/join` reads `partnership_open`, `owner_org`, `name` and
+`stake_range` to present partnership opportunities, and persists intent to
+`diaspora_leads` (whose `target_sme` is documented as "which SME/component
+class").
+
+**Its deployed data reality is unverified.** `isConfigured` gates every call and
+`SEED_JOBS` substitutes silently, so this environment cannot observe whether
+`partnership_open` and `stake_range` describe real commercial commitments. No
+claim is made either way.
+
+Not to be migrated into event sourcing, given no organisation foreign key, and
+`owner_org` holds role descriptions ("Certified gas fitter", "Sheet-metal SME"
+twice) rather than organisation names. Converting it to an authoritative
+organisation relation requires a separate commercial-domain decision.

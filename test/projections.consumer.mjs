@@ -422,5 +422,79 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
   }
 }
 
+// ============================================================
+// MISSION CLOSURE (E3 final convergence)
+//
+// `mission.closed` used to vanish: unmapped, so no transition and no anomaly.
+// An event that cannot advance the graph is still a fact about the sequence.
+//
+// The closing edge is resolved FROM the graph, not hardcoded. Today only
+// `delivery` can close (via `delivered`), so closure is legal there and refused
+// everywhere else — and a refusal is recorded through the existing anomaly
+// mechanism. Delivery is never fabricated.
+// ============================================================
+{
+  const MC = (declared) => [{ id: "M-1", title: "m", target: 10, specification: "S-1", state: declared }];
+  const closeFrom = (declared, pre = []) => {
+    const p = project(asLog([...pre,
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.CLOSED, person: "Director" })]), MC(declared));
+    return { p, m: p.missions[0], anoms: p.anomalies.filter((a) => a.objectClass === "mission") };
+  };
+
+  // A — the event can never silently disappear
+  for (const st of ["planning", "engineering", "procurement", "production", "inspection", "held"]) {
+    const { m, anoms } = closeFrom(st);
+    ok(`closure from ${st} is refused and RECORDED`,
+       m.state === st && anoms.length === 1 &&
+       anoms[0].attempted === "close" && anoms[0].held === st,
+       JSON.stringify(anoms));
+  }
+
+  // B — the one state the graph authorises
+  {
+    const { m, anoms } = closeFrom("delivery");
+    ok("closure from delivery is LEGAL — the graph's only closing edge",
+       m.state === "closed" && anoms.length === 0);
+    ok("the legal closure is recorded in history as the graph's own edge",
+       m.history.length === 1 && m.history[0].transition === "delivered" &&
+       m.history[0].from === "delivery" && m.history[0].to === "closed");
+  }
+
+  // anomaly shape must match the existing mission anomalies exactly
+  {
+    const { anoms } = closeFrom("planning");
+    const a = anoms[0];
+    ok("closure anomaly keeps the established mission anomaly shape",
+       a.objectClass === "mission" && a.id === "M-1" &&
+       typeof a.at === "number" && "eventId" in a &&
+       /^M-1 cannot "close" from "planning"$/.test(a.message));
+  }
+
+  // C + D — closure fabricates neither progress nor delivery
+  {
+    const pre = [
+      Events.production({ component: "C1", specification: "S-1", mission: "M-1", person: "a" }),
+      Events.inspection({ component: "C1", specification: "S-1", mission: "M-1",
+        result: INSPECTION_RESULT.PASS, person: "b" }),
+    ];
+    const { p, m } = closeFrom("planning", pre);
+    ok("C. closure does not manufacture progress",
+       m.accepted === 1 && m.progress === 10);
+    ok("C. closure does not alter component state",
+       p.components["C1"].state === "assembly");
+    ok("D. closure does not fabricate delivery — no state reached delivery",
+       m.state === "planning" && !m.history.some((h) => h.to === "delivery"));
+  }
+
+  // the three outcomes stay distinguishable
+  {
+    const legal   = closeFrom("delivery");
+    const refused = closeFrom("planning");
+    ok("valid transition, invalid transition and no-op remain distinguishable",
+       legal.m.state === "closed" && legal.anoms.length === 0 &&
+       refused.m.state === "planning" && refused.anoms.length === 1);
+  }
+}
+
 console.log(`\n${pass}/${pass + fail} assertions passed${fail ? ` — ${fail} FAILED` : ""}\n`);
 process.exit(fail ? 1 : 0);

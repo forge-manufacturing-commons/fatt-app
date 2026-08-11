@@ -208,6 +208,25 @@ export function project(log = [], missions = []) {
       if (e.type === "mission.authorised")                       transition = "authorise";
       else if (e.type === "engineering.specification.released")   transition = "completePackage";
       else if (e.type === "production.program.finished")          transition = "productionComplete";
+      // CLOSURE — the graph decides, and a refusal is RECORDED, never silent.
+      //
+      // `mission.closed` was previously unmapped, so the event vanished: no
+      // transition, no anomaly, nothing. An event that cannot advance the graph
+      // is a fact about the sequence and must survive as one.
+      //
+      // The edge is resolved FROM the graph rather than hardcoded, so this stays
+      // correct if the lifecycle changes. Today exactly one state can close —
+      // `delivery`, via `delivered` — so closure is legal there and refused
+      // everywhere else. When no closing edge exists from the held state, an
+      // undefined "close" is attempted deliberately: the graph rejects it and the
+      // existing anomaly mechanism reports precisely why. Delivery is never
+      // fabricated; a mission that was never delivered cannot become closed.
+      else if (e.type === "mission.closed") {
+        const closing = missionState.transitions(mi.state).find((t) => {
+          try { return missionState.next(mi.state, t) === "closed"; } catch { return false; }
+        });
+        transition = closing ?? "close";
+      }
       // mission.created carries no transition: `planning` IS the initial state,
       // so creation is an appearance, not a movement.
       //
