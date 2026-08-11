@@ -77,7 +77,16 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
      p.components["COMP-001"].history.some((h) => h.transition === "submitForInspection"));
   ok("mission progress is COUNTED from components", p.missions[0].accepted === 1);
   ok("progress is a percentage of target", p.missions[0].progress === 2);
-  ok("mission moves itself into production", p.missions[0].state === "production");
+  // REPLACES "mission moves itself into production".
+  //
+  // That assertion encoded the defect. Production is a LIFECYCLE state and the
+  // nine-state graph is the only thing entitled to grant it; a component
+  // reaching assembly is PROGRESS. The old projection promoted the mission on
+  // the strength of a metric, so mission state could never be wrong and
+  // therefore said nothing. Progress moving while lifecycle holds is now the
+  // correct, asserted behaviour.
+  ok("progress does NOT manufacture lifecycle state",
+     p.missions[0].state === "planning");
   ok("cleared-for-assembly recommendation appears",
      p.recommendations.some((r) => /cleared for assembly/.test(r.message)));
 }
@@ -128,6 +137,173 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
     Events.production({ component: "B", person: "p" }),
   ]), MISSIONS);
   ok("feed is returned newest first", p.feed[0].subject === "B");
+}
+
+// ============================================================
+// MISSION LIFECYCLE — transitioned, never inferred
+//
+// These assert the SEMANTICS (transition, history, anomaly, isolation), not
+// merely a final state string. The rule under test throughout: lifecycle comes
+// from the nine-state graph in src/domains/mission/state.js; `accepted` and
+// `progress` are metrics and may never grant a state.
+// ============================================================
+{
+  const M = [{ id: "M-1", title: "Mission one", target: 10, specification: "SPEC-1" },
+             { id: "M-2", title: "Mission two", target: 10, specification: "SPEC-2" }];
+  const row = (p, id) => p.missions.find((m) => m.id === id);
+  const missionAnoms = (p, id) => p.anomalies.filter((a) => a.objectClass === "mission" && a.id === id);
+
+  // A — created is an appearance, not a movement
+  {
+    const p = project(asLog([Events.mission({ mission: "M-1", person: "Director" })]), M);
+    ok("A. mission.created holds the initial state", row(p, "M-1").state === "planning");
+    ok("A. mission.created writes no transition history", row(p, "M-1").history.length === 0);
+    ok("A. mission.created raises no anomaly", missionAnoms(p, "M-1").length === 0);
+  }
+
+  // B — authorise: planning -> engineering, and the history records the edge
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", person: "Director" }),
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "Director" }),
+    ]), M);
+    const r = row(p, "M-1");
+    ok("B. mission.authorised drives planning -> engineering", r.state === "engineering");
+    ok("B. the transition is recorded, not just the result",
+       r.history.length === 1 && r.history[0].transition === "authorise" &&
+       r.history[0].from === "planning" && r.history[0].to === "engineering");
+    ok("B. history carries the actor", r.history[0].by === "Director");
+  }
+
+  // C — specification released: engineering -> procurement
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+      Events.engineering({ mission: "M-1", specification: "SPEC-1",
+        type: EVENT_TYPES.ENGINEERING.SPEC_RELEASED, person: "Ngozi" }),
+    ]), M);
+    const r = row(p, "M-1");
+    ok("C. specification.released drives engineering -> procurement", r.state === "procurement");
+    ok("C. both edges are in history",
+       r.history.map((h) => h.transition).join(",") === "authorise,completePackage");
+  }
+
+  // D — program finished: legal only from `production`, which is currently
+  // unreachable (no canonical event means materialsReady). So the honest
+  // outcome is an ANOMALY that names the gap, not a silent jump.
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+      Events.engineering({ mission: "M-1", specification: "SPEC-1",
+        type: EVENT_TYPES.ENGINEERING.SPEC_RELEASED, person: "N" }),
+      Events.production({ mission: "M-1", program: "PRG-1", component: "C1",
+        type: EVENT_TYPES.PRODUCTION.PROGRAM_FINISHED, person: "A" }),
+    ]), M);
+    const r = row(p, "M-1");
+    ok("D. program.finished cannot skip procurement -> production", r.state === "procurement");
+    ok("D. the impossible sequence is reported as an anomaly",
+       missionAnoms(p, "M-1").some((a) => a.attempted === "productionComplete" && a.held === "procurement"));
+  }
+
+  // E — inspection.passed is deliberately unmapped (per-component scope)
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+      Events.inspection({ mission: "M-1", component: "C1",
+        result: INSPECTION_RESULT.PASS, person: "Amina" }),
+    ]), M);
+    ok("E. one component passing does not carry the mission to delivery",
+       row(p, "M-1").state === "engineering");
+    ok("E. an unmapped event raises no anomaly either", missionAnoms(p, "M-1").length === 0);
+  }
+
+  // F — mission.closed is deliberately unmapped: the only edge into `closed`
+  // is `delivered`, and no canonical event means that.
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.CLOSED, person: "D" }),
+    ]), M);
+    ok("F. mission.closed does not close a mission that was never delivered",
+       row(p, "M-1").state === "planning");
+  }
+
+  // G — illegal transition yields an anomaly and preserves state
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+    ]), M);
+    const r = row(p, "M-1");
+    ok("G. authorising twice does not double-advance", r.state === "engineering");
+    ok("G. the second attempt is an anomaly",
+       missionAnoms(p, "M-1").some((a) => a.attempted === "authorise" && a.held === "engineering"));
+    ok("G. the anomaly names the object class", missionAnoms(p, "M-1")[0].objectClass === "mission");
+    ok("G. state is preserved, not silently promoted", r.history.length === 1);
+  }
+
+  // I — progress and lifecycle are independent, in both directions
+  {
+    const p = project(asLog([
+      Events.production({ component: "C1", specification: "SPEC-1", person: "A" }),
+      Events.inspection({ component: "C1", specification: "SPEC-1", result: INSPECTION_RESULT.PASS, person: "B" }),
+    ]), M);
+    const r = row(p, "M-1");
+    ok("I. progress advances without any lifecycle event", r.accepted === 1 && r.progress === 10);
+    ok("I. lifecycle does not follow progress", r.state === "planning");
+  }
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+    ]), M);
+    ok("I. lifecycle advances without any progress",
+       row(p, "M-1").state === "engineering" && row(p, "M-1").accepted === 0);
+  }
+
+  // J — isolation
+  {
+    const p = project(asLog([
+      Events.mission({ mission: "M-1", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+    ]), M);
+    ok("J. an event for one mission leaves the other untouched",
+       row(p, "M-2").state === "planning" && row(p, "M-2").history.length === 0);
+  }
+
+  // ---------- ADVERSARIAL ----------
+  // Each case is an attempt to make the projection manufacture lifecycle state.
+  {
+    const target1 = [{ id: "M-1", title: "one", target: 1, specification: "SPEC-1" }];
+    const full = project(asLog([
+      Events.production({ component: "C1", specification: "SPEC-1", person: "A" }),
+      Events.inspection({ component: "C1", specification: "SPEC-1", result: INSPECTION_RESULT.PASS, person: "B" }),
+    ]), target1);
+    ok("adversarial: progress 100% still does not grant a lifecycle state",
+       row(full, "M-1").progress === 100 && row(full, "M-1").state === "planning");
+
+    const noId = project(asLog([
+      Events.engineering({ specification: "SPEC-1", type: EVENT_TYPES.ENGINEERING.SPEC_RELEASED, person: "N" }),
+    ]), M);
+    ok("adversarial: an event with no mission identifier moves nothing",
+       row(noId, "M-1").state === "planning" && row(noId, "M-1").history.length === 0);
+
+    const otherMission = project(asLog([
+      Events.mission({ mission: "M-9", type: EVENT_TYPES.MISSION.AUTHORISED, person: "D" }),
+    ]), M);
+    ok("adversarial: an undeclared mission's event does not leak into a declared one",
+       row(otherMission, "M-1").state === "planning");
+
+    const fixtureCid = project(asLog([
+      Events.engineering({ specification: "SPEC-1", correlationId: "mission-M-1",
+        type: EVENT_TYPES.ENGINEERING.SPEC_RELEASED, person: "N" }),
+    ]), M);
+    ok("adversarial: a correlationId convention is NOT treated as mission association",
+       row(fixtureCid, "M-1").state === "planning");
+
+    const zero = project(asLog([Events.mission({ mission: "M-1", person: "D" })]), M);
+    ok("adversarial: a mission with zero progress reports zero, not a guess",
+       row(zero, "M-1").accepted === 0 && row(zero, "M-1").progress === 0);
+
+    ok("adversarial: mission rows remain deep-frozen", Object.isFrozen(zero.missions));
+  }
 }
 
 console.log(`\n${pass}/${pass + fail} assertions passed${fail ? ` — ${fail} FAILED` : ""}\n`);

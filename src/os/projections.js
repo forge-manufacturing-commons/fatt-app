@@ -100,6 +100,23 @@ export function project(log = [], missions = []) {
   const touchComp = (id) => (components[id] ??= {
     id, state: componentState.initial, specification: null, history: [],
   });
+  // MISSION LIFECYCLE — folded exactly like specifications and components.
+  //
+  // Previously mission state was a two-value heuristic: `planning`, or
+  // `production` as soon as one component reached assembly. That bypassed the
+  // nine-state graph in src/domains/mission/state.js entirely — no transition
+  // validation, no history, no anomaly when the sequence was impossible. A
+  // mission could not be wrong, which meant its state carried no information.
+  //
+  // Lifecycle now comes only from the graph. Progress stays counted separately:
+  // a mission that has produced components is not thereby "in production", and
+  // a mission in production is not thereby progressing. They are different
+  // questions and the projection no longer conflates them.
+  const missionLife = {};
+  const declaredState = (id) => missions.find((m) => m.id === id)?.state;
+  const touchMission = (id) => (missionLife[id] ??= {
+    id, state: declaredState(id) ?? missionState.initial, history: [],
+  });
 
   for (const e of ordered) {
     if (!e || typeof e.type !== "string") continue;
@@ -162,6 +179,49 @@ export function project(log = [], missions = []) {
       if (e.type === "inspection.failed") failed++;
     }
 
+    // ---- missions ----
+    // ASSOCIATION IS BY e.mission AND NOTHING ELSE.
+    //
+    // That is the only field a producer actually sets (production and
+    // engineering emitters both accept it). story.js threads a correlationId of
+    // the form "mission-<ID>", but that is a convention inside one fixture, not
+    // an enforced invariant, so promoting it to a correlation rule here would
+    // manufacture an association the event never made. An event that does not
+    // name its mission does not move one.
+    if (e.mission) {
+      const mi = touchMission(e.mission);
+      let transition = null;
+      // Only mappings the graph defines AND the event unambiguously means.
+      if (e.type === "mission.authorised")                       transition = "authorise";
+      else if (e.type === "engineering.specification.released")   transition = "completePackage";
+      else if (e.type === "production.program.finished")          transition = "productionComplete";
+      // mission.created carries no transition: `planning` IS the initial state,
+      // so creation is an appearance, not a movement.
+      //
+      // inspection.passed is DELIBERATELY UNMAPPED. The graph defines
+      // qualityAccepted (inspection -> delivery), but inspection.passed is a
+      // per-COMPONENT result. Mapping it would let the first passing component
+      // carry an entire mission into delivery. That is a scope error, not a
+      // transition. Left unmapped and reported rather than guessed.
+      //
+      // mission.closed is DELIBERATELY UNMAPPED. The only edge into `closed` is
+      // `delivered`, and no canonical event means delivered. Mapping closure
+      // onto `delivered` would conflate two different facts.
+      if (transition) {
+        try {
+          const to = missionState.next(mi.state, transition);
+          mi.history.push({ at: e.at, from: mi.state, to, transition, by: e.person || e.human });
+          mi.state = to;
+        } catch (err) {
+          anomalies.push({
+            at: e.at, objectClass: "mission", id: mi.id,
+            attempted: transition, held: mi.state, eventId: e.eventId,
+            message: `${mi.id} cannot "${transition}" from "${mi.state}"`,
+          });
+        }
+      }
+    }
+
     // ---- causal provenance: what this event made TRUE ----
     // Derived, never published. The event log stays the only source of truth.
     for (const c of deriveConsequences(e)) consequences.push(c);
@@ -185,9 +245,10 @@ export function project(log = [], missions = []) {
       .filter((c) => ["assembly", "completed", "installed"].includes(c.state)).length;
     const target = m.target || 0;
     const progress = target ? Math.min(100, Math.round((accepted / target) * 100)) : 0;
-    let state = m.state ?? missionState.initial;
-    if (accepted > 0 && state === missionState.initial) state = "production";
-    return { ...m, accepted, target, progress, state };
+    // Lifecycle from the graph; metrics from the fold. Never one from the other.
+    const life = missionLife[m.id];
+    const state = life?.state ?? m.state ?? missionState.initial;
+    return { ...m, accepted, target, progress, state, history: life?.history ?? [] };
   });
 
   // ---- decisions: what Forge OS recommends, derived from state held now ----

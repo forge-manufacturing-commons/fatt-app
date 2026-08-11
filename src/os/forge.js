@@ -70,12 +70,29 @@ export const stateColor = (state) => ({
   review:"#F5A623", pending:"#F5A623", inspection:"#F5A623", verifying:"#F5A623",
   manufacturing:"#F5A623", reserved:"#F5A623", maintenance:"#F5A623", expanding:"#F5A623",
   rework:"#F5A623", procurement:"#F5A623", delivery:"#F5A623",
+  engineering:"#F5A623",
   // attention
   fault:"#FF2E63", failed:"#FF2E63", blocked:"#FF2E63", critical:"#FF2E63",
   scrapped:"#FF2E63", deprecated:"#FF2E63", halted:"#FF2E63",
+  held:"#FF2E63", abandoned:"#FF2E63",
   // dormant
   idle:"#3a4a5a", offline:"#3a4a5a", standby:"#1C2128", draft:"#8899aa",
   planned:"#8899aa", planning:"#8899aa", unverified:"#8899aa", unknown:"#8899aa",
+  // ---- mission lifecycle completion ----
+  // All nine mission states now resolve. `production` previously fell through
+  // to the dormant default, so the one state the old projection assigned
+  // rendered as "unknown" grey in three rooms. Existing tokens only; no hue is
+  // introduced and no mission-specific colour system exists.
+  //   planning    dormant  — objective being defined      (already present)
+  //   engineering amber    — package being authored
+  //   procurement amber    — materials being sourced      (already present)
+  //   production  teal     — being manufactured, alive
+  //   inspection  amber    — under verification           (already present)
+  //   delivery    amber    — being delivered              (already present)
+  //   closed      green    — complete, matches `completed`
+  //   held        pink     — suspended, matches `halted`
+  //   abandoned   pink     — terminal negative, matches `scrapped`/`deprecated`
+  production:"#0A7F73", closed:"#1a7a4a",
 }[String(state || "").toLowerCase()] ?? "#8899aa");
 
 export const severityColor = (s) =>
