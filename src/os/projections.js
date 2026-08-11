@@ -98,7 +98,7 @@ export function project(log = [], missions = []) {
     id, state: specificationState.initial, revision: null, author: null, history: [],
   });
   const touchComp = (id) => (components[id] ??= {
-    id, state: componentState.initial, specification: null, history: [],
+    id, state: componentState.initial, specification: null, mission: null, history: [],
   });
   // MISSION LIFECYCLE — folded exactly like specifications and components.
   //
@@ -145,6 +145,19 @@ export function project(log = [], missions = []) {
     if (e.component) {
       const c = touchComp(e.component);
       if (e.specification) c.specification ??= e.specification;
+      // MISSION MEMBERSHIP — preserved from the producing event, never derived.
+      //
+      // Mission identity reached the lifecycle fold and the causal map but was
+      // dropped here, so `accepted` had to reconstruct membership by matching
+      // specifications. That guess is wrong in two demonstrable ways: two
+      // missions sharing a specification both counted the same component, and a
+      // mission needing a second specification counted neither — in both cases
+      // while the event itself named the mission explicitly.
+      //
+      // First writer wins, exactly as `specification` above. A component's
+      // membership is established when it is produced; a later event must not
+      // silently reassign work that has already been counted elsewhere.
+      if (e.mission) c.mission ??= e.mission;
       let transition = null;
       if (e.type === "production.component.produced" || e.type === "component.received") transition = "release";
       else if (e.type === "inspection.passed" || e.type === "quality.verified") transition = "pass";
@@ -240,8 +253,17 @@ export function project(log = [], missions = []) {
 
   // ---- missions: progress is counted, never asserted ----
   const missionRows = missions.map((m) => {
+    // CORRELATION PRECEDENCE — explicit identity first, specification only as a
+    // fallback for components whose events never named a mission.
+    //
+    // The order matters and must not be reversed. Specification matching is a
+    // guess retained for uncorrelated data; it may never override an event that
+    // stated its membership. A component belonging to FORGE-ALPHA does not
+    // become FORGE-REPEAT's work because the two share a drawing.
     const accepted = Object.values(components)
-      .filter((c) => (!m.specification || c.specification === m.specification))
+      .filter((c) => (c.mission
+        ? c.mission === m.id
+        : (!m.specification || c.specification === m.specification)))
       .filter((c) => ["assembly", "completed", "installed"].includes(c.state)).length;
     const target = m.target || 0;
     const progress = target ? Math.min(100, Math.round((accepted / target) * 100)) : 0;

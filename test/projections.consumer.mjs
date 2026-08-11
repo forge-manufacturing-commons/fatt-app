@@ -306,5 +306,121 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
   }
 }
 
+// ============================================================
+// MISSION MEMBERSHIP (E3 Phase 8)
+//
+// Mission identity now survives into the folded component, and `accepted` uses
+// it as the authoritative correlation. Specification matching remains only as a
+// fallback for components whose events never named a mission — it must never
+// override an explicit one. Every case below is a Phase 7 failure turned into a
+// regression test.
+// ============================================================
+{
+  const ALPHA = { id: "FORGE-ALPHA",  title: "chassis rails", target: 50, specification: "FTT-CR-001", state: "planning" };
+  const REPEAT = { id: "FORGE-REPEAT", title: "repeat batch",  target: 10, specification: "FTT-CR-001", state: "planning" };
+  const acc = (p, id) => p.missions.find((m) => m.id === id).accepted;
+  // produce + pass a component; `mission` is passed through untouched when given
+  const made = (component, specification, mission) => [
+    Events.production({ component, specification, ...(mission ? { mission } : {}), person: "Adaeze" }),
+    Events.inspection({ component, specification, ...(mission ? { mission } : {}),
+      result: INSPECTION_RESULT.PASS, person: "Amina" }),
+  ];
+
+  // ---- identity reaches the folded component ----
+  {
+    const p = project(asLog(made("C1", "FTT-CR-001", "FORGE-ALPHA")), [ALPHA]);
+    ok("component retains the mission its event named",
+       p.components["C1"].mission === "FORGE-ALPHA");
+    ok("an uncorrelated component carries mission null, not a guess",
+       project(asLog(made("C9", "FTT-CR-001")), [ALPHA]).components["C9"].mission === null);
+  }
+
+  // ---- CASE 1 — shared specification: explicit mission wins ----
+  {
+    const p = project(asLog(made("C1", "FTT-CR-001", "FORGE-ALPHA")), [ALPHA, REPEAT]);
+    ok("CASE 1. shared specification: FORGE-ALPHA is credited",  acc(p, "FORGE-ALPHA") === 1);
+    ok("CASE 1. shared specification: FORGE-REPEAT is NOT credited", acc(p, "FORGE-REPEAT") === 0);
+  }
+
+  // ---- CASE 2 — one mission, two specifications ----
+  {
+    const p = project(asLog([
+      ...made("C1", "FTT-CR-001", "FORGE-ALPHA"),
+      ...made("B1", "FTT-BR-007", "FORGE-ALPHA"),
+    ]), [ALPHA]);
+    ok("CASE 2. a mission aggregates across specifications", acc(p, "FORGE-ALPHA") === 2);
+  }
+
+  // ---- CASE 3 — legacy uncorrelated component keeps the fallback ----
+  {
+    const p = project(asLog(made("C1", "FTT-CR-001")), [ALPHA]);
+    ok("CASE 3. no mission on the event: specification fallback still attributes it",
+       acc(p, "FORGE-ALPHA") === 1);
+  }
+
+  // ---- CASE 4 — explicit mission overrides a foreign specification ----
+  {
+    const OTHER = { ...REPEAT, specification: "FTT-XX-999" };
+    const p = project(asLog(made("C1", "FTT-XX-999", "FORGE-ALPHA")), [ALPHA, OTHER]);
+    ok("CASE 4. explicit mission beats a matching foreign specification",
+       acc(p, "FORGE-ALPHA") === 1);
+    ok("CASE 4. the specification's own mission is NOT credited",
+       acc(p, "FORGE-REPEAT") === 0);
+  }
+
+  // ---- CASE 5 — explicit mission with an unrelated specification ----
+  {
+    const p = project(asLog(made("C1", "FTT-ZZ-000", "FORGE-ALPHA")), [ALPHA]);
+    ok("CASE 5. membership is the event's to declare, not the drawing's",
+       acc(p, "FORGE-ALPHA") === 1);
+  }
+
+  // ---- ADVERSARIAL ----
+  {
+    // B — specification-only counting would fail CASE 1; prove the old rule is gone
+    const oldRule = (p, m) => Object.values(p.components)
+      .filter((c) => !m.specification || c.specification === m.specification)
+      .filter((c) => ["assembly", "completed", "installed"].includes(c.state)).length;
+    const p1 = project(asLog(made("C1", "FTT-CR-001", "FORGE-ALPHA")), [ALPHA, REPEAT]);
+    ok("adversarial B. the retired specification-only rule WOULD have miscounted",
+       oldRule(p1, REPEAT) === 1 && acc(p1, "FORGE-REPEAT") === 0);
+
+    // C — cross-contamination is impossible for correlated components
+    const p2 = project(asLog([
+      ...made("C1", "FTT-CR-001", "FORGE-ALPHA"),
+      ...made("C2", "FTT-CR-001", "FORGE-REPEAT"),
+    ]), [ALPHA, REPEAT]);
+    ok("adversarial C. two missions on one specification each keep their own work",
+       acc(p2, "FORGE-ALPHA") === 1 && acc(p2, "FORGE-REPEAT") === 1);
+
+    // D + mixed data — correlated and uncorrelated components coexist
+    const p3 = project(asLog([
+      ...made("C1", "FTT-CR-001", "FORGE-ALPHA"),
+      ...made("C2", "FTT-CR-001"),
+    ]), [ALPHA, REPEAT]);
+    ok("adversarial D. an uncorrelated component still falls back to specification",
+       acc(p3, "FORGE-ALPHA") === 2 && acc(p3, "FORGE-REPEAT") === 1);
+
+    // membership is not reassignable by a later event
+    const reassign = project(asLog([
+      ...made("C1", "FTT-CR-001", "FORGE-ALPHA"),
+      Events.production({ component: "C1", specification: "FTT-CR-001",
+        mission: "FORGE-REPEAT", person: "x" }),
+    ]), [ALPHA, REPEAT]);
+    ok("adversarial. a later event cannot reassign a component's mission",
+       reassign.components["C1"].mission === "FORGE-ALPHA");
+
+    // F/G — lifecycle and anomalies untouched by correlation
+    ok("adversarial F. lifecycle is still graph-driven, not progress-driven",
+       p1.missions.find((m) => m.id === "FORGE-ALPHA").state === "planning");
+    ok("adversarial G. correlating progress raises no mission anomaly",
+       p1.anomalies.filter((a) => a.objectClass === "mission").length === 0);
+
+    // the component stays read-only
+    ok("adversarial. the folded component remains frozen",
+       Object.isFrozen(p1.components["C1"]));
+  }
+}
+
 console.log(`\n${pass}/${pass + fail} assertions passed${fail ? ` — ${fail} FAILED` : ""}\n`);
 process.exit(fail ? 1 : 0);
