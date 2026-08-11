@@ -422,8 +422,14 @@ export default function EngineeringBay() {
                 <div key={m.id} style={{ marginBottom:14 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"baseline" }}>
                     <span style={{ fontFamily:MONO, fontSize:11, color:IVORY }}>{m.id}</span>
+                    {/* One authoritative state, one authoritative colour. This
+                        span hardcoded TEAL, so every mission state rendered the
+                        same regardless of what the graph held — while the very
+                        same room already resolves specification state through
+                        stateColor() below. The Operations Centre and National
+                        Grid both colour mission state this way. */}
                     <span style={{ fontFamily:UI, fontWeight:700, fontSize:10, letterSpacing:"0.12em",
-                      textTransform:"uppercase", color:TEAL }}>{m.state}</span>
+                      textTransform:"uppercase", color:stateColor(m.state) }}>{m.state}</span>
                   </div>
                   <div style={{ fontFamily:UI, fontSize:11.5, color:MUTED, marginTop:3 }}>{m.title}</div>
                   <div style={{ height:4, background:BORDER, marginTop:8 }}>

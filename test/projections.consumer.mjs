@@ -496,5 +496,100 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
   }
 }
 
+// ============================================================
+// MISSION MEMBERSHIP CONFLICT (E4)
+//
+// First-writer authority is preserved, but a conflicting claim is now RECORDED
+// rather than discarded. `attempted` is the claim, `held` is the authority —
+// the same reading as every state-graph anomaly. No new event type.
+// ============================================================
+{
+  const A = { id: "M-A", title: "a", target: 10, specification: "S-1", state: "planning" };
+  const B = { id: "M-B", title: "b", target: 10, specification: "S-2", state: "planning" };
+  const acc = (p, id) => p.missions.find((m) => m.id === id).accepted;
+  const conflicts = (p) => p.anomalies.filter(
+    (x) => x.objectClass === "component" && /already belongs to/.test(x.message));
+  const made = (c, s, m) => [
+    Events.production({ component: c, specification: s, ...(m ? { mission: m } : {}), person: "a" }),
+    Events.inspection({ component: c, specification: s, ...(m ? { mission: m } : {}),
+      result: INSPECTION_RESULT.PASS, person: "b" }),
+  ];
+
+  // A + D — first writer wins and stays authoritative
+  {
+    const p = project(asLog([...made("C1", "S-1", "M-A"),
+      Events.production({ component: "C1", specification: "S-1", mission: "M-B", person: "x" })]), [A, B]);
+    ok("A. the first mission wins", p.components["C1"].mission === "M-A");
+    ok("D. the original mission remains authoritative after a conflict",
+       p.components["C1"].mission === "M-A" && p.components["C1"].state === "assembly");
+  }
+
+  // B — the same mission repeated is not a conflict
+  {
+    const p = project(asLog(made("C1", "S-1", "M-A")), [A]);
+    ok("B. repeating the same mission raises nothing", conflicts(p).length === 0);
+  }
+
+  // C — a conflicting claim is recorded, in the established shape
+  {
+    const p = project(asLog([...made("C1", "S-1", "M-A"),
+      Events.production({ component: "C1", specification: "S-1", mission: "M-B", person: "x" })]), [A, B]);
+    const c = conflicts(p);
+    ok("C. a conflicting mission claim produces exactly one anomaly", c.length === 1);
+    ok("C. the anomaly names the claim, the authority and the event",
+       c[0].attempted === "M-B" && c[0].held === "M-A" &&
+       c[0].id === "C1" && c[0].objectClass === "component" && "eventId" in c[0],
+       JSON.stringify(c[0]));
+  }
+
+  // E — a rejected claim cannot move progress
+  {
+    const p = project(asLog([...made("C1", "S-1", "M-A"),
+      ...made("C1", "S-1", "M-B")]), [A, B]);
+    ok("E. a conflicting claim cannot credit the claiming mission",
+       acc(p, "M-A") === 1 && acc(p, "M-B") === 0);
+  }
+
+  // F — an uncorrelated component still accepts its first mission
+  {
+    const p = project(asLog([
+      Events.production({ component: "C1", specification: "S-1", person: "a" }),
+      Events.inspection({ component: "C1", specification: "S-1", mission: "M-A",
+        result: INSPECTION_RESULT.PASS, person: "b" }),
+    ]), [A]);
+    ok("F. an uncorrelated component accepts the first mission that names it",
+       p.components["C1"].mission === "M-A" && conflicts(p).length === 0);
+  }
+
+  // G — legacy specification fallback survives
+  {
+    const p = project(asLog(made("C9", "S-1")), [A]);
+    ok("G. specification fallback still attributes uncorrelated components",
+       p.components["C9"].mission === null && acc(p, "M-A") === 1);
+  }
+}
+
+// ============================================================
+// SAFETY-CRITICAL DEAD PATH (E4)
+//
+// The guard for a capability the system deliberately does NOT have. Nothing can
+// truthfully populate safetyCritical — 0 of 32 events and 0 vocabulary fields
+// mention safety — so criticalRequiresLevelThree cannot fire from the fold.
+// These assertions exist to stop a future change claiming otherwise by
+// inference from the family-level commercial catalogue.
+// ============================================================
+{
+  const p = project(asLog([
+    Events.production({ component: "C1", specification: "S-1", person: "a" }),
+    Events.inspection({ component: "C1", specification: "S-1",
+      result: INSPECTION_RESULT.PASS, person: "b" }),
+  ]), []);
+  ok("H. the fold does not claim a safety-critical fact it cannot source",
+     !("safetyCritical" in p.components["C1"]));
+  ok("H. the folded component shape stays exactly what the events can prove",
+     Object.keys(p.components["C1"]).sort().join(",") ===
+     ["history", "id", "mission", "specification", "state"].join(","));
+}
+
 console.log(`\n${pass}/${pass + fail} assertions passed${fail ? ` — ${fail} FAILED` : ""}\n`);
 process.exit(fail ? 1 : 0);

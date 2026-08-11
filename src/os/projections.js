@@ -157,7 +157,26 @@ export function project(log = [], missions = []) {
       // First writer wins, exactly as `specification` above. A component's
       // membership is established when it is produced; a later event must not
       // silently reassign work that has already been counted elsewhere.
-      if (e.mission) c.mission ??= e.mission;
+      //
+      // But a CONFLICTING claim is a fact about the stream, not noise. `??=`
+      // alone preserved authority and discarded the disagreement: two producers
+      // could each believe they owned the same component and nothing would say
+      // so. The original mission stays authoritative and the component is never
+      // reassigned; the refusal is recorded through the existing anomaly shape,
+      // where `attempted` is the claim and `held` is the authority — the same
+      // reading as every state-graph anomaly. No new event type, no new
+      // vocabulary, no change to first-writer authority.
+      if (e.mission) {
+        if (c.mission == null) {
+          c.mission = e.mission;
+        } else if (c.mission !== e.mission) {
+          anomalies.push({
+            at: e.at, objectClass: "component", id: c.id,
+            attempted: e.mission, held: c.mission, eventId: e.eventId,
+            message: `${c.id} already belongs to "${c.mission}" and cannot be claimed by "${e.mission}"`,
+          });
+        }
+      }
       let transition = null;
       if (e.type === "production.component.produced" || e.type === "component.received") transition = "release";
       else if (e.type === "inspection.passed" || e.type === "quality.verified") transition = "pass";

@@ -14,6 +14,25 @@ export const requiresInspectorCompetency = createRule({
   permits: (c) => (c.competencies || []).some((k) => String(k).startsWith("qc-inspector")),
 });
 
+// DORMANT BY CONSTRUCTION — and deliberately not made to look otherwise.
+//
+// This rule is correct and tested, but it can never fire from the event fold,
+// because nothing can truthfully populate `safetyCritical`:
+//   - no canonical event type mentions safety or criticality (0 of 32)
+//   - no field in the event vocabulary carries it
+//   - the folded component is { id, state, specification, mission, history }
+//
+// The only source in the repository is `component_jobs.safety_critical`, which
+// is FAMILY-level commercial catalogue data with no join key to a component —
+// see TRANSITIONAL.md D1/D3. Deriving criticality from it would attach a
+// safety claim to the wrong object through an inferred link, which is worse
+// than the capability being absent.
+//
+// So the rule stays, unfired, rather than being deleted or faked. Guarded by a
+// regression assertion in test/projections.consumer.mjs so no future change can
+// quietly claim safety-critical enforcement the system does not have. Populating
+// it truthfully requires an authoritative source — a domain decision, not a
+// derivation.
 export const criticalRequiresLevelThree = createRule({
   id: "inspection.criticalRequiresLevelThree",
   code: "QC-003",

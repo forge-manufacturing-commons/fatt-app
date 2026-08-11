@@ -7,7 +7,7 @@ Nothing may be added to this file without a removal condition.
 | # | Bridge | Where | Exists because | Remove when |
 |---|--------|-------|----------------|-------------|
 | T1 | `human` mirrors `person` | `src/os/pipeline.js` `bridgeActor()` | `ForgeRuntime.deriveManufacturing` counts distinct `e.human`. An event carrying `person` alone increments the people metric by zero. | `deriveManufacturing` counts `e.person`. Then delete `human` from `bridgeActor`. |
-| T2 | `text` mirrors `summary` | `src/os/events.js` `narrate()` | Five live consumers, verified at `cb3e85f`: `ForgeRuntime.js:184` (`reason: log[0].text`), `Room.jsx:63`, `ArrivalMasthead.jsx:150`, `DemoStudio.jsx:147`, and `projections.js:176` — the last already prefers `summary` (`e.summary \|\| e.text`), so it is partially migrated. | All five consumers read `summary`. Then delete `text` from `narrate()`. |
+| T2 | `text` mirrors `summary` | `src/os/events.js` `narrate()` | Five live consumers, verified at `cb3e85f`: `ForgeRuntime.js:184` (`reason: log[0].text`), `Room.jsx:63`, `ArrivalMasthead.jsx:150`, `DemoStudio.jsx:147`, and `projections.js:287` — the last already prefers `summary` (`e.summary \|\| e.text`), so it is partially migrated. | All five consumers read `summary`. Then delete `text` from `narrate()`. |
 | T3 | `LEGACY_EVENT` + `toLegacyType()` | `src/os/events.js` | The bus derives hub/machine state from eight legacy strings. Canonical types are now understood natively (additive), so this is only for producers still emitting legacy types. | No producer emits a legacy type. |
 | T4 | `src/os/emitters/index.js` re-export shim | `src/os/emitters/` | Emitters moved to `src/domains/<domain>/emitters.js`. Shim keeps any older import path working. **NOT safe to delete:** `test/emitters.consumer.mjs:10` imports `../src/os/emitters/index.js`, and that suite carries 35 assertions. The previous claim of "Currently: none" was false. | `test/emitters.consumer.mjs` imports from `src/domains/<domain>/emitters.js`, and no other import references `os/emitters`. Verify with a repo-wide search, not by assumption. |
 | T5 | Seed events on Arrival Dock mount | `src/rooms/ArrivalDock.jsx` | Metrics read 0 with an empty runtime. Fires only while the log is effectively empty. | Real events flow from real workshops. Self-disabling by design. |
@@ -52,6 +52,25 @@ A Work Order would today duplicate the mission/component relationship without
 adding a justified domain fact. **It may only be introduced if a real
 work-package or assignment requirement emerges that the existing model cannot
 represent** — see D2.
+
+### D4 — SAFETY-CRITICAL ENFORCEMENT — dormant by construction
+
+`inspection.criticalRequiresLevelThree` (QC-003) is correct and tested but can
+never fire, because nothing can truthfully populate `component.safetyCritical`:
+**zero of the 32 canonical events and zero fields in the event vocabulary
+mention safety or criticality**, and the folded component is exactly
+`{ id, state, specification, mission, history }`.
+
+The only source in the repository is `component_jobs.safety_critical` —
+family-level commercial catalogue data with no join key to a component (D1/D3).
+Deriving criticality from it would attach a safety claim to the wrong object
+through an inferred link, which is worse than the capability being absent.
+
+The rule is therefore retained unfired rather than deleted or faked, and a
+regression assertion in `test/projections.consumer.mjs` prevents any future
+change from claiming safety-critical enforcement the system does not have.
+**Revisit when** an authoritative source for component criticality exists —
+which is a domain decision, not a derivation.
 
 ### D2 — COMPONENT MANUFACTURING ASSIGNMENT — deferred domain decision
 
