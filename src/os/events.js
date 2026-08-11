@@ -243,6 +243,107 @@ const REQUIRED_FIELDS_BY_TYPE_PREFIX = Object.freeze({
   "navigation.":  ["studio"],
 });
 
+// ---------- MISSION CORRELATION POLICY ----------
+// Every canonical event states, explicitly, whether it may belong to a mission.
+//
+// Correlation must be explicit, never inferred from proximity, sequence, hub,
+// component, machine, program or UI context. Before this declaration the system
+// could only distinguish "mission.* requires a mission" from "everything else",
+// so the difference between an event that MAY carry one and an event for which a
+// mission is meaningless existed only in reviewers' heads.
+//
+// The classification is CAUSAL OWNERSHIP, not usage. The question for each type
+// is: if this event happens, does it necessarily describe a change to, or an
+// action within, one specific mission?
+//
+//   REQUIRED   definitionally about a mission
+//   OPTIONAL   may serve a mission, or may not — a specification can be authored
+//              speculatively and a component produced for stock
+//   FORBIDDEN  a mission cannot own it; attaching one would be false
+//   UNKNOWN    causal ownership is genuinely undetermined from the domain today.
+//              Deliberately NOT folded into OPTIONAL: "we permit this" and "we
+//              have not decided" are different facts, and collapsing them would
+//              lose the second one.
+//
+// Keyed by exact type rather than prefix, because a prefix cannot express that
+// machine.fault may block a mission while system.booted may not, and because
+// per-type keys are what let the audit detect a NEW event type that arrives
+// without a classification. Values reference EVENT_TYPES directly so a renamed
+// event breaks the policy loudly instead of leaving a stale string behind.
+export const MISSION_POLICY_LEVEL = Object.freeze({
+  REQUIRED:  "MISSION_REQUIRED",
+  OPTIONAL:  "MISSION_OPTIONAL",
+  FORBIDDEN: "MISSION_FORBIDDEN",
+  UNKNOWN:   "MISSION_UNKNOWN",
+});
+const _L = MISSION_POLICY_LEVEL;
+
+export const MISSION_POLICY = Object.freeze({
+  // REQUIRED — a mission event without a mission names nothing. Already enforced
+  // twice before this policy existed: missionEvent() throws, and
+  // REQUIRED_FIELDS_BY_TYPE_PREFIX["mission."] raises a validation error. The
+  // policy records the intent; it does not add a third enforcement path.
+  [EVENT_TYPES.MISSION.CREATED]:    _L.REQUIRED,
+  [EVENT_TYPES.MISSION.AUTHORISED]: _L.REQUIRED,
+  [EVENT_TYPES.MISSION.CLOSED]:     _L.REQUIRED,
+
+  // OPTIONAL — engineering, production and inspection describe a specification
+  // or a component that MAY be serving a mission. Mission-boundness is a
+  // property of a work order, and no work-order model exists, so requiring it
+  // here would make legitimate uncorrelated work impossible.
+  [EVENT_TYPES.ENGINEERING.SPEC_DRAFTED]:  _L.OPTIONAL,
+  [EVENT_TYPES.ENGINEERING.SPEC_RELEASED]: _L.OPTIONAL,
+  [EVENT_TYPES.ENGINEERING.SPEC_REVISED]:  _L.OPTIONAL,
+  [EVENT_TYPES.ENGINEERING.SPEC_APPROVED]: _L.OPTIONAL,
+
+  [EVENT_TYPES.PRODUCTION.COMPONENT_PRODUCED]: _L.OPTIONAL,
+  [EVENT_TYPES.PRODUCTION.STAGE_ADVANCED]:     _L.OPTIONAL,
+  [EVENT_TYPES.PRODUCTION.ASSEMBLY_JOINED]:    _L.OPTIONAL,
+  [EVENT_TYPES.PRODUCTION.PROGRAM_STARTED]:    _L.OPTIONAL,
+  [EVENT_TYPES.PRODUCTION.PROGRAM_FINISHED]:   _L.OPTIONAL,
+
+  [EVENT_TYPES.INSPECTION.RECORDED]: _L.OPTIONAL,
+  [EVENT_TYPES.INSPECTION.PASSED]:   _L.OPTIONAL,
+  [EVENT_TYPES.INSPECTION.FAILED]:   _L.OPTIONAL,
+  [EVENT_TYPES.INSPECTION.REWORKED]: _L.OPTIONAL,
+
+  // machine.* is OPTIONAL and not FORBIDDEN for one specific reason: causalMap
+  // derives machine.fault -> missionImpact "blocked". Forbidding a mission here
+  // would make that impact permanently unattributable. Permitted, never
+  // required — a mill serves whichever mission a work order gives it, and the
+  // story's mill-03 steps stay uncorrelated because nothing states which.
+  [EVENT_TYPES.MACHINE.START]:       _L.OPTIONAL,
+  [EVENT_TYPES.MACHINE.RUN]:         _L.OPTIONAL,
+  [EVENT_TYPES.MACHINE.COMPLETE]:    _L.OPTIONAL,
+  [EVENT_TYPES.MACHINE.STOP]:        _L.OPTIONAL,
+  [EVENT_TYPES.MACHINE.IDLE]:        _L.OPTIONAL,
+  [EVENT_TYPES.MACHINE.FAULT]:       _L.OPTIONAL,
+  [EVENT_TYPES.MACHINE.MAINTENANCE]: _L.OPTIONAL,
+
+  [EVENT_TYPES.KNOWLEDGE.PUBLISHED]:  _L.OPTIONAL,
+  [EVENT_TYPES.KNOWLEDGE.TRANSLATED]: _L.OPTIONAL,
+  [EVENT_TYPES.KNOWLEDGE.REVIEWED]:   _L.OPTIONAL,
+
+  // FORBIDDEN — meta events describe the runtime, not manufacturing. A mission
+  // cannot own a boot, a language change or a room navigation. These were
+  // accepting a mission field and passing validation before this policy.
+  [EVENT_TYPES.NAVIGATION.ENTER]:          _L.FORBIDDEN,
+  [EVENT_TYPES.SYSTEM.LANGUAGE_CHANGED]:   _L.FORBIDDEN,
+  [EVENT_TYPES.SYSTEM.BOOTED]:             _L.FORBIDDEN,
+
+  // UNKNOWN — a person arriving is not mission work, but a competency verified
+  // in order to work on a mission might be. No producer exercises it and the
+  // domain does not settle it, so the honest record is "undetermined".
+  // Reclassifying these to make an audit greener would be a decision disguised
+  // as housekeeping.
+  [EVENT_TYPES.PERSON.ARRIVED]:             _L.UNKNOWN,
+  [EVENT_TYPES.PERSON.COMPETENCY_CLAIMED]:  _L.UNKNOWN,
+  [EVENT_TYPES.PERSON.COMPETENCY_VERIFIED]: _L.UNKNOWN,
+});
+
+/** The policy for a type, or null when the type carries no classification. */
+export const missionPolicyFor = (type) => MISSION_POLICY[type] ?? null;
+
 // Preserves 0 and false. Also preserves empty arrays and objects, which
 // a future assembly-of-components field will need.
 function compact(fields) {
@@ -419,6 +520,21 @@ export function validateEvent(event) {
     }
   }
 
+  // MISSION CORRELATION — the forbidden half of the policy.
+  //
+  // REQUIRED is already enforced above by REQUIRED_FIELDS_BY_TYPE_PREFIX, so
+  // this adds only the case that had no enforcement: a meta event claiming to
+  // belong to a mission. OPTIONAL and UNKNOWN are deliberately silent — both
+  // accept the field's presence and its absence, and UNKNOWN must never harden
+  // into REQUIRED just because some producer happens to supply one.
+  if (event.mission != null && event.mission !== "" &&
+      missionPolicyFor(type) === MISSION_POLICY_LEVEL.FORBIDDEN) {
+    issues.push({
+      severity: "error",
+      message: `event type "${type}" is MISSION_FORBIDDEN and must not carry a mission`,
+    });
+  }
+
   if (event.status != null && !STATUS_VALUES.has(event.status)) {
     issues.push({ severity: "warning", message: `status "${event.status}" is not canonical; it will be stored verbatim` });
   }
@@ -454,6 +570,9 @@ const Events = Object.freeze({
   INSPECTION_RESULT,
   TYPES: EVENT_TYPES,
   LEGACY: LEGACY_EVENT,
+  MISSION_POLICY,
+  MISSION_POLICY_LEVEL,
+  missionPolicyFor,
   CLASS_FIELDS,
   PRIMARY_FIELD,
   FIELD_TO_CLASS,

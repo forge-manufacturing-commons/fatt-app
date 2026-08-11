@@ -12,7 +12,7 @@
 // ============================================================
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, basename } from "node:path";
-import { EVENT_TYPES } from "../src/os/events.js";
+import { EVENT_TYPES, MISSION_POLICY, MISSION_POLICY_LEVEL } from "../src/os/events.js";
 import { PRINCIPLES } from "../src/os/forge.js";
 import { ROOMS } from "../src/os/ForgeOS.js";
 import { withCode, stripComments, selfTestStripComments } from "./lib/source.mjs";
@@ -72,6 +72,49 @@ for (const f of files) {
 }
 ok(`event vocabulary: no invented types (${CANONICAL.size} canonical)`, invented.length === 0,
    invented.slice(0, 6).join(", "));
+
+// ---------- 1b. MISSION CORRELATION POLICY (E3 Phase 6) ----------
+// Drift protection. The vocabulary and the policy must grow together: a new
+// canonical event that arrives without a classification would silently inherit
+// "no opinion" about mission correlation, which is exactly the ambiguity this
+// policy exists to remove.
+{
+  const all = Object.values(EVENT_TYPES).flatMap((d) => Object.values(d));
+  const levels = new Set(Object.values(MISSION_POLICY_LEVEL));
+
+  const unclassified = all.filter((t) => !(t in MISSION_POLICY));
+  ok(`mission policy: every canonical event is classified (${all.length} types)`,
+     unclassified.length === 0, unclassified.join(", "));
+
+  const stale = Object.keys(MISSION_POLICY).filter((t) => !all.includes(t));
+  ok("mission policy: no entry points at a nonexistent event type",
+     stale.length === 0, stale.join(", "));
+
+  ok("mission policy: exactly four levels, no fifth category",
+     Object.values(MISSION_POLICY).every((v) => levels.has(v)) &&
+     Object.keys(MISSION_POLICY).length === all.length);
+
+  // CODE, NOT PROSE. The classification must be declared in executable source.
+  // A commented-out entry must not count — the same discipline every other
+  // check here follows. Verified by stripping comments and confirming the
+  // declaration and all four levels survive, then confirming a prose-only
+  // classification does not.
+  const evSrc = files.find((f) => f.path === "src/os/events.js");
+  const declaredInCode =
+    /export const MISSION_POLICY\s*=/.test(evSrc.code) &&
+    /MISSION_FORBIDDEN/.test(evSrc.code) &&
+    /MISSION_UNKNOWN/.test(evSrc.code);
+  const proseOnly = stripComments(
+    '// export const MISSION_POLICY = { "a.b": "MISSION_FORBIDDEN" };\nconst x = 1;');
+  ok("mission policy: declared in executable code, not in a comment",
+     declaredInCode && !/MISSION_POLICY\s*=/.test(proseOnly));
+
+  const count = (lv) => all.filter((t) => MISSION_POLICY[t] === lv).length;
+  console.log(`       ${count(MISSION_POLICY_LEVEL.REQUIRED)} required · ` +
+    `${count(MISSION_POLICY_LEVEL.OPTIONAL)} optional · ` +
+    `${count(MISSION_POLICY_LEVEL.FORBIDDEN)} forbidden · ` +
+    `${count(MISSION_POLICY_LEVEL.UNKNOWN)} unknown`);
+}
 
 // ---------- 2. STATE -> COLOUR ----------
 // Fails if a room keeps its own status-colour map instead of stateColor().

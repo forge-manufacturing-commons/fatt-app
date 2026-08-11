@@ -9,6 +9,7 @@ import Events, {
   knowledgeEvent, navigationEvent, validateEvent, assertEvent,
   classForField, isEntityField, intendedStatus, toLegacyType,
   assertVocabulary, EVENT_SCHEMA_VERSION,
+  MISSION_POLICY, MISSION_POLICY_LEVEL, missionPolicyFor,
 } from "../src/os/events.js";
 
 let pass = 0, fail = 0;
@@ -89,6 +90,118 @@ ok("C19 vocabulary drift is detectable",
    assertVocabulary(["person"]).producerOnly.length > 0);
 ok("aggregate default export is wired", typeof Events.production === "function"
    && Events.TYPES === EVENT_TYPES);
+
+// ============================================================
+// MISSION CORRELATION POLICY (E3 Phase 6)
+//
+// The policy exists so that correlation is explicit rather than inferred, and
+// so a NEW canonical event cannot arrive without stating whether it may belong
+// to a mission. These assertions test executable behaviour, never comments.
+// ============================================================
+{
+  const L = MISSION_POLICY_LEVEL;
+  const allTypes = Object.values(EVENT_TYPES).flatMap((d) => Object.values(d));
+  const accepts = (e) => validateEvent(e).valid === true;
+  const rejects = (e) => errs(e).length > 0;
+
+  // ---- REQUIRED (A–D) ----
+  // missionEvent() throws before validation is reached, so the policy's required
+  // half is asserted against a hand-built event to test the VALIDATOR, not the
+  // constructor's own guard.
+  ok("A. mission.created without mission is rejected",
+     rejects({ type: EVENT_TYPES.MISSION.CREATED, summary: "x" }));
+  ok("B. mission.created with mission is accepted",
+     accepts({ type: EVENT_TYPES.MISSION.CREATED, mission: "FORGE-ALPHA", summary: "x" }));
+  ok("C. mission.authorised without mission is rejected",
+     rejects({ type: EVENT_TYPES.MISSION.AUTHORISED, summary: "x" }));
+  ok("D. mission.closed without mission is rejected",
+     rejects({ type: EVENT_TYPES.MISSION.CLOSED, summary: "x" }));
+
+  // ---- OPTIONAL (E–H) — both presence and absence must pass ----
+  ok("E. production without mission is accepted",
+     accepts(productionEvent({ component: "C1", person: "A" })));
+  ok("F. production with mission is accepted",
+     accepts(productionEvent({ component: "C1", mission: "FORGE-ALPHA", person: "A" })));
+  ok("G. machine without mission is accepted",
+     accepts(machineEvent({ machine: "mill-03" })));
+  ok("H. machine with mission is accepted — a fault may block a mission",
+     accepts(machineEvent({ machine: "mill-03", mission: "FORGE-ALPHA" })));
+
+  // ---- FORBIDDEN (I–L) — the case that had no enforcement before ----
+  ok("I. system.booted without mission is accepted",
+     accepts({ type: EVENT_TYPES.SYSTEM.BOOTED }));
+  ok("J. system.booted WITH a mission is rejected",
+     rejects({ type: EVENT_TYPES.SYSTEM.BOOTED, mission: "FORGE-ALPHA" }));
+  ok("K. navigation.enter without mission is accepted",
+     accepts(navigationEvent({ studio: "engineering-bay" })));
+  ok("L. navigation.enter WITH a mission is rejected",
+     rejects(navigationEvent({ studio: "engineering-bay", mission: "FORGE-ALPHA" })));
+  ok("L. the forbidden error names the policy, not just the field",
+     errs(navigationEvent({ studio: "engineering-bay", mission: "FORGE-ALPHA" }))
+       .some((i) => /MISSION_FORBIDDEN/.test(i.message)));
+
+  // ---- M. a type outside the vocabulary keeps its existing behaviour ----
+  ok("M. an unclassified type is not silently made required or forbidden",
+     missionPolicyFor("widget.frobnicated") === null &&
+     accepts({ type: "widget.frobnicated", component: "C1", summary: "s" }) &&
+     accepts({ type: "widget.frobnicated", component: "C1", mission: "M", summary: "s" }));
+
+  // ---- N. exactly one classification per canonical event ----
+  const unclassified = allTypes.filter((t) => !(t in MISSION_POLICY));
+  ok(`N. every canonical event is classified (${allTypes.length} types)`,
+     unclassified.length === 0);
+  const levels = new Set(Object.values(L));
+  const badLevel = Object.entries(MISSION_POLICY).filter(([, v]) => !levels.has(v));
+  ok("N. every classification is one of the four levels — no fifth category",
+     badLevel.length === 0);
+  // A plain object cannot hold two values for one key, so duplication shows up
+  // as a key count mismatch against the declaration rather than as two levels.
+  ok("N. no canonical event carries zero or two classifications",
+     Object.keys(MISSION_POLICY).length === allTypes.length);
+
+  // ---- stale-policy detection ----
+  const stale = Object.keys(MISSION_POLICY).filter((t) => !allTypes.includes(t));
+  ok("no policy entry points at a nonexistent canonical event",
+     stale.length === 0, stale.join(", "));
+
+  // ---- O. drift protection actually fails on an unclassified new event ----
+  // Simulates the vocabulary growing without the policy growing with it.
+  {
+    const synthetic = [...allTypes, "production.widget.frobnicated"];
+    const wouldFail = synthetic.filter((t) => !(t in MISSION_POLICY)).length > 0;
+    ok("O. a new canonical event with no classification fails the audit", wouldFail);
+  }
+
+  // ---- P. UNKNOWN must not harden into REQUIRED ----
+  ok("P. UNKNOWN accepts both presence and absence of mission",
+     accepts(personEvent({ person: "Amina" })) &&
+     accepts(personEvent({ person: "Amina", mission: "FORGE-ALPHA" })));
+  ok("P. person.* is recorded as UNKNOWN, not quietly OPTIONAL",
+     [EVENT_TYPES.PERSON.ARRIVED, EVENT_TYPES.PERSON.COMPETENCY_CLAIMED,
+      EVENT_TYPES.PERSON.COMPETENCY_VERIFIED].every((t) => MISSION_POLICY[t] === L.UNKNOWN));
+
+  // ---- Q. mission:null keeps the existing absence semantics ----
+  const nulled = productionEvent({ component: "C1", mission: null, person: "A" });
+  ok("Q. mission:null is dropped by compact(), not stored",
+     !("mission" in nulled) && accepts(nulled));
+  ok("Q. mission:null on a FORBIDDEN type is still accepted — absence is absence",
+     accepts({ type: EVENT_TYPES.SYSTEM.BOOTED, mission: null }));
+
+  // ---- the policy must not diverge from the enforcement that already existed ----
+  ok("REQUIRED types are still enforced by the required-fields mechanism",
+     [EVENT_TYPES.MISSION.CREATED, EVENT_TYPES.MISSION.AUTHORISED, EVENT_TYPES.MISSION.CLOSED]
+       .every((t) => MISSION_POLICY[t] === L.REQUIRED && rejects({ type: t, summary: "x" })));
+  ok("no OPTIONAL, UNKNOWN or FORBIDDEN type requires a mission",
+     allTypes.filter((t) => MISSION_POLICY[t] !== L.REQUIRED)
+       .every((t) => !errs({ type: t, machine: "m", component: "c", specification: "s",
+         person: "p", knowledge: "k", studio: "st", result: INSPECTION_RESULT.PASS, summary: "s" })
+         .some((i) => /requires field "mission"/.test(i.message))));
+
+  console.log(`\n  policy: ${allTypes.filter((t) => MISSION_POLICY[t] === L.REQUIRED).length} required · ` +
+    `${allTypes.filter((t) => MISSION_POLICY[t] === L.OPTIONAL).length} optional · ` +
+    `${allTypes.filter((t) => MISSION_POLICY[t] === L.FORBIDDEN).length} forbidden · ` +
+    `${allTypes.filter((t) => MISSION_POLICY[t] === L.UNKNOWN).length} unknown`);
+}
 
 console.log(`\n${pass}/${pass + fail} assertions passed${fail ? ` — ${fail} FAILED` : ""}\n`);
 process.exit(fail ? 1 : 0);
