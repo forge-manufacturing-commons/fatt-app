@@ -47,12 +47,83 @@ ok("the failed inspection is in the component's history",
    v.components["COMP-CR-0001"].history.some((h) => h.to === "rework"));
 ok("mission progress was COUNTED, not published",
    v.missions.find((m) => m.id === "FORGE-ALPHA").accepted === 1);
-ok("no anomalies — the story is a legal sequence", v.anomalies.length === 0,
-   JSON.stringify(v.anomalies));
+// REPLACES a blanket `anomalies.length === 0`.
+//
+// That assertion was true only while mission identity was being dropped. Now
+// that the story preserves it, the mission graph can finally judge the sequence
+// — and it correctly refuses `completePackage` from `planning`, because the
+// story never authorises the mission. Silencing that would be reintroducing the
+// heuristic Phase 3 removed. The guarantee is therefore split rather than
+// loosened: the object graphs must still be spotless, and the one mission
+// anomaly must be exactly the expected one.
+const objectAnoms = v.anomalies.filter((a) => a.objectClass !== "mission");
+const missionAnoms = v.anomalies.filter((a) => a.objectClass === "mission");
+ok("the specification and component sequence is legal — no object anomalies",
+   objectAnoms.length === 0, JSON.stringify(objectAnoms));
+ok("exactly one mission anomaly: the story never authorises the mission",
+   missionAnoms.length === 1 &&
+   missionAnoms[0].id === "FORGE-ALPHA" &&
+   missionAnoms[0].attempted === "completePackage" &&
+   missionAnoms[0].held === "planning",
+   JSON.stringify(missionAnoms));
 ok("the feed carries every step", v.feed.length >= 13);
 ok("recommendations were produced by the outcome", v.recommendations.length > 0);
 ok("a recommendation explains itself",
    v.recommendations.every((r) => !r.because || Array.isArray(r.because)));
+
+// ============================================================
+// MISSION CORRELATION CONTRACT (E3 Phase 4)
+//
+// Identity is preserved, never inferred. These assertions exist so a future
+// change cannot quietly either drop the identity again or over-claim it by
+// attaching a mission to events that only happen to sit nearby in the script.
+// ============================================================
+{
+  const withMission = MANUFACTURING_STORY.filter((s) => s.event.mission);
+  const machineSteps = MANUFACTURING_STORY.filter((s) => s.event.type.startsWith("machine."));
+
+  ok("the story is still 13 steps — correlation added no events",
+     MANUFACTURING_STORY.length === 13);
+  ok("eleven steps carry explicit mission identity",
+     withMission.length === 11, `${withMission.length}`);
+  ok("every mission-bearing step names THIS mission",
+     withMission.every((s) => s.event.mission === STORY_META.mission));
+
+  // B — identity must not be inferred from a machine
+  ok("machine steps remain deliberately uncorrelated",
+     machineSteps.length === 2 && machineSteps.every((s) => !s.event.mission));
+  // C — identity must not be inferred from a component
+  ok("mission is carried explicitly, not derived from the component",
+     MANUFACTURING_STORY.every((s) => !s.event.component || s.event.mission === undefined ||
+        s.event.mission === STORY_META.mission));
+  // F — an absent mission stays absent
+  ok("an uncorrelated event carries no mission key at all",
+     machineSteps.every((s) => !("mission" in s.event)));
+
+  // The payoff: the causal machinery can now attribute its own impact.
+  ok("every consequence is attributable to a mission",
+     v.consequences.length > 0 && v.consequences.every((c) => c.affectedMission === STORY_META.mission),
+     `${v.consequences.filter((c) => !c.affectedMission).length} unattributed`);
+  ok("missionImpact is now attributed, not orphaned",
+     v.consequences.filter((c) => c.missionImpact)
+      .every((c) => c.affectedMission === STORY_META.mission));
+
+  // Phase 3 must survive Phase 4.
+  const alpha = v.missions.find((m) => m.id === "FORGE-ALPHA");
+  const hub   = v.missions.find((m) => m.id === "FORGE-HUB");
+  ok("lifecycle did NOT advance — no canonical event authorised the mission",
+     alpha.state === "planning" && alpha.history.length === 0);
+  ok("progress remains independent of lifecycle",
+     alpha.accepted === 1 && alpha.progress === 2 && alpha.state === "planning");
+  // A + J — isolation
+  ok("FORGE-HUB acquired none of FORGE-ALPHA's identity",
+     hub.state === "planning" && hub.accepted === 0 && hub.history.length === 0);
+
+  // G — business meaning unchanged
+  ok("the story still tells the same thing: a failure then an acceptance",
+     MANUFACTURING_STORY.some((s) => s.event.type === "inspection.failed") &&
+     MANUFACTURING_STORY.some((s) => s.event.type === "inspection.passed"));
+}
 
 console.log(`\n${pass}/${pass+fail} assertions passed${fail?` — ${fail} FAILED`:""}\n`);
 process.exit(fail?1:0);
