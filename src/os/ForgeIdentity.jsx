@@ -20,6 +20,7 @@ const IdentityContext = createContext(null);
 export function ForgeIdentityProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [organisation, setOrganisation] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(Boolean(isConfigured));
   const [error, setError] = useState(null);
@@ -54,6 +55,24 @@ export function ForgeIdentityProvider({ children }) {
   }, [userId]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  // ---- organisation ----
+  // A profile's organisation was previously only ever SELECTed as an id and
+  // never resolved, so no surface could say which organisation an actor belongs
+  // to. This reads the row itself, and reads nothing when the link is absent —
+  // an actor without an organisation is a real and common state, not an error.
+  const loadOrganisation = useCallback(async () => {
+    if (!isConfigured || !profile?.organisation_id) { setOrganisation(null); return; }
+    const { data, error: e } = await supabase
+      .from("organisations")
+      .select("id, name, role, rc_number, state, city, website, description, verification, created_by")
+      .eq("id", profile.organisation_id)
+      .maybeSingle();
+    if (e) { setError(e.message); return; }
+    setOrganisation(data ?? null);
+  }, [profile?.organisation_id]);
+
+  useEffect(() => { loadOrganisation(); }, [loadOrganisation]);
 
   // ---- notifications ----
   const loadNotifications = useCallback(async () => {
@@ -95,6 +114,100 @@ export function ForgeIdentityProvider({ children }) {
     return { error: e?.message ?? null };
   }, []);
 
+  // ORGANISATION ONBOARDING.
+  //
+  // Registration created an authenticated PERSON and never an organisation, so
+  // every profile the application produced had organisation_id null and the
+  // `organisations` table could not be populated by any running code. This is
+  // the smallest path that closes that gap, and it deliberately does very
+  // little:
+  //
+  //   * it uses the existing table and the existing profiles.organisation_id.
+  //     No second organisation model.
+  //   * `role` must be supplied. It is never inferred from the person's own
+  //     profile role, because a sheet-metal engineer may work for a logistics
+  //     partner and guessing would put a false role on a real company.
+  //   * `verification: "unverified"` is written explicitly. The RLS insert
+  //     policy requires it, and being admitted is not being verified.
+  //   * the uuid comes back from Postgres. Nothing here hardcodes one.
+  //
+  // IDEMPOTENT IN THREE PLACES, because repeated registration is normal:
+  //   1. an already-linked profile returns its organisation and writes nothing
+  //   2. an organisation this user already created is reused, not duplicated
+  //   3. the profile link is only written when it is actually absent
+  //
+  // IT WILL NOT JOIN AN ORGANISATION SOMEBODY ELSE CREATED. Typing an existing
+  // company's name must not attach you to it — that is impersonation, and the
+  // authority to admit a colleague is an invitation model that does not exist
+  // yet. Refused explicitly rather than quietly permitted.
+  const ensureOrganisation = useCallback(async ({ name, role, state = null, city = null }) => {
+    if (!isConfigured) return { error: "Supabase is not configured in this environment." };
+    if (!userId)       return { error: "Sign in before establishing an organisation." };
+
+    const clean = typeof name === "string" ? name.trim() : "";
+    if (!clean) return { error: "An organisation name is required." };
+    if (!role)  return { error: "An organisation role is required. It is never inferred." };
+
+    // 1. already linked — nothing to do.
+    if (profile?.organisation_id) {
+      const { data } = await supabase
+        .from("organisations").select("id, name, role, verification")
+        .eq("id", profile.organisation_id).maybeSingle();
+      return { organisation: data ?? null, created: false, error: null };
+    }
+
+    // 2. reuse one this user already created. Scoped to created_by so the
+    //    lookup can never surface, and then link to, another party's row.
+    const { data: mine, error: findErr } = await supabase
+      .from("organisations")
+      .select("id, name, role, verification, created_by")
+      .eq("created_by", userId)
+      .ilike("name", clean)
+      .maybeSingle();
+    if (findErr) return { error: findErr.message };
+
+    let org = mine ?? null;
+
+    if (!org) {
+      // Refuse to adopt a name already held by a different creator.
+      const { data: taken } = await supabase
+        .from("organisations").select("id, created_by").ilike("name", clean).limit(1);
+      if (taken?.length && taken[0].created_by !== userId) {
+        return {
+          error: `"${clean}" is already registered by another account. ` +
+                 `Joining an existing organisation requires an invitation from it, ` +
+                 `which this deployment does not yet issue.`,
+        };
+      }
+
+      const { data: created, error: insErr } = await supabase
+        .from("organisations")
+        .insert({ name: clean, role, state, city, created_by: userId, verification: "unverified" })
+        .select("id, name, role, verification, created_by")
+        .single();
+      if (insErr) return { error: insErr.message };
+      org = created;
+    }
+
+    // 3. link the profile. `.is("organisation_id", null)` makes the write
+    //    conditional in the database rather than in this function, so two tabs
+    //    racing cannot overwrite an existing link.
+    const { error: linkErr } = await supabase
+      .from("profiles")
+      .update({ organisation_id: org.id, updated_at: new Date().toISOString() })
+      .eq("id", userId)
+      .is("organisation_id", null);
+    if (linkErr) return { error: linkErr.message };
+
+    await supabase.from("audit_events").insert({
+      actor: userId, action: "organisation.established", entity: "organisation",
+      entity_id: org.id, payload: { name: org.name, role: org.role },
+    });
+
+    await loadProfile();
+    return { organisation: org, created: !mine, error: null };
+  }, [userId, profile?.organisation_id, loadProfile]);
+
   const signIn = useCallback(async ({ email, password }) => {
     if (!isConfigured) return { error: "Supabase is not configured in this environment." };
     const { error: e } = await supabase.auth.signInWithPassword({ email, password });
@@ -104,7 +217,7 @@ export function ForgeIdentityProvider({ children }) {
   const signOut = useCallback(async () => {
     if (!isConfigured) return;
     await supabase.auth.signOut();
-    setProfile(null); setNotifications([]);
+    setProfile(null); setOrganisation(null); setNotifications([]);
   }, []);
 
   const markRead = useCallback(async (id) => {
@@ -135,7 +248,7 @@ export function ForgeIdentityProvider({ children }) {
   const value = useMemo(() => ({
     configured: isConfigured,
     loading, error,
-    session, user: session?.user ?? null, profile,
+    session, user: session?.user ?? null, profile, organisation,
     role: profile?.role ?? null,
     roleMeta: roleById(profile?.role),
     verified,
@@ -144,10 +257,11 @@ export function ForgeIdentityProvider({ children }) {
     can,
     notifications,
     unreadCount: notifications.filter((n) => !n.read_at).length,
-    register, signIn, signOut, markRead, record,
-    refresh: () => { loadProfile(); loadNotifications(); },
-  }), [loading, error, session, profile, verified, granted, can, notifications,
-       register, signIn, signOut, markRead, record, loadProfile, loadNotifications]);
+    register, signIn, signOut, markRead, record, ensureOrganisation,
+    refresh: () => { loadProfile(); loadOrganisation(); loadNotifications(); },
+  }), [loading, error, session, profile, organisation, verified, granted, can, notifications,
+       register, signIn, signOut, markRead, record, ensureOrganisation,
+       loadProfile, loadOrganisation, loadNotifications]);
 
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }

@@ -38,10 +38,25 @@
 // real commercial commitment.
 // ============================================================
 
-/** Provenance is orthogonal to verification: it says whether the RECORD is real. */
+/**
+ * Provenance is orthogonal to verification: it says whether the RECORD is real.
+ *
+ * PILOT sits between SEED and REAL deliberately. A pilot organisation is a real
+ * organisation — it is not a demonstration identity, and calling it SEED would
+ * be a lie about who is acting. But it is also not yet REAL in the sense this
+ * module reserves that word for: a member the platform has verified and whose
+ * details it holds. SOLC's role and hub were supplied by pilot configuration;
+ * its legal identity, registration and capabilities are unknown, and PILOT is
+ * how the system says exactly that instead of rounding up or down.
+ *
+ * Three values, three different claims, and no surface may substitute one for
+ * another. An organisation absent from every registry is NOT real — it has no
+ * provenance at all, which reads as UNKNOWN.
+ */
 export const PROVENANCE = Object.freeze({
-  SEED: "seed",   // a demonstration identity. Never a real network member.
-  REAL: "real",   // reserved. No record carries this yet.
+  SEED:  "seed",   // a demonstration identity. Never a real network member.
+  PILOT: "pilot",  // a real organisation, admitted by explicit pilot configuration.
+  REAL:  "real",   // reserved. No record carries this yet.
 });
 
 // ---------- COMPONENT CLASS TAXONOMY ----------

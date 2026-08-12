@@ -105,3 +105,59 @@ Not to be migrated into event sourcing, given no organisation foreign key, and
 `owner_org` holds role descriptions ("Certified gas fitter", "Sheet-metal SME"
 twice) rather than organisation names. Converting it to an authoritative
 organisation relation requires a separate commercial-domain decision.
+
+### D5 — PILOT ORGANISATION REGISTRY — configuration, not table (E6)
+
+`SOLC` is declared in `src/os/pilot.js` rather than read from `organisations`,
+for the same reason `network.js` declares seed organisations: `organisations.id`
+is a `gen_random_uuid()` primary key that differs per deployment and may not be
+hardcoded, and the table's deployed contents are unobservable behind
+`isConfigured`.
+
+Events therefore carry the stable configuration id (`"SOLC"`), and the database
+row is joined to it **by name** — trimmed, case-insensitive, otherwise exact.
+
+**The seam is the name match.** Two organisations with the same name would
+collide, and a pilot that renames itself in the database would stop resolving.
+Neither is possible with one configured pilot, and both become impossible when
+the registry is read from the table instead of declared.
+
+Removal condition: `organisations` is queried as the organisation registry and
+`PILOT_ORGANISATIONS` is deleted. Blocked on the same thing as D2.
+
+### T8 — ENTRY PREDICATE DUPLICATES THE FOLD'S TOLERANCE (E6)
+
+`src/domains/production/entry.js` `wouldAccept()` re-implements one specific
+piece of `projections.js` behaviour: an inspection result arriving directly from
+`manufacturing` is accepted, because the fold performs the missing
+`submitForInspection` itself.
+
+Two implementations of one rule. Not merged, because the fold's version is
+embedded in the component branch of the reducer and extracting it would change
+the projection — out of scope for a pilot activation pass.
+
+**Guarded rather than hidden:** `test/pilot.consumer.mjs` asserts the predicate
+and the graph agree for all 44 state × action pairs, and that every action the
+surface offers publishes an event the fold then accepts. They cannot drift apart
+silently.
+
+Removal condition: the tolerance is exported from the production domain and both
+the fold and the entry surface call the same function.
+
+### T9 — `production.component.produced` MOVES A COMPONENT *INTO* MANUFACTURING
+
+The event type says the component has been produced. The transition it drives is
+`release`, whose destination state is `manufacturing`, which the graph documents
+as "Being made". So the event reads as completion while the resulting state reads
+as work in progress.
+
+Pre-existing fold and graph behaviour, observed while building the pilot entry
+surface. **Not fixed here**: changing either the event's transition or the state's
+meaning alters the manufacturing lifecycle thesis, which E6 was explicitly not
+authorised to do.
+
+Contained rather than papered over — the entry surface labels every action with
+both the event it records and the state the graph will move to, so no surface has
+to pretend the two agree.
+
+Removal condition: a lifecycle pass decides which of the two is wrong.

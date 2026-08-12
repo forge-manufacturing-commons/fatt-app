@@ -29,7 +29,8 @@ import { RoomShell, Label, Panel, Stat, Badge, NetworkSurface, Recommendation } 
 import OperationsFeed from "@kernel/OperationsFeed.jsx";
 import { T, FONT, S, stateColor, severityColor } from "@kernel/forge.js";
 import RippleIndicator from "@kernel/ripple/RippleIndicator.jsx";
-import { SEED_ORGANISATIONS, capabilitiesOf, hubsOf } from "@kernel/network.js";
+import { SEED_ORGANISATIONS, capabilitiesOf } from "@kernel/network.js";
+import { PILOT_ORGANISATIONS } from "@kernel/pilot.js";
 
 // ============================================================
 // PLATFORM CONTRACT
@@ -102,21 +103,31 @@ export default function NationalGrid() {
         </div>
 
         {/* MANUFACTURING NETWORK — three separate facts, never merged.
-            CAPABILITY comes from the static seed registry; RESPONSIBILITY comes
+            CAPABILITY comes from the static registries; RESPONSIBILITY comes
             only from the fold, where an event explicitly named an organisation.
             Where responsibility is absent it reads UNKNOWN — it is never filled
-            in with an organisation that merely holds the capability. */}
+            in with an organisation that merely holds the capability.
+
+            PILOT AND SEED RENDER TOGETHER, LABELLED APART. The panel was headed
+            "seed" and iterated the seed registry alone, so a pilot organisation's
+            responsibility — the whole point of the pilot — would have been
+            invisible on the national surface. Merging the lists is safe ONLY
+            because every row already carries its own provenance badge, which is
+            the one provenance model rather than a second one. The heading no
+            longer claims the whole panel is seed, because it is not. */}
         <div>
-          <Label>Manufacturing network · seed</Label>
+          <Label>Manufacturing network</Label>
           <Panel accent={T.teal}>
-            {SEED_ORGANISATIONS.map((o) => {
+            {[...PILOT_ORGANISATIONS, ...SEED_ORGANISATIONS].map((o) => {
               const caps = capabilitiesOf(o.id);
               const responsible = Object.values(view.components).filter((c) => c.organisation === o.id);
               return (
                 <div key={o.id} style={{ marginBottom:S.md }}>
                   <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"baseline" }}>
                     <span style={{ fontFamily:FONT.mono, fontSize:11, color:T.ivory }}>{o.id}</span>
-                    <Badge color={T.grey}>{o.provenance}</Badge>
+                    {/* Amber for pilot, grey for seed. A real organisation and a
+                        demonstration identity must never look alike. */}
+                    <Badge color={o.provenance === "pilot" ? T.amber : T.grey}>{o.provenance}</Badge>
                   </div>
                   <div style={{ fontFamily:FONT.ui, fontSize:11.5, color:T.grey, marginTop:3 }}>{o.name}</div>
                   <div style={{ fontFamily:FONT.ui, fontSize:10.5, color:T.grey, marginTop:5 }}>
@@ -125,7 +136,7 @@ export default function NationalGrid() {
                       : "— nothing recorded"}
                   </div>
                   <div style={{ fontFamily:FONT.ui, fontSize:10.5, color:T.grey, marginTop:3 }}>
-                    AT {hubsOf(o.id).join(" · ") || "— no hub recorded"}
+                    AT {(o.hubs ?? []).join(" · ") || "— no hub recorded"}
                   </div>
                   <div style={{ fontFamily:FONT.ui, fontSize:10.5, marginTop:5,
                     color: responsible.length ? T.teal : T.greyDark }}>
@@ -137,8 +148,10 @@ export default function NationalGrid() {
               );
             })}
             <div style={{ fontFamily:FONT.ui, fontSize:10, color:T.greyDark, marginTop:S.sm }}>
-              Seed identities for demonstration. Not real Forge members, not verified
-              manufacturers, no commercial commitment. Capability is not responsibility.
+              PILOT rows are real organisations admitted by explicit configuration —
+              unverified, with no capability, capacity or commercial commitment
+              recorded. SEED rows are demonstration identities and are not real Forge
+              members at all. In both cases capability is not responsibility.
             </div>
           </Panel>
         </div>
