@@ -28,6 +28,7 @@ import LanguageStudio from "./rooms/LanguageStudio.jsx";
 import EngineeringBay from "./rooms/EngineeringBay.jsx";
 import NationalGridRoom from "./rooms/NationalGrid.jsx";
 import OperationsCentre from "./rooms/OperationsCentre.jsx";
+import ForgeStudioRoom from "./rooms/ForgeStudioRoom.jsx";
 import { useEventRipple } from "./os/ripple/useEventRipple.js";
 import Join from "./pages/Join.jsx";
 import { PLATFORM } from "./constants/site.js";
@@ -49,6 +50,9 @@ const BUILT = {
   "build-board":      BuildBoard,
   "demo-studio":      DemoStudio,
   "language-studio":  LanguageStudio,
+  // Forge Studio (Phase 2). /assistant was registered in ForgeOS.js as
+  // "commissioning" and rendered a placeholder; it now has a room.
+  "ai-assistant":     ForgeStudioRoom,
 };
 
 // ------------------------------------------------------------

@@ -56,6 +56,9 @@ export const PRINCIPLES = Object.freeze({
   "language-studio":   "Knowledge becomes manufacturing capability.",
   "publishing-studio": "Every document becomes institutional memory.",
   "demo-studio":       "Every manufacturing decision is traceable.",
+  // Forge Studio. The principle is the whole safety architecture in one line: the
+  // assistant may change the LANGUAGE a fact is spoken in and nothing else.
+  "ai-assistant":      "Language is the interface. Forge Canon is the truth.",
 });
 
 // ---- SEMANTIC STATE COLOUR ----

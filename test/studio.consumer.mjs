@@ -471,13 +471,34 @@ console.log("\n§20 — OFFLINE, NO PROVIDER, NO KEY");
   const files = readdirSync(dir).filter((f) => f.endsWith(".js"));
   const sources = files.map((f) => ({ f, src: readFileSync(new URL(f, dir), "utf8") }));
 
-  ok(`§20. the studio layer is ${files.length} modules`, files.length === 6);
+  // PHASE 2 WIDENED THIS FROM 6 TO 10: respond.js, ask.js, prepare.js, provider.js.
+  // The guard fired correctly and is updated, not removed — and the interesting
+  // result is that the three properties below still hold for ALL TEN, including
+  // provider.js. Attaching a model provider did not put a network call, a provider
+  // name or an API key anywhere in the Studio layer: provider.js speaks only to a
+  // named Supabase Edge Function, and the secret lives in that function's server
+  // environment. The offline guarantee this section was written to defend survived
+  // the phase that was supposed to break it.
+  ok(`§20. the studio layer is ${files.length} modules`, files.length === 10);
+  ok("§20. and the four Phase 2 additions are present",
+     ["respond.js", "ask.js", "prepare.js", "provider.js"].every((f) => files.includes(f)));
   for (const { f, src } of sources) {
     ok(`§20. ${f} makes no network call`, !/\bfetch\s*\(|XMLHttpRequest|WebSocket|axios/.test(src));
     ok(`§20. ${f} names no AI provider`,
        !/openai|anthropic|gemini|mistral|cohere|huggingface/i.test(src));
     ok(`§20. ${f} reads no API key`, !/apiKey|API_KEY|VITE_[A-Z_]*KEY|process\.env/.test(src));
   }
+  // THE ONE SANCTIONED NETWORK PATH, and the proof it carries no secret. If a key
+  // ever appears in the client, the loop above catches it; this asserts the shape
+  // of the path that replaces it.
+  {
+    const p = sources.find((s) => s.f === "provider.js").src;
+    ok("§20. provider.js reaches a named Edge Function, not a provider directly",
+       /functions\.invoke\(/.test(p) && /FUNCTION_NAME\s*=\s*"forge-ai"/.test(p));
+    ok("§20. and it requires a deterministic base — the provider is never the only path",
+       /a base adapter is required/.test(p));
+  }
+
   ok("§20. no adapter is bundled — one must be injected",
      /an adapter function must be injected/.test(
        sources.find((s) => s.f === "infer.js").src));

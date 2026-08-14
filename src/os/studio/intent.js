@@ -31,72 +31,207 @@ import { detectLanguage, explicitLanguageRequest, resolveResponseLanguage } from
 import { findProtectedTerms } from "./terms.js";
 import { componentState } from "../../domains/production/state.js";
 
-/** Every intent Phase 0 recognises. All are READ questions. */
+/**
+ * Every intent Forge Studio recognises.
+ *
+ * PHASE 2 ADDED SIX, AND EVERY ONE OF THEM IS STILL A READ. The additions exist
+ * because the Canon already holds four DISTINCT relationships on a component and
+ * a single "who?" intent could not tell them apart:
+ *
+ *   COMPONENT_WHO           RESPONSIBILITY   component.organisation
+ *   COMPONENT_CONTRIBUTIONS PARTICIPATION    component.contributions[]
+ *   COMPONENT_DIRECTIVES    COORDINATION     component.directives[]
+ *   COMPONENT_HISTORY       PERFORMANCE      component.history[]
+ *
+ * Collapsing those into one intent would have made Forge AI answer "who is
+ * responsible?" with a list of contributors — reintroducing exactly the confusion
+ * E9 was built to remove. So the language layer distinguishes them, because the
+ * Canon does.
+ *
+ * ACTION_REQUEST is the one that is NOT a question. It exists so that "approve
+ * this" is RECOGNISED rather than falling through to `unknown` — a request to act
+ * must be identified in order to be refused with a reason. Recognising an
+ * instruction is not obeying it.
+ */
 export const INTENT = Object.freeze({
-  COMPONENT_STATE:       "component.state",
-  COMPONENT_NEXT_ACTION: "component.next_action",
-  COMPONENT_WHO:         "component.who",
-  INSPECTION_STATUS:     "inspection.status",
-  SPECIFICATION_EXPLAIN: "specification.explain",
-  MISSION_PROGRESS:      "mission.progress",
-  SEARCH:                "search",
-  UNKNOWN:               "unknown",
+  COMPONENT_STATE:         "component.state",
+  COMPONENT_NEXT_ACTION:   "component.next_action",
+  COMPONENT_WHO:           "component.who",
+  COMPONENT_HUB:           "component.hub",
+  COMPONENT_MISSION:       "component.mission",
+  COMPONENT_CONTRIBUTIONS: "component.contributions",
+  COMPONENT_DIRECTIVES:    "component.directives",
+  COMPONENT_HISTORY:       "component.history",
+  ACKNOWLEDGEMENT_STATUS:  "acknowledgement.status",
+  INSPECTION_STATUS:       "inspection.status",
+  SPECIFICATION_EXPLAIN:   "specification.explain",
+  MISSION_PROGRESS:        "mission.progress",
+  ACTION_REQUEST:          "action.request",
+  SEARCH:                  "search",
+  UNKNOWN:                 "unknown",
 });
 
 /**
  * Marker phrases per intent per language. Multi-word phrases first — they are
  * far more discriminating than single words, especially across languages that
  * share borrowed technical vocabulary.
+ *
+ * HAUSA IS FIRST-CLASS HERE, NOT TRANSLATED IN. The Hausa lists carry the natural
+ * question openers a workshop participant actually uses — Menene, Wane, Ina,
+ * Yaushe, Me ya sa, Me ya kamata, Wanene, Nawa, Shin — and, just as importantly,
+ * the CODE-SWITCHED forms. A Nigerian engineer says "Menene state ɗin HUB-014
+ * yanzu?", mixing Hausa grammar with English technical nouns, and that is correct
+ * speech in a Nigerian workshop rather than a degraded input to be corrected. So
+ * both "matsayi" and "state ɗin" are markers for the same intent.
+ *
+ * PHRASES ARE MATCHED AGAINST THE RAW TEXT, WHICH CONSTRAINS WHAT MAY GO IN HERE.
+ * Canon identifiers are not masked at this stage, so a bare "hub" would match the
+ * component id "HUB-014" and make every component question look like a location
+ * question. Every hub marker is therefore multi-word or unambiguous.
  */
 const PHRASES = Object.freeze({
   [INTENT.COMPONENT_NEXT_ACTION]: {
-    en: ["what next", "do next", "next step", "what should i do", "what happens next", "what remains"],
-    ha: ["na gaba", "me ya kamata", "mataki na gaba", "me ya rage", "abin da ya rage"],
-    yo: ["tókàn", "tokan", "kí ni mo yẹ", "ki ni mo ye", "ìgbésẹ̀ tókàn"],
-    ig: ["ọzọ", "ozo", "kwesịrị ime", "kwesiri ime", "gịnị ka m"],
-    pcm: ["wetin next", "wetin i go do", "wetin remain"],
-    fr: ["prochaine étape", "que faire"],
+    en: ["what next", "do next", "next step", "what should i do", "what happens next",
+         "what remains", "what still needs", "what is left", "what's left"],
+    ha: ["na gaba", "me ya kamata", "mataki na gaba", "me ya rage", "abin da ya rage",
+         "me za mu yi", "me ake bukata", "sauran aikin", "me ya saura"],
+    yo: ["tókàn", "tokan", "kí ni mo yẹ", "ki ni mo ye", "ìgbésẹ̀ tókàn", "kí ó ku"],
+    ig: ["ọzọ", "ozo", "kwesịrị ime", "kwesiri ime", "gịnị ka m", "gịnị fọdụrụ"],
+    pcm: ["wetin next", "wetin i go do", "wetin remain", "wetin still dey"],
+    fr: ["prochaine étape", "que faire", "que reste"],
   },
   [INTENT.COMPONENT_STATE]: {
-    en: ["what is happening", "what's happening", "current state", "status of", "where is", "what state"],
-    ha: ["halin yanzu", "matakin", "yaya", "ina", "a ina"],
-    yo: ["ipò", "ipo", "báwo", "bawo", "níbo", "nibo"],
-    ig: ["kedu", "ebee", "ọnọdụ", "onodu"],
+    en: ["what is happening", "what's happening", "current state", "status of", "where is",
+         "what state", "what is the state"],
+    // "matsayi" is status/position. "menene state ɗin" is the code-switched form
+    // of the same question and must land on the same intent.
+    ha: ["menene matsayin", "menene matsayi", "matsayin", "matsayi", "menene state",
+         "state ɗin", "state din", "yana ina", "halin yanzu", "yaya", "ina", "a ina",
+         "me ya sa", "wane matakin", "wane mataki"],
+    yo: ["ipò", "ipo", "báwo", "bawo", "níbo", "nibo", "kí ni ipò"],
+    ig: ["kedu", "ebee", "ọnọdụ", "onodu", "kedu ọnọdụ"],
     pcm: ["how far", "wetin dey happen", "where"],
-    fr: ["état actuel", "où est"],
+    fr: ["état actuel", "où est", "quel est l'état"],
   },
+  // RESPONSIBILITY. "alhaki" is the Hausa word for responsibility/accountability —
+  // it is the discriminator that separates this from participation below.
   [INTENT.COMPONENT_WHO]: {
-    en: ["who is responsible", "who did", "who made", "who contributed", "who approved", "who directed"],
-    ha: ["wa ne", "wa ya", "wanene", "wa yake"],
-    yo: ["ta ni", "tani"],
-    ig: ["onye", "ònye"],
-    pcm: ["who dey responsible", "who do"],
-    fr: ["qui est responsable", "qui a"],
+    en: ["who is responsible", "who is accountable", "who owns", "which organisation is responsible",
+         "who answers for"],
+    ha: ["wanene ke da alhakin", "wane ke da alhakin", "ke da alhakin", "alhakin",
+         "wanene ke da", "wace kungiya", "wace ƙungiya"],
+    yo: ["ta ni ó ni", "ta ni ni ojuse", "ẹni tó ni"],
+    ig: ["onye nwe", "onye na-ahụ maka", "onye ọrụ ya bụ"],
+    pcm: ["who dey responsible", "who own", "who get am"],
+    fr: ["qui est responsable", "quelle organisation est responsable"],
+  },
+  // MANUFACTURING LOCATION. Distinct from state because the Canon holds it in a
+  // different field, closed by Canon P0-2. "ake kera" = "is being manufactured".
+  [INTENT.COMPONENT_HUB]: {
+    en: ["which hub", "what hub", "where was it made", "where is it made", "where is it being made",
+         "where was it manufactured", "where is it manufactured", "which workshop", "what workshop"],
+    ha: ["a ina ake kera", "ina ake kera", "ake kera", "a ina aka kera", "aka kera",
+         "a wane hub", "wane hub", "a ina ake yin", "ina ake yin", "a wace bita"],
+    yo: ["ibi tí wọ́n ń ṣe", "níbo ni wọ́n ń ṣe", "ilé iṣẹ́ wo"],
+    ig: ["ebee ka a na-emere", "ebee ka e mere", "ụlọ ọrụ ole"],
+    pcm: ["which hub", "where dem make am", "where dem dey make am"],
+    fr: ["quel atelier", "où est-il fabriqué"],
+  },
+  [INTENT.COMPONENT_MISSION]: {
+    en: ["what mission", "which mission", "part of what mission", "part of which mission",
+         "belongs to what mission", "under what mission"],
+    ha: ["wane aiki", "wane manufa", "wace manufa", "ƙarƙashin wane", "karkashin wane",
+         "wane mission", "wace mission"],
+    yo: ["iṣẹ́ àpinfunni wo", "iṣẹ wo"],
+    ig: ["ozi ọrụ ole", "ọrụ ole"],
+    pcm: ["which mission", "na which mission"],
+    fr: ["quelle mission"],
+  },
+  // PARTICIPATION. "gudummawa" = contribution. Never responsibility.
+  [INTENT.COMPONENT_CONTRIBUTIONS]: {
+    en: ["who contributed", "who worked on", "who helped", "who participated",
+         "what knowledge was contributed", "who advised"],
+    ha: ["wanene ya ba da gudummawa", "ya ba da gudummawa", "gudummawa",
+         "wanene ya yi aiki a kan", "su wa suka yi aiki", "wanene ya taimaka"],
+    yo: ["ta ni ó kópa", "ta ni ṣe iranlọwọ"],
+    ig: ["onye tinyere aka", "onye nyere aka"],
+    pcm: ["who contribute", "who work on am", "who help"],
+    fr: ["qui a contribué", "qui a participé"],
+  },
+  // COORDINATION. "umarni" = instruction/directive.
+  [INTENT.COMPONENT_DIRECTIVES]: {
+    en: ["who directed", "who instructed", "who gave the instruction", "who ordered",
+         "what was directed", "what instruction"],
+    ha: ["wanene ya ba da umarni", "ya ba da umarni", "umarni", "wanene ya umarce",
+         "wa ya bada umarni"],
+    yo: ["ta ni ó pàṣẹ", "àṣẹ wo"],
+    ig: ["onye nyere iwu", "iwu gịnị"],
+    pcm: ["who give order", "who direct am"],
+    fr: ["qui a donné l'instruction", "qui a ordonné"],
+  },
+  // ACKNOWLEDGEMENT — the two-party resolution of a directive (E9.5).
+  [INTENT.ACKNOWLEDGEMENT_STATUS]: {
+    en: ["has the instruction been accepted", "was the instruction accepted", "has it been acknowledged",
+         "was it acknowledged", "did they accept", "instruction accepted", "acknowledgement status"],
+    ha: ["an amince da umarnin", "shin an amince", "an karɓi umarnin", "an karbi umarnin",
+         "an amince da umarni", "an yarda da umarnin"],
+    yo: ["ṣé wọ́n gbà", "wọn gba àṣẹ"],
+    ig: ["a nabatara iwu", "ha nabatara"],
+    pcm: ["dem accept the order", "dem gree"],
+    fr: ["l'instruction a-t-elle été acceptée"],
+  },
+  [INTENT.COMPONENT_HISTORY]: {
+    en: ["what happened to", "history of", "what has happened", "when was", "when did",
+         "show the history", "timeline"],
+    ha: ["yaushe", "tarihin", "tarihi", "me ya faru", "menene ya faru", "ya faru",
+         "abin da ya faru"],
+    yo: ["ìtàn", "itan", "ìgbà wo"],
+    ig: ["akụkọ", "kedu mgbe", "mgbe ole"],
+    pcm: ["wetin happen", "when e happen"],
+    fr: ["historique", "quand"],
   },
   [INTENT.INSPECTION_STATUS]: {
     en: ["passed inspection", "inspection done", "have we inspected", "inspection complete", "did it pass"],
-    ha: ["gama inspection", "an gama inspection", "ya ci inspection", "an yi inspection",
-         "fara inspection", "shirye", "inspection"],
+    ha: ["ya wuce inspection", "shin ya wuce", "gama inspection", "an gama inspection",
+         "ya ci inspection", "an yi inspection", "fara inspection", "shirye", "inspection",
+         "ya wuce ayyukan bincike"],
     yo: ["ti kọja", "ti koja", "ayẹwo"],
     ig: ["nyochaa", "agafeela"],
     pcm: ["inspection don finish", "e pass"],
     fr: ["inspection terminée"],
   },
   [INTENT.SPECIFICATION_EXPLAIN]: {
-    en: ["explain the specification", "explain this drawing", "explain the drawing", "explain", "what does the spec"],
-    ha: ["bayyana", "ka bayyana", "bayyana min", "ka yi min bayani"],
+    en: ["explain the specification", "explain this drawing", "explain the drawing", "explain",
+         "what does the spec"],
+    ha: ["bayyana", "ka bayyana", "bayyana min", "ka yi min bayani", "ka bayyana min"],
     yo: ["ṣàlàyé", "salaye", "ṣalaye"],
     ig: ["kọwaa", "kowaa"],
     pcm: ["explain", "break am down"],
     fr: ["expliquer", "explique"],
   },
   [INTENT.MISSION_PROGRESS]: {
-    en: ["mission progress", "how many accepted", "how far is the mission", "progress of"],
-    ha: ["nawa aka gama", "ci gaban aiki", "ci gaba"],
-    yo: ["ìlọsíwájú", "ilosiwaju"],
-    ig: ["ọganihu", "oganihu"],
-    pcm: ["how far mission"],
-    fr: ["progression de la mission"],
+    en: ["mission progress", "how many accepted", "how far is the mission", "progress of",
+         "how many have been accepted", "how many wheel hubs"],
+    ha: ["nawa aka gama", "nawa aka amince", "nawa ne aka gama", "ci gaban aiki", "ci gaba",
+         "nawa aka karɓa", "nawa aka karba", "nawa"],
+    yo: ["ìlọsíwájú", "ilosiwaju", "mélòó ni"],
+    ig: ["ọganihu", "oganihu", "ole ka a nabatara"],
+    pcm: ["how far mission", "how many dem accept"],
+    fr: ["progression de la mission", "combien ont été acceptés"],
+  },
+  // NOT A QUESTION. Recognised so it can be REFUSED with a reason rather than
+  // silently falling through to `unknown`. See the authority boundary in infer.js.
+  [INTENT.ACTION_REQUEST]: {
+    en: ["approve this", "approve it", "approve the", "sign this off", "sign off",
+         "record the pass", "publish this", "mark it as passed", "i am the engineer",
+         "record this event", "authorise this", "authorize this"],
+    ha: ["ka amince da", "ki amince da", "amince da wannan", "ka sa hannu",
+         "ni injiniya ne", "ni engineer ne", "ka approve", "ki approve",
+         "ka tabbatar da wannan", "ka rubuta wannan"],
+    yo: ["fọwọ́ sí", "fowo si", "gba á", "èmi ni onímọ̀ ẹ̀rọ"],
+    ig: ["kwadoo ya", "bịanye aka", "abụ m onye injinia"],
+    pcm: ["approve am", "sign am", "na me be the engineer"],
+    fr: ["approuve ceci", "approuvez ceci", "je suis l'ingénieur"],
   },
   [INTENT.SEARCH]: {
     en: ["find", "search", "show me all", "list"],
@@ -203,11 +338,19 @@ export function resolveIntent(text, { preferredLanguage = "en" } = {}) {
   // Score every intent across EVERY language's phrases. Scoring is not limited to
   // the detected language, because mixed input is normal — "Yanzu muna ready mu
   // fara inspection" carries an English marker inside a Hausa sentence.
+  //
+  // WEIGHT IS WORD COUNT, not a flat 2-for-multiword. With fourteen intents that
+  // share vocabulary, "a ina ake kera" (4 words, unambiguously a location
+  // question) has to outrank "ina" (1 word, which merely means "where") decisively
+  // rather than by one point. Specificity is length.
   const hits = [];
   for (const [type, byLang] of Object.entries(PHRASES)) {
     for (const [lang, phrases] of Object.entries(byLang)) {
       for (const p of phrases) {
-        if (lower.includes(norm(p))) hits.push({ type, lang, phrase: p, weight: p.includes(" ") ? 2 : 1 });
+        const n = norm(p);
+        if (lower.includes(n)) {
+          hits.push({ type, lang, phrase: p, weight: n.split(/\s+/).filter(Boolean).length });
+        }
       }
     }
   }
@@ -233,12 +376,23 @@ export function resolveIntent(text, { preferredLanguage = "en" } = {}) {
   }
 
   // Best intent by total weight; ties broken by the longest matched phrase.
+  //
+  // THE TIE-BREAK WAS BROKEN AND IS NOW FIXED. It read `h[1] === b[0]`, indexing a
+  // hit OBJECT numerically — `h[1]` is always undefined, so the filter never
+  // matched, `Math.max(...[], 0)` was always 0, and every tie silently fell back to
+  // Map insertion order. It went unnoticed while there were seven intents that
+  // rarely tied. With fourteen that share "who" and "where" vocabulary, an
+  // insertion-order tie-break would make the answer depend on the order this file
+  // happens to declare its intents, which is not a linguistic fact about the
+  // question. Longest single matched phrase now decides.
   const totals = new Map();
-  for (const h of hits) totals.set(h.type, (totals.get(h.type) ?? 0) + h.weight);
+  const longest = new Map();
+  for (const h of hits) {
+    totals.set(h.type, (totals.get(h.type) ?? 0) + h.weight);
+    longest.set(h.type, Math.max(longest.get(h.type) ?? 0, h.phrase.length));
+  }
   const best = [...totals.entries()].sort(
-    (a, b) => b[1] - a[1] ||
-      Math.max(...hits.filter((h) => h[1] === b[0]).map((h) => h.phrase.length), 0) -
-      Math.max(...hits.filter((h) => h[1] === a[0]).map((h) => h.phrase.length), 0),
+    (a, b) => b[1] - a[1] || (longest.get(b[0]) ?? 0) - (longest.get(a[0]) ?? 0),
   )[0];
   const [type, weight] = best;
   const totalWeight = [...totals.values()].reduce((a, b) => a + b, 0);

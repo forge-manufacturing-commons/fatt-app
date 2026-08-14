@@ -25,8 +25,8 @@
 // UNKNOWN rather than a fact. That property is what Phase 1 exists to prove.
 // ============================================================
 
-import { groundResponse, canonFact, interpretation, recommendation, unknown, foldSource,
-         notRecorded, NOT_RECORDED_BY_CANON }
+import { groundResponse, canonFact, canonDerived, interpretation, recommendation, unknown,
+         foldSource, notRecorded, NOT_RECORDED_BY_CANON }
   from "./grounding.js";
 import { INTENT } from "./intent.js";
 import { componentState } from "../../domains/production/state.js";
@@ -82,6 +82,23 @@ export const deterministicAdapter = ({ intent, canon }) => {
   // SPECIFICATION_EXPLAIN is exempt because the Canon genuinely holds part of the
   // answer (state, author); that branch refuses the drawing content separately, so
   // it can state what it knows AND what it does not in the same response.
+  // (PHASE 2) THE AUTHORITY BOUNDARY OUTRANKS EVERYTHING, INCLUDING THE SUBJECT
+  // CHECK AND THE COMPONENT-EXISTS CHECK.
+  //
+  // "Ka amince da drawing ɗin" ("approve the drawing") mentions a subject the
+  // Canon does not record, so the subject check below would have refused it for
+  // the wrong reason — "Forge Canon does not contain drawing content" — which is
+  // true but answers a question nobody asked. The user asked to APPROVE something.
+  // The reason that request fails is not a missing drawing; it is that authority
+  // is not conferred by asking. Refusing for the wrong reason teaches the user
+  // that supplying the drawing would be enough.
+  if (intent?.type === INTENT.ACTION_REQUEST) {
+    return [
+      unknown("authority", "ForgeOS requires an authenticated, authorised identity to " +
+                           "record an event; a statement in conversation confers none"),
+    ];
+  }
+
   const subject = intent?.subject;
   if (subject && NOT_RECORDED_BY_CANON[subject] && intent?.type !== INTENT.SPECIFICATION_EXPLAIN) {
     return [notRecorded(subject, id ?? intent?.specification ?? null, lang)];
@@ -107,6 +124,11 @@ export const deterministicAdapter = ({ intent, canon }) => {
         comp.hub
           ? canonFact(`${id} ${comp.hub}`, foldSource(`components.${id}.hub`))
           : unknown(`${id} hub`, "no manufacturing hub is recorded for this component"),
+        // The mission the work sits under. Part of "what is happening with this
+        // part" because the Canon correlates it — four facts, four fold paths.
+        comp.mission
+          ? canonFact(`${id} ${comp.mission}`, foldSource(`components.${id}.mission`))
+          : unknown(`${id} mission`, "this component is not correlated to any mission"),
       ];
 
     case INTENT.COMPONENT_NEXT_ACTION: {
@@ -119,6 +141,49 @@ export const deterministicAdapter = ({ intent, canon }) => {
           : unknown(`${id} next`, `the lifecycle permits no transition from "${comp.state}"`),
       ];
     }
+
+    // (PHASE 2) MANUFACTURING LOCATION ONLY. Asked as its own question because the
+    // Canon holds it in its own field. The refusal when absent is a CANON absence.
+    case INTENT.COMPONENT_HUB:
+      return [
+        comp.hub
+          ? canonFact(`${id} ${comp.hub}`, foldSource(`components.${id}.hub`))
+          : unknown(`${id} hub`, "no manufacturing hub is recorded for this component"),
+      ];
+
+    case INTENT.COMPONENT_MISSION:
+      return [
+        comp.mission
+          ? canonFact(`${id} ${comp.mission}`, foldSource(`components.${id}.mission`))
+          : unknown(`${id} mission`, "this component is not correlated to any mission"),
+      ];
+
+    // PARTICIPATION. A different relationship from responsibility, and the reason
+    // COMPONENT_WHO and this are separate intents at all.
+    case INTENT.COMPONENT_CONTRIBUTIONS:
+      return (comp.contributions ?? []).length
+        ? [canonFact(String(comp.contributions.length),
+                     foldSource(`components.${id}.contributions`))]
+        : [unknown(`${id} contributions`, "no participation is recorded for this component")];
+
+    case INTENT.COMPONENT_DIRECTIVES:
+      return (comp.directives ?? []).length
+        ? [canonFact(String(comp.directives.length),
+                     foldSource(`components.${id}.directives`))]
+        : [unknown(`${id} directives`, "no directive is recorded for this component")];
+
+    case INTENT.ACKNOWLEDGEMENT_STATUS: {
+      const resolved = (comp.directives ?? []).find((d) => d?.acknowledgement);
+      return resolved
+        ? [canonFact(`${resolved.acknowledgement}`, foldSource(`components.${id}.directives`))]
+        : [unknown(`${id} acknowledgement`,
+                   "no acknowledgement of a directive is recorded for this component")];
+    }
+
+    case INTENT.COMPONENT_HISTORY:
+      return (comp.history ?? []).length
+        ? [canonFact(String(comp.history.length), foldSource(`components.${id}.history`))]
+        : [unknown(`${id} history`, "no transition is recorded for this component")];
 
     case INTENT.COMPONENT_WHO:
       // DELIBERATELY DOES NOT CITE `comp.hub`. A hub is where the work happened,
@@ -151,6 +216,13 @@ export const deterministicAdapter = ({ intent, canon }) => {
       return [
         canonFact(`${m.id} ${m.accepted}/${m.target}`, foldSource(`missions.${m.id}.accepted`)),
         canonFact(`${m.id} ${m.state}`, foldSource(`missions.${m.id}.state`)),
+        // CANON_DERIVED (Phase 2). "How much is left" is not a field — it is
+        // arithmetic over two fields that ARE. Both are cited, and verifyClaim
+        // requires both to resolve, so the derivation cannot outlive its inputs.
+        canonDerived(`${Math.max(0, m.target - m.accepted)}`, [
+          foldSource(`missions.${m.id}.accepted`),
+          foldSource(`missions.${m.id}.target`),
+        ]),
       ];
     }
 

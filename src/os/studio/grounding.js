@@ -27,6 +27,13 @@
 
 export const CLAIM = Object.freeze({
   CANON_FACT:        "CANON_FACT",
+  // PHASE 2. A fact COMPUTED from Canon facts rather than read from one field:
+  // "82 of 200 accepted, so 118 remain". The arithmetic is not in the fold, but
+  // every input to it is, and each input must resolve exactly as a CANON_FACT
+  // must. It is a separate class because the failure modes differ — a derived
+  // claim can be wrong by miscalculation while every source it cites resolves —
+  // so `sources` is plural and ALL of them are verified.
+  CANON_DERIVED:     "CANON_DERIVED",
   AI_INTERPRETATION: "AI_INTERPRETATION",
   AI_RECOMMENDATION: "AI_RECOMMENDATION",
   UNKNOWN:           "UNKNOWN",
@@ -89,6 +96,17 @@ const freeze = (o) => Object.freeze(o);
 /** A Canon fact. Refused later unless `source` resolves against the fold. */
 export const canonFact = (text, source) =>
   freeze({ type: CLAIM.CANON_FACT, text: String(text ?? ""), source: source ? freeze(source) : null });
+
+/**
+ * A fact derived from Canon facts. EVERY source must resolve, not just one.
+ *
+ * `sources` is an array because the honesty of a derivation depends on all of its
+ * inputs. A claim citing one resolvable path and one imaginary path is not
+ * three-quarters true; it is unsupported, and verifyClaim downgrades it whole.
+ */
+export const canonDerived = (text, sources = []) =>
+  freeze({ type: CLAIM.CANON_DERIVED, text: String(text ?? ""),
+           source: null, sources: freeze((Array.isArray(sources) ? sources : [sources]).map(freeze)) });
 
 export const interpretation = (text) =>
   freeze({ type: CLAIM.AI_INTERPRETATION, text: String(text ?? ""), source: null });
@@ -201,6 +219,27 @@ export function verifyClaim(claim, { view = {}, log = [] } = {}) {
     return freeze({ ...claim, source: null, verified: true, verifiedAgainst: "room declaration, not Canon" });
   }
 
+  if (claim.type === CLAIM.CANON_DERIVED) {
+    // ALL sources, or none. A derivation with one unresolvable input is
+    // unsupported in full — it cannot stand as "mostly Canon".
+    const srcs = Array.isArray(claim.sources) ? claim.sources : [];
+    if (!srcs.length) {
+      return unknown(claim.text, "a CANON_DERIVED claim was asserted with no sources");
+    }
+    const results = srcs.map((s) =>
+      s?.kind === SOURCE_KIND.EVENT
+        ? (log.find((x) => x?.eventId === s.eventId)
+            ? { resolved: true }
+            : { resolved: false, reason: `event "${s.eventId}" is not present in this event stream` })
+        : resolveFoldPath(view, s?.path));
+    const bad = results.findIndex((r) => !r.resolved);
+    if (bad !== -1) {
+      return unknown(claim.text, `derivation source did not resolve: ${results[bad].reason}`);
+    }
+    return freeze({ ...claim, verified: true,
+                    values: freeze(results.map((r) => r.value)) });
+  }
+
   if (claim.type !== CLAIM.CANON_FACT) {
     // Interpretation, recommendation and unknown assert nothing about the Canon.
     return freeze({ ...claim, verified: true });
@@ -234,12 +273,17 @@ export function verifyClaim(claim, { view = {}, log = [] } = {}) {
  */
 export function groundResponse(claims = [], ctx = {}) {
   const verified = (Array.isArray(claims) ? claims : [claims]).map((c) => verifyClaim(c, ctx));
+  // A downgrade is any claim that ASSERTED the Canon and failed to prove it —
+  // CANON_DERIVED counts, or a model could dodge verification by relabelling.
+  const asserted = new Set([CLAIM.CANON_FACT, CLAIM.CANON_DERIVED]);
   const downgraded = verified.filter(
-    (c, i) => c.type === CLAIM.UNKNOWN && (Array.isArray(claims) ? claims[i] : claims)?.type === CLAIM.CANON_FACT,
+    (c, i) => c.type === CLAIM.UNKNOWN &&
+              asserted.has((Array.isArray(claims) ? claims[i] : claims)?.type),
   );
   return freeze({
     claims: freeze(verified),
     facts: freeze(verified.filter((c) => c.type === CLAIM.CANON_FACT)),
+    derived: freeze(verified.filter((c) => c.type === CLAIM.CANON_DERIVED)),
     interpretations: freeze(verified.filter((c) => c.type === CLAIM.AI_INTERPRETATION)),
     recommendations: freeze(verified.filter((c) => c.type === CLAIM.AI_RECOMMENDATION)),
     unknowns: freeze(verified.filter((c) => c.type === CLAIM.UNKNOWN)),
@@ -286,8 +330,14 @@ export const fromConversation = (text) =>
   freeze({ type: CLAIM.CANON_FACT, text: String(text ?? ""), source: null,
            origin: "conversation" });
 
+/** The only two classes a surface may present as Forge Canon facts. */
+export const BINDING_CLASSES = Object.freeze([CLAIM.CANON_FACT, CLAIM.CANON_DERIVED]);
+export const isBinding = (claim) =>
+  BINDING_CLASSES.includes(claim?.type) && claim?.verified === true;
+
 export default {
-  CLAIM, SOURCE_KIND, canonFact, interpretation, recommendation, unknown,
+  CLAIM, SOURCE_KIND, canonFact, canonDerived, BINDING_CLASSES, isBinding,
+  interpretation, recommendation, unknown,
   roomLocal, notRecorded, isCanonLimitation, NOT_RECORDED_BY_CANON, CANON_SILENCE,
   foldSource, eventSource, resolveFoldPath, verifyClaim, groundResponse,
   assertsEventOccurred, fromConversation,

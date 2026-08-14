@@ -34,20 +34,47 @@ const MARKERS = Object.freeze({
             "san", "abin", "rage", "kafin", "fara", "da", "ba", "akan", "matakin",
             "gaba", "shi", "ne", "halin", "bayan", "za", "samun", "ko", "kuma", "wani",
             "bukata", "kula", "gama", "turo", "mana", "bayyana", "min", "nawa", "cikin",
-            "don", "sai", "amma", "ta", "na", "in", "an", "ka", "ki", "su", "sun"],
+            "don", "sai", "amma", "ta", "na", "in", "an", "ka", "ki", "su", "sun",
+            // PHASE 2. The question words a workshop participant actually opens with,
+            // plus the manufacturing nouns Forge Canon questions are built from.
+            // Without these, "Menene matsayin HUB-014?" scored ZERO on Hausa and was
+            // answered in English — the single most visible failure this phase had to
+            // fix, because a Hausa question answered in English is not a multilingual
+            // system, it is an English system with a Hausa veneer.
+            "menene", "mene", "matsayin", "matsayi", "wanene", "wace", "wane",
+            "alhakin", "alhaki", "kera", "ake", "aka", "shin", "wuce", "umarni",
+            "umarnin", "gudummawa", "amince", "yarda", "karɓi", "karbi", "karɓa",
+            "karba", "injiniya", "tarihin", "tarihi", "faru", "saura", "manufa",
+            "ƙarƙashin", "karkashin", "yake", "take", "aiki", "aikin", "ayyukan",
+            "hannu", "tabbatar", "rubuta", "taimaka", "suka", "mun", "ke", "sa",
+            "bita", "kungiya", "ƙungiya", "bincike", "jerin", "nemo"],
     chars: /[ƙɗɓƴ]/i,
   },
   yo: {
     words: ["kí", "ki", "ni", "mo", "yẹ", "ye", "ṣe", "se", "tókàn", "tokan", "lori",
             "ohun", "wa", "ti", "náà", "naa", "báwo", "bawo", "fún", "fun", "wọn",
-            "kan", "jẹ", "je", "àwọn", "awon", "ṣàlàyé", "salaye", "pé", "pe", "ló", "lo"],
-    chars: /[ẹọṣ]|[àèìòù]|[áéíóú]/,
+            "kan", "jẹ", "je", "àwọn", "awon", "ṣàlàyé", "salaye", "pé", "pe", "ló", "lo",
+            // PHASE 2 — the question and relationship words used by the intent layer.
+            "ipò", "ipo", "níbo", "nibo", "mélòó", "meloo", "ìtàn", "itan", "àṣẹ", "ase",
+            "kópa", "kopa", "ojuse", "ẹni", "eni", "ibi", "wọ́n", "ń", "ilé", "ile",
+            "iṣẹ́", "ise", "ayẹwo", "kọja", "koja", "fọwọ́", "fowo", "gbà", "gba",
+            "onímọ̀", "ẹ̀rọ", "ta"],
+    // DISTINCTIVE ONLY: the sub-dot letters. Tone marks (à é ì ó ù …) were here and
+    // are now SHARED with French — see SHARED_CHARS. Keeping them as distinctive
+    // Yoruba evidence meant "Quel est l'état de HUB-014 ?" scored +2 on Yoruba for
+    // the é in "état" and was answered in Yoruba.
+    chars: /[ẹṣ]/,
   },
   ig: {
     words: ["gịnị", "gini", "ka", "kwesịrị", "kwesiri", "ime", "ọzọ", "ozo", "na",
             "ihe", "ndị", "ndi", "nke", "ya", "anyị", "anyi", "bụ", "bu", "maka",
-            "kọwaa", "kowaa", "ọrụ", "oru", "were", "ugbu", "a", "gịnị", "dị", "di"],
-    chars: /[ịọụṅ]/i,
+            "kọwaa", "kowaa", "ọrụ", "oru", "were", "ugbu", "a", "gịnị", "dị", "di",
+            // PHASE 2 — Igbo scored only on orthography before, which it SHARES with
+            // Yoruba, so an Igbo question could be answered in Yoruba. See SHARED_CHARS.
+            "kedu", "ọnọdụ", "onodu", "ebee", "onye", "ole", "mgbe", "akụkọ", "akuko",
+            "iwu", "nabatara", "tinyere", "nyere", "aka", "fọdụrụ", "foduru", "emere",
+            "mere", "ụlọ", "ulo", "nwe", "agafeela", "nyochaa", "gịnị", "depụta"],
+    chars: /[ịụṅ]/i,
   },
   pcm: {
     words: ["wetin", "dey", "abeg", "na", "make", "don", "wan", "sabi", "fit", "no",
@@ -63,7 +90,13 @@ const MARKERS = Object.freeze({
   },
   fr: {
     words: ["le", "la", "les", "que", "quoi", "est", "pour", "nous", "avec", "dans",
-            "sur", "une", "des", "il", "elle", "faire", "prochaine", "étape"],
+            "sur", "une", "des", "il", "elle", "faire", "prochaine", "étape",
+            // French now has to stand on VOCABULARY, because its accents are no
+            // longer distinctive evidence — they are shared with Yoruba tone marks.
+            "quel", "quelle", "quels", "quelles", "où", "combien", "atelier",
+            "fabriqué", "fabrique", "état", "etat", "responsable", "historique",
+            "quand", "ordonné", "accepté", "acceptés", "terminée", "mission",
+            "organisation", "ceci", "reste", "expliquer", "explique", "cet", "cette"],
     chars: null,
   },
   urh: {
@@ -88,6 +121,26 @@ export const SHARED_TOKENS = Object.freeze(new Set(
     .flatMap((m) => m.words)
     .filter((w, i, all) => all.indexOf(w) !== i),
 ));
+
+/**
+ * Orthography shared between two languages, and therefore weak evidence.
+ *
+ * The same trap as SHARED_TOKENS, one level down. "ọ" (o with dot below) is used
+ * by BOTH Yoruba and Igbo. Scoring it as a distinctive character for each meant
+ * "Kedu ọnọdụ HUB-014?" — unambiguously Igbo — tied at 2 points each and was
+ * decided by the order this file happens to declare its languages, which answered
+ * an Igbo question in Yoruba.
+ *
+ * Truly distinctive marks stay in `chars` and score 2: ẹ and ṣ and tone marks are
+ * Yoruba, ị and ụ and ṅ are Igbo. Shared marks score 1 — enough to say "one of
+ * these two", never enough to choose between them on its own.
+ */
+const SHARED_CHARS = Object.freeze([
+  { re: /ọ/i, langs: ["yo", "ig"] },
+  // Accented vowels: Yoruba tone marks and French accents are the SAME characters.
+  // This entry is why a French question is no longer read as Yoruba.
+  { re: /[àèìòùáéíóúâêîôû]/i, langs: ["yo", "fr"] },
+]);
 
 const isUnique = (token, code) =>
   MARKERS[code].words.includes(token) && !SHARED_TOKENS.has(token);
@@ -120,6 +173,13 @@ export function detectLanguage(text) {
     }
     // A distinctive diacritic is strong evidence — it appears in no other set.
     if (m.chars && m.chars.test(masked)) { scores[code] += 2; unique[code] += 2; }
+  }
+
+  // Orthography shared by two languages: half weight, and it may NOT count towards
+  // `unique`, so it can never argue on its own that a second language is present.
+  for (const { re, langs } of SHARED_CHARS) {
+    if (!re.test(masked)) continue;
+    for (const code of langs) if (code in scores) scores[code] += 1;
   }
 
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
