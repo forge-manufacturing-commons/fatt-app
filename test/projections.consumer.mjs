@@ -592,9 +592,26 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
   // `organisation` was added — that is the guard working, not failing. The point
   // it defends is unchanged: the fold carries only fields an event can prove, so
   // `safetyCritical` still has no place here.
+  // Fired again in E9.1 when `contributions` was added — the guard working twice.
+  // What it defends is still the same: every field must be something an event can
+  // prove. `contributions` qualifies (it is folded only from knowledge.* events
+  // that name the component); `safetyCritical` still does not.
+  // Fired a third time in E9.3 for `directives` — the guard working again.
+  // Fired a FOURTH time in Canon P0-2 for `hub`. Same test, same reason to exist:
+  // `hub` is admitted because `isEntityField("hub")` is true and every
+  // manufacturing event has carried it since V1, so an event CAN prove it. It was
+  // never projected, which is precisely the gap P0-2 closed. `safetyCritical`
+  // still cannot be proved by any event and therefore still has no place here.
   ok("H. the folded component shape stays exactly what the events can prove",
      Object.keys(p.components["C1"]).sort().join(",") ===
-     ["history", "id", "mission", "organisation", "specification", "state"].join(","));
+     ["contributions", "directives", "history", "hub", "id", "mission", "organisation",
+      "specification", "state"].join(","));
+  // COMPANION TO THE WIDENING. The guard above got looser by one field, so this
+  // asserts the thing that widening could have broken: these events carry NO hub,
+  // so the new field must be null. A fold field that appears populated without an
+  // event to source it is the exact failure `safetyCritical` guards against.
+  ok("H. and the new `hub` field is null when no event carried a hub",
+     p.components["C1"].hub === null);
 }
 
 // ============================================================
@@ -713,15 +730,51 @@ console.log("\nFORGE OS — projections (the connected kernel)\n");
        m.state === "planning" && m.history.length === 0);
     ok("Q. component lifecycle remains authoritative",
        p.components["C1"].state === "assembly");
-    ok("R. the fold shape grew by exactly one field",
+    ok("R. the fold shape is exactly the authorised set across E5, E9.1, E9.3 and P0-2",
        Object.keys(p.components["C1"]).sort().join(",") ===
-       ["history", "id", "mission", "organisation", "specification", "state"].join(","));
+       ["contributions", "directives", "history", "hub", "id", "mission", "organisation",
+        "specification", "state"].join(","));
+    ok("R. and `directives` is empty here — no lifecycle event is a directive",
+       p.components["C1"].directives.length === 0);
+    ok("R. and `contributions` is empty here — no lifecycle event is a contribution",
+       p.components["C1"].contributions.length === 0);
+    // COMPANION TO THE P0-2 WIDENING, in the room where the confusion would be
+    // most damaging: this component HAS a responsible organisation. Adding `hub`
+    // must not have made location and responsibility the same fact.
+    ok("R. and `hub` did not become a second copy of `organisation`",
+       p.components["C1"].organisation === "DEMO-ORG-001" &&
+       p.components["C1"].hub !== "DEMO-ORG-001");
   }
 
   // T + U + V — nothing frozen moved
   {
     const all = Object.values(EVENT_TYPES).flatMap((d) => Object.values(d));
-    ok("T. no new event type was introduced", all.length === 32);
+    // E9.3 authorised exactly ONE new type. The guard is updated to 33 and a
+    // companion assertion below protects what it originally defended: that
+    // nothing OTHER than the coordination event was slipped in.
+    // E9.5 authorised one more: the acknowledgement. The companion assertion
+    // still protects what this guard originally defended — that nothing OTHER
+    // than the two coordination events was slipped into the vocabulary.
+    ok("T. the vocabulary is exactly 34 types", all.length === 34);
+    ok("T. and the only additions are the two coordination events",
+       all.filter((t) => t !== "production.work.directed" &&
+                         t !== "production.work.acknowledged").length === 32);
+    // Proved by execution rather than by reading the source: publish both
+    // coordination events against a component and assert the lifecycle is untouched.
+    {
+      const d = Events.production({ component: "CX", type: EVENT_TYPES.PRODUCTION.WORK_DIRECTED,
+        directedTo: "ORG-X", directedToClass: "institution", person: "P", human: "P",
+        summary: "do it" });
+      const a = Events.production({ component: "CX", type: EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED,
+        inResponseTo: d.eventId, outcome: "accepted", person: "Q", human: "Q", summary: "ok" });
+      const cx = project(asLog([d, a]), MISSIONS).components["CX"];
+      ok("T. neither coordination event drives a component transition",
+         cx.state === "planned" && cx.history.length === 0);
+      ok("T. nor confers responsibility, nor creates participation",
+         cx.organisation === null && cx.contributions.length === 0);
+      ok("T. the directive is recorded and resolved instead",
+         cx.directives.length === 1 && cx.directives[0].outcome === "accepted");
+    }
     ok("T. no organisation/capability/responsibility event exists",
        all.filter((t) => /organisation|capabilit|responsib|workorder/i.test(t)).length === 0);
     ok("U. every canonical event still carries a mission policy",

@@ -45,7 +45,7 @@
 // organisations are read from the table rather than declared — TRANSITIONAL.md D2.
 // ============================================================
 
-import { PROVENANCE, COMPONENT_CLASS, classForSpecification } from "./network.js";
+import { PROVENANCE, COMPONENT_CLASS, classForSpecification, hubsOf } from "./network.js";
 
 // ---------- PILOT ORGANISATIONS ----------
 // `role` is a forge_role enum value from supabase/migrations/002_identity.sql.
@@ -209,8 +209,21 @@ export function assertPilotIntegrity() {
   return true;
 }
 
+/**
+ * Hubs an organisation operates at, across BOTH registries.  (E9.5)
+ *
+ * The single reader every caller should use. It supplies the pilot registry to
+ * `network.hubsOf`, which cannot import it. Pilot records are not duplicated —
+ * they are passed by reference from the one place they are declared.
+ *
+ * Returns [] for an organisation no registry knows. That is UNKNOWN, and a scope
+ * check must treat it as "no scope", never as "all hubs".
+ */
+export const hubsOfOrganisation = (organisationId) =>
+  hubsOf(organisationId, PILOT_ORGANISATIONS);
+
 export default {
-  PILOT_ORGANISATIONS, PILOT_ASSIGNMENTS,
+  PILOT_ORGANISATIONS, PILOT_ASSIGNMENTS, hubsOfOrganisation,
   pilotOrganisationById, pilotOrganisationByName, isPilotOrganisation,
   assignmentsOf, assignmentFor, provenanceOfOrganisation,
   pilotIntegrityProblems, assertPilotIntegrity,

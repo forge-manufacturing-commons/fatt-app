@@ -25,6 +25,16 @@ export const CAPABILITIES = {
   'research.publish':    'Publish research and test results',
   'student_team.submit': 'Enter student teams into missions',
   'advisory.offer':      'Offer technical advisory to the network',
+  // COORDINATION (E9.3). The authority to direct ANOTHER party's work on an
+  // artefact — distinct from performing it, approving it, or being responsible
+  // for it. Granted below to `manufacturer` alone, deliberately.
+  'work.direct':         'Direct another party to perform manufacturing work',
+  // The RESPONSE authority (E9.5). Deliberately NOT `job.accept`: that means
+  // "accept manufacturing work" and is verification-gated, so gating a reply on
+  // it would stop the unverified SOLC pilot from answering its own directive.
+  // Acknowledging a directive and taking on regulated work are related but
+  // different acts, and `job.accept` keeps its meaning and its gate untouched.
+  'work.acknowledge':    'Acknowledge or reject a manufacturing directive',
   'volunteer.enrol':     'Enrol on placements and training',
   'oversight.view':      'View national oversight and statistics',
   'report.download':     'Export reports and performance data',
@@ -35,16 +45,29 @@ export const CAPABILITIES = {
 export const ROLES = [
   { id:'sme',                label:'SME',                 kind:'organisation', glyph:'▣',
     purpose:'A small or medium enterprise that manufactures components.',
-    capabilities:['capability.publish','equipment.register','job.accept','job.track','invoice.issue','mission.view'] },
+    capabilities:['capability.publish','equipment.register','job.accept','job.track','invoice.issue','mission.view','work.acknowledge'] },
+  // `work.direct` is granted to `manufacturer` ONLY, and the choice is argued
+  // from the existing capability model rather than from job titles. Of the
+  // twelve roles, `manufacturer` is the only one that already holds BOTH
+  // `mission.create` (may declare work) and `job.accept`/`job.track` (may take
+  // on and follow work) — i.e. the only role this model already treats as
+  // organising production rather than performing it (`sme`), overseeing it
+  // (`government_agency`), or engineering it (`engineer`). Granting it more
+  // widely would have made every refusal in the E9.3 matrix pass by accident.
   { id:'manufacturer',       label:'Manufacturer',        kind:'organisation', glyph:'▤',
     purpose:'A manufacturing firm able to take whole assemblies.',
-    capabilities:['capability.publish','equipment.register','job.accept','job.track','invoice.issue','mission.create','mission.view'] },
+    capabilities:['capability.publish','equipment.register','job.accept','job.track','invoice.issue','mission.create','mission.view','work.direct','work.acknowledge'] },
+  // `work.acknowledge` goes to exactly the four roles this model already says can
+  // take on manufacturing work — the holders of `job.accept`. Acknowledging a
+  // directive is the response act of precisely those parties. Not granted to
+  // engineer, diaspora_expert, nysc_volunteer, university, polytechnic,
+  // research_institute, government_agency or investor.
   { id:'component_supplier', label:'Component Supplier',  kind:'organisation', glyph:'▥',
     purpose:'Supplies parts, materials and sub-assemblies.',
-    capabilities:['capability.publish','equipment.register','job.accept','job.track','invoice.issue','mission.view'] },
+    capabilities:['capability.publish','equipment.register','job.accept','job.track','invoice.issue','mission.view','work.acknowledge'] },
   { id:'logistics_partner',  label:'Logistics Partner',   kind:'organisation', glyph:'▧',
     purpose:'Moves materials and finished goods across the corridors.',
-    capabilities:['capability.publish','job.accept','job.track','invoice.issue','mission.view'] },
+    capabilities:['capability.publish','job.accept','job.track','invoice.issue','mission.view','work.acknowledge'] },
   { id:'university',         label:'University',          kind:'organisation', glyph:'◈',
     purpose:'Laboratories, departments, research and student teams.',
     capabilities:['capability.publish','equipment.register','research.publish','student_team.submit','engineering.author','mission.view'] },

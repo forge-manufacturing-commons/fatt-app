@@ -25,7 +25,7 @@ import { useIdentity } from "../os/ForgeIdentity.jsx";
 import { specificationState } from "../domains/engineering/state.js";
 import { engineeringRules } from "../domains/engineering/rules.js";
 import { createEngineeringEmitter } from "../domains/engineering/emitters.js";
-import { createPolicy, requireActor, PolicyViolation } from "../os/policy.js";
+import { createPolicy, requireActor, requireCapability, PolicyViolation } from "../os/policy.js";
 import { RuleViolation } from "../os/rules.js";
 import { IllegalTransition } from "../os/state.js";
 import { FORGE_CLIPS } from "../os/geometry.js";
@@ -74,9 +74,25 @@ const ACTORS = [
   { id: "eng-folake", name: "Folake Adeyemi", competencies: ["engineering-level-3"] },
 ];
 
-// The documents that exist. Their STATE is not stored here — it is folded
-// from the event log by projections.js, which is what lets every other room
-// see the same reality without shared component state.
+// ROOM-LOCAL DECLARATIONS — NOT CANON. (P0-1)
+//
+// These titles, authors and revisions live in this file and NOWHERE ELSE. The
+// Canon records a specification's LIFECYCLE — that FTT-HB-001 was drafted,
+// reviewed, approved, by whom and when — because those are events. It records no
+// title, because `title` is not a canonical field: `isEntityField("title")` is
+// false and no event in events.js carries one.
+//
+// This room is where such a declaration ENTERS the system: `author` and
+// `revision` are read from here and put onto the events this room publishes, at
+// which point they become Canon for that event. That is legitimate. What is NOT
+// legitimate is DISPLAYING them as though the Canon already holds them — a
+// specification nobody has acted on yet has no Canon record at all, and the room
+// must say so rather than implying otherwise.
+//
+// So the state below is folded from the log and the rest is labelled ROOM-LOCAL.
+// Their STATE is not stored here — it is folded from the event log by
+// projections.js, which is what lets every other room see the same reality
+// without shared component state.
 const DECLARED_SPECS = [
   { id: "FTT-CR-001", title: "Chassis rail, 2.0mm CR steel",  author: "eng-ngozi",  revision: "A.01" },
   { id: "FTT-HB-001", title: "Wheel hub, machined billet",    author: "eng-tunde",  revision: "A.03" },
@@ -125,23 +141,70 @@ export default function EngineeringBay() {
   // immediately visible to the Operations Centre and to mission progress.
   const view = useMemo(() => project(log, MISSIONS), [log]);
 
-  const specs = useMemo(() => DECLARED_SPECS.map((d) => ({
-    ...d,
-    state: view.specifications[d.id]?.state ?? specificationState.initial,
-    history: view.specifications[d.id]?.history ?? [],
-  })), [view]);
+  // TWO ORIGINS, KEPT APART. (P0-1)
+  //
+  // `canonRecord` is null until an event exists. The previous version of this merge
+  // spread the room's declaration and the fold into one flat object and defaulted
+  // the state to `specificationState.initial`, so an untouched specification looked
+  // identical to one the Canon had actually recorded as a draft. `recordedInCanon`
+  // is the field that distinguishes them, and the surface renders it.
+  //
+  // The flat fields are retained because the emitters read `spec.author` and
+  // `spec.revision` to PUT them on events — see the DECLARED_SPECS note. The
+  // additions here are about what the room may CLAIM, not about what it may author.
+  const specs = useMemo(() => DECLARED_SPECS.map((d) => {
+    const canonRecord = view.specifications[d.id] ?? null;
+    return {
+      ...d,
+      state: canonRecord?.state ?? specificationState.initial,
+      history: canonRecord?.history ?? [],
+      recordedInCanon: canonRecord !== null,
+      // Named explicitly so a reader of this file, and the audit, can see which
+      // fields have no event basis whatsoever.
+      roomLocalFields: ["title", "author", "revision"],
+    };
+  }), [view]);
 
   const spec = specs.find((x) => x.id === selected) || specs[0];
 
   // Policy is composed here; the room does not decide what it means.
-  const policy = useMemo(() => createPolicy([requireActor]), []);
+  //
+  // E8 — TWO CORRECTIONS.
+  //
+  // 1. THE COMPOSED POLICY WAS NEVER INJECTED. `policy` was built here and then
+  //    left out of createEngineeringEmitter(), which accepts a `policy` key. So
+  //    gate 1 has never actually run in this room, despite the contract
+  //    declaring `policy: true` and the audit detecting `createPolicy` in the
+  //    source text. It is passed now.
+  //
+  // 2. AUTHORITY IS ENFORCED, NOT DISPLAYED. requireCapability reads the needed
+  //    capability from EVENT_CAPABILITY and checks it against the AUTHENTICATED
+  //    profile's role and verification standing. Approving a specification needs
+  //    `engineering.approve`, which `sme` and `diaspora_expert` do not hold and
+  //    which is verification-gated even for an engineer.
+  //
+  // The local ACTORS list supplies a demonstration NAME only. Authority comes
+  // from `profile` — never from the picker, because a client-side selector must
+  // not be able to grant itself an engineering capability.
+  const policy = useMemo(
+    () => createPolicy([
+      requireActor,
+      requireCapability({
+        person: profile?.display_name || actor?.name,
+        role: profile?.role,
+        verification: profile?.verification,
+      }),
+    ]),
+    [profile?.display_name, profile?.role, profile?.verification, actor?.name]
+  );
   const emitter = useMemo(
     () => createEngineeringEmitter({
       publish,
+      policy,
       actor: profile?.display_name || actor?.name,
       correlationId: `spec-${spec?.id}`,
     }),
-    [publish, profile, actor, spec?.id]
+    [publish, policy, profile, actor, spec?.id]
   );
 
   // Which transitions the OBJECT permits — asked of the state engine, never guessed.
@@ -230,7 +293,7 @@ export default function EngineeringBay() {
       title="Nothing is manufactured against an"
       accent="unapproved specification."
       lede="Every action here passes four gates: the record must be complete, the actor must be permitted, the manufacturing domain must allow it, and the document must be in a state that admits the transition. Refusals name the rule."
-      meta="Demo mode · seed specifications · not operational"
+      meta="Demo mode · seed specifications · not operational · titles, revisions and authors are ROOM-LOCAL declarations, not Canon"
     >
       <RippleIndicator domain="engineering" />
 
@@ -275,11 +338,39 @@ export default function EngineeringBay() {
                     textTransform:"uppercase", color:c, border:`1px solid ${c}`, padding:"3px 7px",
                     clipPath:FORGE_CLIPS.buttonSm }}>{s.state}</span>
                 </div>
-                <div style={{ fontFamily:UI, fontSize:12.5, color:"rgba(245,241,233,.8)", marginTop:6 }}>{s.title}</div>
-                <div style={{ fontFamily:UI, fontSize:10.5, color:MUTED, marginTop:5 }}>
-                  rev {s.revision} · authored by {ACTORS.find(a=>a.id===s.author)?.name ?? s.author}
+
+                {/* CANON — folded from the log. The state above is real only when an
+                    event produced it; otherwise it is the lifecycle's starting point
+                    and the Canon holds nothing at all. Say which. */}
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}>
+                  <span style={{ fontFamily:UI, fontWeight:800, fontSize:8, letterSpacing:"0.18em",
+                    textTransform:"uppercase", padding:"2px 5px",
+                    color: s.recordedInCanon ? BLACK : MUTED,
+                    background: s.recordedInCanon ? TEAL : "transparent",
+                    boxShadow: s.recordedInCanon ? "none" : `inset 0 0 0 1px ${BORDER}` }}>
+                    {s.recordedInCanon ? "Canon" : "Not in Canon"}
+                  </span>
+                  <span style={{ fontFamily:UI, fontSize:10, color:MUTED }}>
+                    {s.recordedInCanon
+                      ? `${s.history.length} recorded event${s.history.length === 1 ? "" : "s"}`
+                      : "no event recorded against this specification"}
+                  </span>
                 </div>
-                <div style={{ fontFamily:UI, fontSize:10.5, color:MUTED, marginTop:4, fontStyle:"italic" }}>
+
+                {/* ROOM-LOCAL / DECLARED — title, revision and author have no event
+                    basis. They are declared in this file. The badge is not decoration:
+                    it is the difference between what ForgeOS knows and what this
+                    screen was written to display. */}
+                <div style={{ marginTop:9, paddingLeft:8, borderLeft:`2px dashed ${BORDER}` }}>
+                  <div style={{ fontFamily:UI, fontWeight:800, fontSize:8, letterSpacing:"0.18em",
+                    textTransform:"uppercase", color:AMBER }}>Room-local · declared</div>
+                  <div style={{ fontFamily:UI, fontSize:12.5, color:"rgba(245,241,233,.8)", marginTop:4 }}>{s.title}</div>
+                  <div style={{ fontFamily:UI, fontSize:10.5, color:MUTED, marginTop:3 }}>
+                    rev {s.revision} · authored by {ACTORS.find(a=>a.id===s.author)?.name ?? s.author}
+                  </div>
+                </div>
+
+                <div style={{ fontFamily:UI, fontSize:10.5, color:MUTED, marginTop:8, fontStyle:"italic" }}>
                   {specificationState.means(s.state)}
                 </div>
               </div>

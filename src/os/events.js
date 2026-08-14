@@ -64,6 +64,17 @@ export const INSPECTION_RESULT = Object.freeze({
 });
 const RESULT_VALUES = new Set(Object.values(INSPECTION_RESULT));
 
+// ---------- ACKNOWLEDGEMENT OUTCOME (E9.5) ----------
+// One event with a canonical outcome, following the `inspection.*` precedent
+// where `result` distinguishes pass from fail rather than two unrelated types.
+// A rejection is a legitimate response to a directive, not a separate kind of
+// fact, so it must not become its own event type.
+export const ACKNOWLEDGEMENT = Object.freeze({
+  ACCEPTED: "accepted",
+  REJECTED: "rejected",
+});
+const ACKNOWLEDGEMENT_VALUES = new Set(Object.values(ACKNOWLEDGEMENT));
+
 // ---------- EVENT TYPES ----------
 export const EVENT_TYPES = Object.freeze({
   MACHINE: Object.freeze({
@@ -79,6 +90,14 @@ export const EVENT_TYPES = Object.freeze({
     COMPONENT_PRODUCED: "production.component.produced",
     STAGE_ADVANCED:     "production.stage.advanced",
     ASSEMBLY_JOINED:    "production.assembly.joined",
+    // COORDINATION (E9.3). A two-party fact: someone directed someone else to do
+    // something about an artefact. Drives NO lifecycle transition and confers no
+    // responsibility — see projections.js and EVENT_CAPABILITY.
+    WORK_DIRECTED:      "production.work.directed",
+    // The RESPONSE to a specific directive (E9.5). Drives no transition, confers
+    // no responsibility, creates no participation, and proves nothing about
+    // whether the work was done.
+    WORK_ACKNOWLEDGED:  "production.work.acknowledged",
     PROGRAM_STARTED:    "production.program.started",
     PROGRAM_FINISHED:   "production.program.finished",
   }),
@@ -201,7 +220,43 @@ export const FIELD_TO_CLASS = Object.freeze(
   }, {})
 );
 
-const ENTITY_FIELD_NAMES = new Set(Object.keys(FIELD_TO_CLASS));
+// ============================================================
+// POLYMORPHIC ENTITY FIELDS  (E9.3)
+//
+// CLASS_FIELDS maps a field to EXACTLY ONE Forge Object class, which is what
+// makes `classForField` answerable. `directedTo` cannot live there: a directive
+// may be addressed to a PERSON or to an INSTITUTION, and forcing it into either
+// list would make `classForField("directedTo")` wrong half the time.
+//
+// So it is declared here instead — explicitly, not by surviving `compact()`. The
+// class is not guessed from the value; the EVENT declares it in
+// `directedToClass`, and validateEvent refuses a target whose class is missing
+// or outside the permitted set. That keeps a two-party fact structurally
+// addressable without weakening the one-field-one-class rule everywhere else.
+//
+// `directedTo` is registered as a canonical entity field below so that
+// `isEntityField` recognises it and an event carrying only a target still
+// attaches to a Forge Object.
+// ============================================================
+export const DIRECTED_TO_CLASSES = Object.freeze([FORGE_OBJECT.PERSON, FORGE_OBJECT.INSTITUTION]);
+
+export const POLYMORPHIC_FIELDS = Object.freeze({
+  // field name -> { classes it may take, the field that declares which }
+  directedTo: Object.freeze({ classes: DIRECTED_TO_CLASSES, classField: "directedToClass" }),
+});
+
+const ENTITY_FIELD_NAMES = new Set([
+  ...Object.keys(FIELD_TO_CLASS),
+  ...Object.keys(POLYMORPHIC_FIELDS),
+]);
+
+/** The class a polymorphic target declares, or null. Never inferred from the value. */
+export const declaredClassOf = (event, field = "directedTo") => {
+  const spec = POLYMORPHIC_FIELDS[field];
+  if (!spec || !event) return null;
+  const declared = event[spec.classField];
+  return spec.classes.includes(declared) ? declared : null;
+};
 
 export const classForField = (field) => FIELD_TO_CLASS[field] ?? null;
 export const isEntityField = (field) => ENTITY_FIELD_NAMES.has(field);
@@ -299,6 +354,8 @@ export const MISSION_POLICY = Object.freeze({
   [EVENT_TYPES.PRODUCTION.COMPONENT_PRODUCED]: _L.OPTIONAL,
   [EVENT_TYPES.PRODUCTION.STAGE_ADVANCED]:     _L.OPTIONAL,
   [EVENT_TYPES.PRODUCTION.ASSEMBLY_JOINED]:    _L.OPTIONAL,
+  [EVENT_TYPES.PRODUCTION.WORK_DIRECTED]:      _L.OPTIONAL,
+  [EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED]:  _L.OPTIONAL,
   [EVENT_TYPES.PRODUCTION.PROGRAM_STARTED]:    _L.OPTIONAL,
   [EVENT_TYPES.PRODUCTION.PROGRAM_FINISHED]:   _L.OPTIONAL,
 
@@ -343,6 +400,87 @@ export const MISSION_POLICY = Object.freeze({
 
 /** The policy for a type, or null when the type carries no classification. */
 export const missionPolicyFor = (type) => MISSION_POLICY[type] ?? null;
+
+// ============================================================
+// EVENT CAPABILITY — which events require which authority  (E8)
+//
+// The vocabulary already separates AUTHORING from APPROVING and both from
+// ADVISING: `engineering.author`, `engineering.approve` and `advisory.offer` are
+// three distinct capabilities in Roles.js, and `diaspora_expert` holds the first
+// and third but deliberately NOT the second. That distinction was data with no
+// consequence — nothing consulted it before publishing an event. This map is the
+// consequence.
+//
+// DELIBERATELY TWO ENTRIES. An unmapped event type requires no capability, which
+// keeps this a statement about the two relationships E8 proves rather than a
+// permissions matrix grown to cover everything.
+//
+//   engineering.specification.approved -> engineering.approve
+//       Approving a design for manufacture is an authority act. It is also in
+//       VERIFICATION_GATED, so an unverified engineer cannot do it — that gate
+//       already existed and had no enforcement path until now.
+//
+//   knowledge.reviewed -> advisory.offer
+//       Reviewing is advisory. `knowledgeEvent` accepts a `specification`, so a
+//       review can attach to a drawing without a document subsystem and without
+//       touching the specification's approval state.
+//
+// PRODUCTION IS DELIBERATELY ABSENT. `production.component.produced` is NOT
+// mapped. The only candidate capabilities are `job.accept` (which is
+// VERIFICATION_GATED) and `job.track` (which means tracking, not recording).
+// Mapping production to either would immediately strip the SOLC pilot — role
+// `sme`, verification `unverified` — of the ability E6 and E7 proved it has. The
+// manufacturing-entitlement question stays open for a later authority pass.
+//
+// Capability strings must exist in Roles.js CAPABILITIES; the authority suite
+// asserts that, so a typo cannot become a silently unenforceable rule.
+// ============================================================
+export const EVENT_CAPABILITY = Object.freeze({
+  [EVENT_TYPES.ENGINEERING.SPEC_APPROVED]: "engineering.approve",
+  [EVENT_TYPES.KNOWLEDGE.REVIEWED]:        "advisory.offer",
+  //   production.work.directed -> work.direct
+  //       Directing another party's work is an authority act. It is NOT granted
+  //       to `sme`, so the responsible organisation cannot direct itself into
+  //       coordinating, and NOT to `engineer`, so approval authority does not
+  //       leak into coordination authority.
+  [EVENT_TYPES.PRODUCTION.WORK_DIRECTED]:  "work.direct",
+  //   production.work.acknowledged -> work.acknowledge
+  //       Answering a directive is an authority act by the DIRECTED party. It is
+  //       deliberately NOT `job.accept`: that capability means "accept
+  //       manufacturing work", is verification-gated, and gating acknowledgement
+  //       on it would stop the unverified SOLC pilot from answering its own
+  //       directive. `job.accept` keeps its meaning and its gate, untouched.
+  [EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED]: "work.acknowledge",
+});
+
+// Capabilities whose authority is LOCATIONAL as well as functional: holding them
+// is not enough, the actor's organisation must operate at the hub named on the
+// event. Declared here so the scope rule is data-driven rather than a hardcoded
+// list of event types in policy.js.
+export const SCOPED_CAPABILITIES = Object.freeze(["work.direct", "work.acknowledge"]);
+
+/** True when an event type's capability is locationally scoped. */
+export const isScopedType = (type) => SCOPED_CAPABILITIES.includes(capabilityFor(type));
+
+// ---------- REFERENCE FIELDS (E9.5) ----------
+// `inResponseTo` holds the eventId of the exact prior fact being answered. It is
+// NOT an entity field — it references an EVENT, not a Forge Object — so it is
+// declared here rather than in CLASS_FIELDS, and deliberately not folded into
+// ENTITY_FIELD_NAMES.
+//
+// IT IS NOT correlationId. A correlationId groups a conversation: two directives
+// about one component share it, so it cannot say WHICH directive is being
+// answered. `inResponseTo` names one event. That distinction is the whole reason
+// this field exists.
+export const REFERENCE_FIELDS = Object.freeze({
+  inResponseTo: Object.freeze({
+    on: EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED,
+    mustReference: Object.freeze([EVENT_TYPES.PRODUCTION.WORK_DIRECTED]),
+  }),
+});
+
+/** The capability an event type requires, or null when it requires none. */
+export const capabilityFor = (type) => EVENT_CAPABILITY[type] ?? null;
 
 // Preserves 0 and false. Also preserves empty arrays and objects, which
 // a future assembly-of-components field will need.
@@ -533,6 +671,52 @@ export function validateEvent(event) {
       severity: "error",
       message: `event type "${type}" is MISSION_FORBIDDEN and must not carry a mission`,
     });
+  }
+
+  // TWO-PARTY TARGET (E9.3). A directive must name who was directed, and the
+  // target's object class must be declared rather than guessed from the value.
+  if (type === EVENT_TYPES.PRODUCTION.WORK_DIRECTED) {
+    if (event.directedTo == null || event.directedTo === "") {
+      issues.push({ severity: "error",
+        message: `"${type}" requires "directedTo" — a directive with no directed party names nobody` });
+    } else if (declaredClassOf(event) === null) {
+      issues.push({ severity: "error",
+        message: `"${type}" requires "directedToClass" to be one of ${DIRECTED_TO_CLASSES.join(", ")}; ` +
+                 `received ${JSON.stringify(event.directedToClass)}` });
+    }
+  }
+  // ACKNOWLEDGEMENT (E9.5). It must answer exactly one prior directive and must
+  // declare an outcome. Existence of the referenced directive cannot be checked
+  // here — validateEvent sees one event, not the log — so that is enforced at the
+  // policy gate by requireDirectiveTarget, before publication.
+  if (type === EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED) {
+    if (event.inResponseTo == null || event.inResponseTo === "") {
+      issues.push({ severity: "error",
+        message: `"${type}" requires "inResponseTo" — an acknowledgement that names no directive answers nothing` });
+    }
+    if (!ACKNOWLEDGEMENT_VALUES.has(event.outcome)) {
+      issues.push({ severity: "error",
+        message: `"${type}" requires "outcome" to be one of ${[...ACKNOWLEDGEMENT_VALUES].join(", ")}; ` +
+                 `received ${JSON.stringify(event.outcome)}` });
+    }
+  }
+  // A reply reference outside an acknowledgement is meaningless.
+  if (event.inResponseTo != null && event.inResponseTo !== "" &&
+      type !== EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED) {
+    issues.push({ severity: "error",
+      message: `"inResponseTo" is only meaningful on "${EVENT_TYPES.PRODUCTION.WORK_ACKNOWLEDGED}", not on "${type}"` });
+  }
+
+  // A target outside a directive is meaningless, and a declared class with no
+  // target is a malformed record. Both are refused wherever they appear.
+  if (event.directedTo != null && event.directedTo !== "" &&
+      type !== EVENT_TYPES.PRODUCTION.WORK_DIRECTED) {
+    issues.push({ severity: "error",
+      message: `"directedTo" is only meaningful on "${EVENT_TYPES.PRODUCTION.WORK_DIRECTED}", not on "${type}"` });
+  }
+  if (event.directedToClass != null && (event.directedTo == null || event.directedTo === "")) {
+    issues.push({ severity: "error",
+      message: `"directedToClass" was declared without a "directedTo" target` });
   }
 
   if (event.status != null && !STATUS_VALUES.has(event.status)) {

@@ -11,9 +11,11 @@
 // a demo identity would be a lie about who is accountable.
 // ============================================================
 
-import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { supabase, isConfigured } from "../lib/supabase";
 import { capabilitiesFor, roleById, VERIFICATION_GATED } from "./Roles.js";
+import { resolveProfile, RESOLUTION } from "./profileResolver.js";
+import { linkProfileToOrganisation, isEstablished, shouldAudit } from "./organisationLink.js";
 
 const IdentityContext = createContext(null);
 
@@ -43,16 +45,54 @@ export function ForgeIdentityProvider({ children }) {
   const userId = session?.user?.id ?? null;
 
   // ---- profile ----
+  //
+  // Registration used to be the only thing that created a profile, via the
+  // auth.users trigger. That left two holes this closes: a user who existed
+  // BEFORE the identity schema was deployed can never be provisioned by an
+  // AFTER INSERT trigger, and the trigger was observed DISABLED on this project
+  // while sign-ups were still succeeding — producing an authenticated actor with
+  // no profile and no way back.
+  //
+  // Session resolution now converges the profile through public.ensure_profile(),
+  // a SECURITY DEFINER function that inserts only the id and returns the row.
+  // The decision itself lives in profileResolver.js so every branch is unit
+  // tested; this hook only owns the React concerns — the loop guard and the
+  // visible error.
+  //
+  // LOOP SAFETY, three independent guards:
+  //
+  //   1. `ensureAttempts` is a REF, not state. Marking an attempt never triggers
+  //      a render, so it cannot feed back into this effect.
+  //   2. The RPC is attempted at most once per user identity (enforced in the
+  //      resolver). A server-side refusal reports itself instead of retrying.
+  //   3. The effect keys on `authKey` — a stable string — rather than on the
+  //      session OBJECT. supabase-js emits a fresh session object on every
+  //      TOKEN_REFRESHED, and getSession() plus onAuthStateChange both set it,
+  //      so depending on the object would re-resolve on each of those. The key
+  //      changes only when the actor or their authenticated-ness changes, which
+  //      is exactly when the profile needs resolving again.
+  const ensureAttempts = useRef(new Set());
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const authKey = `${userId ?? ""}|${session?.access_token ? "auth" : "anon"}`;
+
   const loadProfile = useCallback(async () => {
-    if (!isConfigured || !userId) { setProfile(null); return; }
-    const { data, error: e } = await supabase
-      .from("profiles")
-      .select("id, display_name, role, actor_kind, organisation_id, state, discipline, verification, onboarded")
-      .eq("id", userId)
-      .maybeSingle();
-    if (e) { setError(e.message); return; }
-    setProfile(data ?? null);
-  }, [userId]);
+    const { outcome, profile: resolved, error: resolveError } = await resolveProfile({
+      configured: isConfigured,
+      session: sessionRef.current,
+      client: supabase,
+      hasAttempted: (id) => ensureAttempts.current.has(id),
+      markAttempted: (id) => ensureAttempts.current.add(id),
+    });
+
+    setProfile(resolved);
+
+    // Requirement: failures are explicit and visible. A resolution error is
+    // NOT the same fact as "this actor has no profile", so it is surfaced
+    // rather than collapsed into a null profile.
+    if (resolveError) setError(resolveError);
+    else if (outcome === RESOLUTION.EXISTING || outcome === RESOLUTION.ENSURED) setError(null);
+  }, [authKey]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
@@ -189,23 +229,38 @@ export function ForgeIdentityProvider({ children }) {
       org = created;
     }
 
-    // 3. link the profile. `.is("organisation_id", null)` makes the write
-    //    conditional in the database rather than in this function, so two tabs
+    // 3. link the profile, and PROVE it happened. `.is("organisation_id", null)`
+    //    keeps the write conditional in the database rather than in this
+    //    function, so two tabs
     //    racing cannot overwrite an existing link.
-    const { error: linkErr } = await supabase
-      .from("profiles")
-      .update({ organisation_id: org.id, updated_at: new Date().toISOString() })
-      .eq("id", userId)
-      .is("organisation_id", null);
-    if (linkErr) return { error: linkErr.message };
-
-    await supabase.from("audit_events").insert({
-      actor: userId, action: "organisation.established", entity: "organisation",
-      entity_id: org.id, payload: { name: org.name, role: org.role },
+    //    The link, and the READING of the link, live in organisationLink.js so
+    //    every outcome is unit tested. Success is never claimed unless the
+    //    database confirms it.
+    const { outcome, error: linkErr } = await linkProfileToOrganisation({
+      client: supabase, userId, organisationId: org.id,
     });
 
+    // 4. AUDIT ONLY A REAL, FRESH LINK.
+    //    This is the second half of the defect: the audit event fired before the
+    //    link was confirmed, so production accumulated three
+    //    "organisation.established" records for a link that never existed.
+    //    `shouldAudit` is true only for LINKED — not for a no-op, and never on a
+    //    failure path.
+    if (shouldAudit(outcome)) {
+      await supabase.from("audit_events").insert({
+        actor: userId, action: "organisation.established", entity: "organisation",
+        entity_id: org.id, payload: { name: org.name, role: org.role },
+      });
+    }
+
+    if (!isEstablished(outcome)) {
+      // No organisation is created, no profile is fabricated, and nothing is
+      // retried. The caller gets the reason and the surface renders it.
+      return { organisation: org, created: !mine, linked: false, outcome, error: linkErr };
+    }
+
     await loadProfile();
-    return { organisation: org, created: !mine, error: null };
+    return { organisation: org, created: !mine, linked: true, outcome, error: null };
   }, [userId, profile?.organisation_id, loadProfile]);
 
   const signIn = useCallback(async ({ email, password }) => {
@@ -217,7 +272,11 @@ export function ForgeIdentityProvider({ children }) {
   const signOut = useCallback(async () => {
     if (!isConfigured) return;
     await supabase.auth.signOut();
-    setProfile(null); setOrganisation(null); setNotifications([]);
+    // Clear the loop guard so a later sign-in may attempt provisioning again.
+    // Without this, a transient RPC failure would remain latched for the life of
+    // the page and signing in again would report the stale refusal.
+    ensureAttempts.current.clear();
+    setProfile(null); setOrganisation(null); setNotifications([]); setError(null);
   }, []);
 
   const markRead = useCallback(async (id) => {

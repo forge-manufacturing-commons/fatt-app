@@ -32,7 +32,7 @@ import {
 } from "../src/os/pilot.js";
 import { componentState } from "../src/domains/production/state.js";
 import {
-  MANUFACTURING_ACTIONS, wouldAccept, resultingState, availableActions,
+  MANUFACTURING_ACTIONS, wouldAccept, resultingState, availableActions, isTruthfulFrom,
 } from "../src/domains/production/entry.js";
 import { createProductionEmitter } from "../src/domains/production/emitters.js";
 import { createInspectionEmitter } from "../src/domains/inspection/emitters.js";
@@ -305,7 +305,10 @@ console.log("\nEVENT AUTHORITY — canonical, validated, attributable");
 
   // No new vocabulary was introduced anywhere in this pass.
   const all = Object.values(EVENT_TYPES).flatMap((d) => Object.values(d));
-  ok("the event vocabulary is still 32 types", all.length === 32);
+  ok("the event vocabulary is 34 types after E9.5", all.length === 34);
+  ok("and the only additions are the two coordination events",
+     all.filter((t) => t !== "production.work.directed" &&
+                       t !== "production.work.acknowledged").length === 32);
   ok("no pilot/organisation/workorder event type was added",
      all.filter((t) => /pilot|organisation|workorder|responsib/i.test(t)).length === 0);
 }
@@ -323,10 +326,18 @@ console.log("\nTHE FORM CANNOT SUPPLY THE ORGANISATION  (code-only evidence)");
      /pilotOrganisationByName\(\s*organisation\?\.name\s*\)/.test(code));
   ok("the event's organisation comes from the resolved pilot identity",
      /organisation:\s*pilot\.id/.test(code));
-  ok("the surface has exactly one text input",
-     (code.match(/<input/g) || []).length === 1);
-  ok("the only input is bound to the component identifier",
+  // E6.2 added a second input: the human operator. This assertion previously
+  // required exactly one and failed — correctly detecting the change. The
+  // guarantee it protects is not "one input", it is "no organisation input", so
+  // it is tightened rather than relaxed: exactly two, and both are enumerated.
+  ok("the surface has exactly two text inputs",
+     (code.match(/<input/g) || []).length === 2);
+  ok("one input is bound to the component identifier",
      /value=\{componentId\}/.test(code));
+  ok("the other is bound to the operator's name",
+     /value=\{operator\}/.test(code));
+  ok("neither input is bound to anything organisation-shaped",
+     !/value=\{(organisation|org|orgName|company)[^}]*\}/.test(code));
   ok("no input, select or textarea is bound to an organisation state setter",
      !/(setOrganisation|organisationInput|orgName)\s*\(/.test(code));
   ok("the surface never reads an organisation out of form state",
@@ -375,9 +386,23 @@ console.log("\nCOMPONENT STATE CHANGES ONLY THROUGH AN EVENT");
   ok("responsibility survived the whole lifecycle", done.organisation === "SOLC");
   ok("mission membership survived the whole lifecycle", done.mission === "FORGE-HUB");
   ok("every transition is in the history", done.history.length >= 5);
-  ok("the frozen fold shape did not grow",
+  // E9.1 added `contributions` — participation, a different relationship from
+  // responsibility. The guard fired correctly and is updated, not removed.
+  // Canon P0-2 added `hub`. The guard fired a second time and is updated, not
+  // removed — and this is the most valuable place it could have fired, because
+  // this is the REAL pilot lifecycle rather than a synthetic one.
+  ok("the fold shape is exactly the authorised set",
      Object.keys(done).sort().join() ===
-     ["history", "id", "mission", "organisation", "specification", "state"].join());
+     ["contributions", "directives", "history", "hub", "id", "mission", "organisation",
+      "specification", "state"].join());
+  ok("and this pure manufacturing lifecycle produced no contributions",
+     done.contributions.length === 0);
+  // P0-2, MEASURED ON THE PILOT'S OWN DATA. Before this, "where was FTT-HB-001
+  // machined?" was unanswerable from the Canon even though every event in this
+  // very lifecycle carried `hub: "warri"`.
+  ok("the manufacturing hub survived the whole lifecycle", done.hub === "warri");
+  ok("and the hub is the pilot's declared hub, not its organisation",
+     done.hub === PILOT_ASSIGNMENTS[0].hub && done.hub !== done.organisation);
 }
 
 // ============================================================
@@ -536,11 +561,16 @@ console.log("\nORGANISATION ONBOARDING  (code-only evidence — the write is BLO
 // ============================================================
 {
   const id = stripComments(readFileSync(new URL("../src/os/ForgeIdentity.jsx", import.meta.url), "utf8"));
+  // E6.4 moved the conditional profile UPDATE out of the provider and into
+  // organisationLink.js, so that a zero-row result could be detected instead of
+  // assumed. Two assertions below read that module now. They failed when the code
+  // moved — which is the point of asserting on source rather than on intent.
+  const link = stripComments(readFileSync(new URL("../src/os/organisationLink.js", import.meta.url), "utf8"));
 
   ok("onboarding uses the existing organisations table",
      /from\(\s*["']organisations["']\s*\)/.test(id));
   ok("onboarding writes the existing profiles.organisation_id",
-     /organisation_id:\s*org\.id/.test(id));
+     /organisation_id:\s*organisationId/.test(link));
   ok("the organisation is created unverified",
      /verification:\s*["']unverified["']/.test(id));
   ok("created_by is the authenticated user",
@@ -552,7 +582,9 @@ console.log("\nORGANISATION ONBOARDING  (code-only evidence — the write is BLO
   ok("an existing organisation by the same creator is reused",
      /\.eq\(\s*["']created_by["']\s*,\s*userId\s*\)/.test(id));
   ok("the profile link is conditional in the database, not just in JS",
-     /\.is\(\s*["']organisation_id["']\s*,\s*null\s*\)/.test(id));
+     /\.is\(\s*["']organisation_id["']\s*,\s*null\s*\)/.test(link));
+  ok("and the link now proves how many rows it changed",
+     /\.select\(\s*["']id["']\s*\)/.test(link));
   ok("the role must be supplied and is never inferred",
      /An organisation role is required/.test(id));
   ok("adopting another account's organisation is refused",
@@ -566,6 +598,165 @@ console.log("\nORGANISATION ONBOARDING  (code-only evidence — the write is BLO
   ok("only organisation-kind roles are offered",
      /kind\s*===\s*["']organisation["']/.test(wk));
   ok("the workspace renders the pilot entry surface", /<PilotEntry\s*\/>/.test(wk));
+}
+
+// ============================================================
+console.log("\nE6.2 (1) — OPERATOR IS A PERSON, ORGANISATION IS AN INSTITUTION");
+// ============================================================
+{
+  const code = stripComments(readFileSync(new URL("../src/os/PilotEntry.jsx", import.meta.url), "utf8"));
+
+  // --- A. organisation still derived from the authenticated profile ---
+  ok("A. the organisation resolves from the authenticated profile",
+     /pilotOrganisationByName\(\s*organisation\?\.name\s*\)/.test(code));
+  ok("A. the event's organisation is the resolved pilot id",
+     /organisation:\s*pilot\.id/.test(code));
+  ok("A. the surface refuses to act when no organisation resolves",
+     /if\s*\(!pilot\s*\|\|\s*!assignment\)/.test(code));
+
+  // --- B. organisation cannot be supplied by the form ---
+  ok("B. no input is bound to an organisation value",
+     !/value=\{(organisation|org|orgName|company)[^}]*\}/.test(code));
+  ok("B. the organisation is never read out of form state",
+     !/organisation:\s*(componentId|operator|name|form|input|e\.target)/.test(code));
+  ok("B. there is no organisation state setter at all",
+     !/setOrganisation|setOrg\b|setCompany/.test(code));
+  ok("B. the derived block is labelled non-editable", /not editable/i.test(code));
+
+  // --- C. the human is distinct from the organisation ---
+  ok("C. a dedicated operator state exists",
+     /const \[operator, setOperator\] = useState\(""\)/.test(code));
+  ok("C. the actor passed to the emitter is the operator, not the organisation",
+     /actor:\s*operatorName/.test(code));
+  ok("C. the operator is NOT derived from display_name",
+     !/profile\?\.display_name/.test(code));
+  ok("C. the operator is NOT derived from the email local-part",
+     !/session\?\.user\?\.email/.test(code) && !/split\(\s*["']@["']\s*\)/.test(code));
+  ok("C. the operator is NOT derived from the organisation name",
+     !/operator[^=]*=\s*organisation/.test(code) && !/setOperator\(\s*organisation/.test(code));
+  ok("C. the operator is NOT derived from role, state or hub",
+     !/operator[^=]*=\s*(profile\?\.(role|state)|assignment\.hub)/.test(code));
+  ok("C. the recorded block shows person and organisation separately",
+     /Operator \(person\)/.test(code) && /k="Organisation"/.test(code));
+
+  // --- D. an operator name is required because the contract requires an actor ---
+  ok("D. the pipeline policy that requires an actor is still applied",
+     /policy:\s*requireActor/.test(code));
+  ok("D. the run guard refuses to publish without an operator",
+     /if\s*\(!trimmed\s*\|\|\s*!operatorName\s*\|\|\s*busy\)\s*return/.test(code));
+  ok("D. actions are withheld until an operator is named",
+     /\{!operatorName \?/.test(code));
+
+  // requireActor genuinely refuses — proved against the real policy, not asserted
+  let refused = false;
+  try {
+    createProductionEmitter({ publish: () => {}, policy: requireActor })
+      .produceComponent({ component: "HUB-777", organisation: "SOLC" });
+  } catch (err) { refused = /requireActor/.test(err.message); }
+  ok("D. the pipeline really does refuse an actor-less production record", refused);
+
+  // --- E. no fabricated person identity ---
+  ok("E. no people/persons table is referenced anywhere",
+     !/from\(\s*["'](people|persons|operators)["']\s*\)/.test(code));
+  ok("E. the surface still performs no database write",
+     !/supabase|\.insert\(|\.update\(|\.upsert\(/.test(code));
+  ok("E. no default or placeholder operator value is substituted",
+     !/setOperator\(\s*["'][^"']+["']\s*\)/.test(code));
+  ok("E. the operator state starts empty", /useState\(""\)/.test(code));
+
+  // --- F. the resulting canonical event carries both, correctly ---
+  {
+    const { out, publish } = collector();
+    const OPERATOR = "Adaeze Okoro";
+    createProductionEmitter({
+      publish, actor: OPERATOR, hub: ASSIGNMENT.hub, policy: requireActor,
+      correlationId: `pilot-SOLC-HUB-014`,
+    }).produceComponent({
+      component: "HUB-014", specification: ASSIGNMENT.specification,
+      mission: ASSIGNMENT.mission, organisation: SOLC.id,
+    });
+    const e = out[0];
+
+    ok("F. person is the human operator", e.person === OPERATOR);
+    ok("F. human mirrors person", e.human === OPERATOR);
+    ok("F. organisation is SOLC", e.organisation === "SOLC");
+    ok("F. person and organisation are different values", e.person !== e.organisation);
+    ok("F. the organisation name is nowhere in a person field",
+       e.person !== "SOLC" && e.human !== "SOLC");
+    ok("F. the event validates with zero issues",
+       validateEvent(e).valid && validateEvent(e).issues.length === 0);
+
+    const p = project(asLog(out), MISSIONS).components["HUB-014"];
+    ok("F. the fold records the organisation as responsible", p.organisation === "SOLC");
+    ok("F. the fold attributes the transition to the human",
+       p.history.some((h) => h.by === OPERATOR));
+    ok("F. and never to the organisation",
+       !p.history.some((h) => h.by === "SOLC"));
+  }
+}
+
+// ============================================================
+console.log("\nE6.2 (2) — THE REWORK ACTION ONLY WHERE ITS EVENT IS TRUE");
+// ============================================================
+{
+  // The graph permits submitForInspection from BOTH manufacturing and rework, and
+  // the only event driving it is inspection.reworked. Offering it from
+  // manufacturing published a claim that the part had been reworked when nothing
+  // had failed. The transition stays legal; the ACTION is constrained.
+  ok("the graph still permits submitForInspection from manufacturing",
+     wouldAccept("manufacturing", "submitForInspection") === true);
+  ok("the graph still permits it from rework",
+     wouldAccept("rework", "submitForInspection") === true);
+  ok("but the rework ACTION is no longer offered from manufacturing",
+     availableActions("manufacturing").every((a) => a.id !== "reworked"));
+  ok("and it IS offered from rework",
+     availableActions("rework").some((a) => a.id === "reworked"));
+  ok("the constraint is declared on the action, not hidden in a branch",
+     MANUFACTURING_ACTIONS.find((a) => a.id === "reworked").truthfulFrom.join() === "rework");
+  ok("no other action carries a truthfulness constraint",
+     MANUFACTURING_ACTIONS.filter((a) => a.truthfulFrom).length === 1);
+  ok("isTruthfulFrom is unconstrained for actions without the field",
+     isTruthfulFrom(MANUFACTURING_ACTIONS.find((a) => a.id === "produced"), "planned") === true);
+
+  // From manufacturing the operator records the RESULT; the fold does the submit.
+  const fromMfg = availableActions("manufacturing").map((a) => a.id).sort();
+  ok("manufacturing offers exactly the two inspection results",
+     fromMfg.join() === "failed,passed");
+  ok("planned still offers only 'produced'",
+     availableActions("planned").map((a) => a.id).join() === "produced");
+  ok("inspection offers the two results",
+     availableActions("inspection").map((a) => a.id).sort().join() === "failed,passed");
+  ok("rework offers only the rework resubmission",
+     availableActions("rework").map((a) => a.id).join() === "reworked");
+  ok("terminal states offer nothing",
+     ["scrapped", "retired", "cancelled"].every((s) => availableActions(s).length === 0));
+
+  // No new event type was invented to make the wording convenient.
+  const all = Object.values(EVENT_TYPES).flatMap((d) => Object.values(d));
+  ok("the vocabulary is 34 types after E9.5", all.length === 34);
+  ok("with only the two coordination events added",
+     all.filter((t) => t !== "production.work.directed" &&
+                       t !== "production.work.acknowledged").length === 32);
+  ok("no inspection.submitted / sent-for-inspection event was created",
+     all.filter((t) => /submitted|sent|dispatch/i.test(t)).length === 0);
+  ok("inspection.reworked is still the only driver of submitForInspection",
+     all.filter((t) => t.startsWith("inspection.")).length === 4);
+
+  // Every offered action must still publish a valid event from its state.
+  let published = 0, invalid = [];
+  for (const from of componentState.states()) {
+    for (const a of availableActions(from)) {
+      const { out, publish } = collector();
+      try {
+        record(a.id, { component: `TT-${from}-${a.id}`, publish });
+        published++;
+        if (!validateEvent(out[0]).valid) invalid.push(`${from}/${a.id}`);
+      } catch (err) { invalid.push(`${from}/${a.id}: ${err.message}`); }
+    }
+  }
+  ok(`every offered action still publishes a valid event (${published} publishes)`,
+     invalid.length === 0);
+  ok("the offered set shrank by exactly one — the false rework", published === 6);
 }
 
 console.log(`

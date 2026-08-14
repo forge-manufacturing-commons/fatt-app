@@ -70,6 +70,24 @@ export const MANUFACTURING_ACTIONS = Object.freeze([
     transition: "submitForInspection",
     domain: "inspection",
     command: "rework",
+    // TRUTHFULNESS CONSTRAINT — narrower than the graph, on purpose.
+    //
+    // The component graph allows `submitForInspection` from BOTH `manufacturing`
+    // and `rework`, and exactly one event drives it: `inspection.reworked`. So
+    // offering this action from `manufacturing` did not merely mislabel a button
+    // — clicking it published an event asserting the part had been REWORKED when
+    // nothing had failed and nothing had been corrected. A false entry in the
+    // log is worse than a missing button.
+    //
+    // From `manufacturing` the operator does not need it: the fold performs the
+    // intermediate submitForInspection itself when a pass or fail arrives, which
+    // is why `entry.js` never offered a bare "Send for inspection" either. There
+    // is no `inspection.submitted` event, and this pass does not invent one to
+    // make wording convenient.
+    //
+    // So the transition stays legal in the graph and the ACTION is restricted to
+    // the one state where its event is true.
+    truthfulFrom: Object.freeze(["rework"]),
   }),
 ]);
 
@@ -107,14 +125,33 @@ export function resultingState(from, transition) {
 }
 
 /**
+ * Would this action's EVENT be a true statement from this state?
+ *
+ * Separate from `wouldAccept`, which answers only whether the graph permits the
+ * transition. Two different questions: the graph asks "is this move legal?", this
+ * asks "would recording it be honest?". An action with no `truthfulFrom` is
+ * unconstrained — its event says nothing beyond the transition itself.
+ */
+export const isTruthfulFrom = (action, from) =>
+  !action.truthfulFrom || action.truthfulFrom.includes(from);
+
+/**
  * Actions this component will accept right now, each carrying the state it
  * leads to. A component the log has never seen is at `componentState.initial`,
  * which is a fact about the graph rather than an assumption about the part.
+ *
+ * BOTH gates must pass: the graph must permit the transition AND the event must
+ * be true from this state. The surface is therefore deliberately narrower than
+ * the state machine, and `wouldAccept` is left as pure graph legality so the two
+ * never get conflated.
  */
 export function availableActions(from = componentState.initial) {
   return MANUFACTURING_ACTIONS
-    .filter((a) => wouldAccept(from, a.transition))
+    .filter((a) => wouldAccept(from, a.transition) && isTruthfulFrom(a, from))
     .map((a) => ({ ...a, to: resultingState(from, a.transition) }));
 }
 
-export default { MANUFACTURING_ACTIONS, actionById, wouldAccept, resultingState, availableActions };
+export default {
+  MANUFACTURING_ACTIONS, actionById, wouldAccept, resultingState,
+  isTruthfulFrom, availableActions,
+};

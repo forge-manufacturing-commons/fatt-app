@@ -99,7 +99,18 @@ export function project(log = [], missions = []) {
   });
   const touchComp = (id) => (components[id] ??= {
     id, state: componentState.initial, specification: null, mission: null,
-    organisation: null, history: [],
+    // MANUFACTURING LOCATION — where the work happened. Descriptive, not authority.
+    hub: null,
+    // RESPONSIBILITY — one organisation, first-writer. Unchanged by E9.1.
+    organisation: null,
+    // TRANSITIONS — who moved the part through its lifecycle.
+    history: [],
+    // PARTICIPATION — who contributed to the part. Many-valued, carries no
+    // responsibility, and is a different relationship from `organisation`.
+    contributions: [],
+    // COORDINATION — who directed whom to do what. Many-valued, two-party,
+    // carries no responsibility, drives no transition, and is not participation.
+    directives: [],
   });
   // MISSION LIFECYCLE — folded exactly like specifications and components.
   //
@@ -146,6 +157,25 @@ export function project(log = [], missions = []) {
     if (e.component) {
       const c = touchComp(e.component);
       if (e.specification) c.specification ??= e.specification;
+      // MANUFACTURING LOCATION (P0-2). `hub` is FORGE_OBJECT.WORKSHOP and has been
+      // carried on every manufacturing event since V1 — it was simply never
+      // projected, so the Canon could not answer "which workshop is making this?"
+      // about a fact that was already in every event. This is projection of an
+      // existing canonical field, not a change to what any event means.
+      //
+      // FIRST-WRITER AND SILENT, following `specification` rather than
+      // `organisation`. The fold already distinguishes two kinds of field:
+      // AUTHORITY fields (organisation, mission) raise an anomaly on conflict,
+      // because a competing claim is a dispute worth recording. DESCRIPTIVE
+      // fields (specification, and now hub) take the first value and stay quiet,
+      // because a later event naming a different place is usually a legitimately
+      // different act — an inspection at a quality office does not contradict
+      // fabrication at warri.
+      //
+      // HUB IS NOT RESPONSIBILITY. It says where work happened, never who owns
+      // it. Two organisations may operate at one hub, and being at a hub confers
+      // nothing: no ownership, no coordination authority, no workshop position.
+      if (e.hub) c.hub ??= e.hub;
       // MISSION MEMBERSHIP — preserved from the producing event, never derived.
       //
       // Mission identity reached the lifecycle fold and the causal map but was
@@ -191,7 +221,145 @@ export function project(log = [], missions = []) {
       // Same authority rule as mission: first writer wins, and a conflicting
       // claim is recorded rather than discarded. Absent stays absent, which the
       // surfaces must render as UNKNOWN rather than filling in a capable party.
-      if (e.organisation) {
+      // ---- PARTICIPATION vs RESPONSIBILITY  (E9.1) ----
+      //
+      // These are two different relationships to the same artefact and they are
+      // now folded into two different places:
+      //
+      //   organisation     WHO IS RESPONSIBLE for making this component.
+      //                    One value, first writer wins, conflict is an anomaly.
+      //   contributions[]  WHO CONTRIBUTED to it. Many values, no authority,
+      //                    no effect on responsibility or state.
+      //
+      // WHY THIS WAS NECESSARY. Before E9.1 every event carrying `organisation`
+      // was read as a responsibility claim. So a university naming its own
+      // institution on a legitimate CAD contribution produced:
+      //
+      //   "HUB-E9-001 is already the responsibility of "SOLC" and cannot be
+      //    claimed by "UNI-KADUNA-001""
+      //
+      // ...which was a FALSE conflict. The contribution was truthful and the
+      // system had no way to record it except as an attempted hijack. The
+      // responsibility invariant was right; the representation was too narrow.
+      //
+      // THE SIGNAL IS THE EVENT TYPE, AND ONLY THE KNOWLEDGE FAMILY.
+      // `knowledge.published`, `knowledge.reviewed` and `knowledge.translated`
+      // mean, in canonical terms, that someone produced, reviewed or translated
+      // knowledge; naming a `component` states which artefact it concerns. That
+      // is an explicit contribution, not an inference — and `knowledge.reviewed`
+      // is already capability-gated to `advisory.offer` (E8), so the vocabulary
+      // already treats these as authorised acts by a named party.
+      //
+      // WHAT IS DELIBERATELY NOT CLASSIFIED. "Any event mentioning a component"
+      // is NOT a contribution. Production, inspection, machine and assembly
+      // events are PERFORMANCE, and performance already has a home: history[].by
+      // records who moved the part. Sweeping them in would have made the two
+      // relationships mean the same thing again, in the opposite direction.
+      //
+      // A knowledge event therefore NEVER establishes or challenges
+      // responsibility — publishing a drawing note about a part does not make
+      // you responsible for making it. Every other event behaves exactly as it
+      // did before this pass, which is why the real conflict detection E7 proved
+      // still fires unchanged.
+      const isContribution = typeof e.type === "string" && e.type.startsWith("knowledge.");
+
+      // COORDINATION (E9.3). `production.work.directed` is a production.* event,
+      // so without this branch its `organisation` would have been read as a
+      // responsibility claim — a coordinator from another organisation would
+      // either have hijacked responsibility or produced a false conflict, which
+      // is the same mistake E9.1 fixed for participation. A directive is neither
+      // responsibility nor participation nor performance, so it gets its own
+      // branch and its own relation, and touches none of the other three.
+      const isDirective = e.type === "production.work.directed";
+
+      // ACKNOWLEDGEMENT (E9.5). Also a production.* event, so it needs the same
+      // exemption from the responsibility branch: answering a directive is not a
+      // claim to own the component. It RESOLVES an existing directive rather than
+      // creating a fifth relation — the directive evolves from issued to
+      // acknowledged or rejected while every original field is preserved.
+      const isAcknowledgement = e.type === "production.work.acknowledged";
+
+      if (isAcknowledgement) {
+        const target = c.directives.find((x) => x.eventId === e.inResponseTo);
+        if (target) {
+          if (target.acknowledgementEventId === e.eventId) {
+            // Replay of the same acknowledgement. Nothing to do.
+          } else if (target.outcome == null) {
+            // FIRST RESPONSE WINS, matching the first-writer rule already used
+            // for responsibility and mission membership.
+            target.outcome = e.outcome ?? null;
+            target.acknowledgedBy = e.person || e.human || null;
+            target.acknowledgedOrganisation = e.organisation ?? null;
+            target.acknowledgedAt = e.at ?? null;
+            target.acknowledgementEventId = e.eventId ?? null;
+          } else {
+            // A second, different response. The first is authoritative and is
+            // NOT overwritten; the disagreement is recorded through the existing
+            // anomaly shape rather than silently discarded.
+            anomalies.push({
+              at: e.at, objectClass: "component", id: c.id,
+              attempted: e.outcome ?? null, held: target.outcome, eventId: e.eventId,
+              message: `directive ${target.eventId} on ${c.id} was already "${target.outcome}" ` +
+                       `and cannot be re-answered as "${e.outcome}"`,
+            });
+          }
+        } else {
+          // Policy refuses this before publication, so reaching here means an
+          // acknowledgement entered the log by another route. Recorded, not
+          // silently dropped.
+          anomalies.push({
+            at: e.at, objectClass: "component", id: c.id,
+            attempted: e.inResponseTo ?? null, held: null, eventId: e.eventId,
+            message: `${c.id} received an acknowledgement of directive "${e.inResponseTo}", ` +
+                     `which is not a directive on this component`,
+          });
+        }
+      } else if (isDirective) {
+        if (!c.directives.some((x) => x.eventId === e.eventId)) {
+          c.directives.push({
+            eventId: e.eventId ?? null,
+            at: e.at ?? null,
+            // WHO DIRECTED — a person, never an organisation.
+            person: e.person || e.human || null,
+            // WHO WAS DIRECTED — structurally addressable, with its declared
+            // Forge Object class. Never inferred from the value.
+            directedTo: e.directedTo ?? null,
+            directedToClass: e.directedToClass ?? null,
+            // WHAT WAS ASKED, and the context it was asked in.
+            instruction: e.summary ?? e.text ?? null,
+            specification: e.specification ?? null,
+            mission: e.mission ?? null,
+            // The directing party's own organisation, recorded as context only.
+            // This is NOT a responsibility claim and is never folded into
+            // `organisation`.
+            organisation: e.organisation ?? null,
+            // RESOLUTION (E9.5). A directive begins OUTSTANDING — outcome null —
+            // and is stamped by an acknowledgement. It never becomes accepted or
+            // performed by default, and the fields above are never rewritten.
+            outcome: null,
+            acknowledgedBy: null,
+            acknowledgedOrganisation: null,
+            acknowledgedAt: null,
+            acknowledgementEventId: null,
+          });
+        }
+      } else if (isContribution) {
+        // Idempotent by event identity, not by a database constraint: replaying
+        // the same log must produce the same fold, and the fold is recomputed
+        // from scratch on every publish.
+        if (!c.contributions.some((x) => x.eventId === e.eventId)) {
+          c.contributions.push({
+            eventId: e.eventId ?? null,
+            at: e.at ?? null,
+            // NULL where the event does not supply it. Nothing is inferred: a
+            // person is never derived from an organisation, an organisation is
+            // never derived from a person's role.
+            person: e.person || e.human || null,
+            organisation: e.organisation ?? null,
+            type: e.type,
+          });
+        }
+      } else if (e.organisation) {
         if (c.organisation == null) {
           c.organisation = e.organisation;
         } else if (c.organisation !== e.organisation) {

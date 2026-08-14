@@ -56,9 +56,10 @@ const Row = ({ k, v, color = T.ivory }) => (
 );
 
 export default function PilotEntry() {
-  const { profile, organisation, session } = useIdentity();
+  const { organisation } = useIdentity();
   const { log, publish } = useForgeActivity();
   const [componentId, setComponentId] = useState("");
+  const [operator, setOperator] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);   // { event, from, to } | { error }
 
@@ -70,7 +71,23 @@ export default function PilotEntry() {
   const assignment = useMemo(
     () => (pilot ? assignmentFor(pilot.id) : null), [pilot]);
 
-  const actor = profile?.display_name || session?.user?.email || null;
+  // WHO vs WHICH ORGANISATION — two different Forge Objects, two different fields.
+  //
+  // This previously read `profile?.display_name || session?.user?.email`. For the
+  // pilot that produced person="SOLC", human="SOLC", organisation="SOLC": an
+  // institution's name sitting in a FORGE_OBJECT.PERSON field, so the log could
+  // not say who actually did the work. The email fallback was worse — a local-part
+  // is not a person's name either, it is a mailbox.
+  //
+  // The profile holds NO human name for an organisation-kind actor. There is no
+  // people table and this pass does not create one, so the honest options were
+  // "ask" or "invent". It asks. `requireActor` in the pipeline refuses an
+  // unattributable production record, so the actions stay closed until it is
+  // given — the operator is required by the event contract, not by preference.
+  //
+  // The organisation is NOT affected by this field. It continues to resolve
+  // through: authenticated session -> profile -> organisation -> pilot config.
+  const operatorName = operator.trim();
 
   const trimmed = componentId.trim();
   const folded = trimmed ? view.components[trimmed] : null;
@@ -111,14 +128,16 @@ export default function PilotEntry() {
   }
 
   const run = async (action) => {
-    if (!trimmed || busy) return;
+    if (!trimmed || !operatorName || busy) return;
     setBusy(true);
     setResult(null);
     try {
       // Actor is required by policy: an unattributable production record is
       // refused at the pipeline rather than stored and explained later.
+      // `actor` is the HUMAN. bridgeActor() puts it in person + human, both of
+      // which are FORGE_OBJECT.PERSON fields. It is never the organisation.
       const common = {
-        publish, actor, hub: assignment.hub, policy: requireActor,
+        publish, actor: operatorName, hub: assignment.hub, policy: requireActor,
         correlationId: `pilot-${pilot.id}-${trimmed}`,
       };
       const emitter = action.domain === "inspection"
@@ -148,13 +167,41 @@ export default function PilotEntry() {
     <div style={{ clipPath: FORGE_CLIPS.panelBR, background: T.surface,
       borderTop: `2px solid ${T.teal}`, padding: "20px 22px" }}>
 
-      <Row k="Organisation" v={organisation.name} />
+      {/* DERIVED — none of these is an input. The organisation in particular is
+          resolved from the authenticated profile and is deliberately not
+          editable: letting a form set it would turn manufacturing
+          responsibility into a claim the client makes about itself. */}
+      <div style={{ fontFamily: FONT.ui, fontSize: 10, color: T.greyDark,
+        letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
+        Derived from your account · not editable
+      </div>
+      <Row k="Organisation" v={organisation.name} color={T.amber} />
       <Row k="Provenance" v={pilot.provenance} color={T.amber} />
       <Row k="Role" v={organisation.role} />
       <Row k="Hub" v={assignment.hub} />
       <Row k="Specification" v={assignment.specification} />
       <Row k="Component class" v={assignment.componentClass} />
       <Row k="Mission" v={assignment.mission} />
+
+      {/* THE HUMAN. Separate from the organisation, and required. */}
+      <div style={{ fontFamily: FONT.ui, fontSize: 11, color: T.grey,
+        margin: "14px 0 8px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        Operator · who is recording this
+      </div>
+      <input
+        value={operator}
+        onChange={(e) => setOperator(e.target.value)}
+        placeholder="Your name, e.g. Adaeze Okoro"
+        aria-label="Operator name"
+        style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT.ui,
+          fontSize: 13, padding: "11px 13px", background: T.black, color: T.ivory,
+          border: `1px solid ${operatorName ? T.border : T.amber}`, outline: "none" }}
+      />
+      <div style={{ fontFamily: FONT.ui, fontSize: 10.5, color: T.grey, marginTop: 5, lineHeight: 1.5 }}>
+        A person, not the company. {organisation.name} is the organisation
+        accountable for the part; this is who performed the work. Forge OS will
+        not record production against an organisation alone.
+      </div>
 
       <div style={{ fontFamily: FONT.ui, fontSize: 11, color: T.grey,
         margin: "14px 0 8px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -173,6 +220,15 @@ export default function PilotEntry() {
       {trimmed && (
         <div style={{ marginTop: 12 }}>
           <Row k="Current state" v={current} color={stateColor(current)} />
+          {/* THE TWO RELATIONSHIPS, NEVER MERGED. (P0-2)
+              Responsibility answers "who answers for this part". Hub answers
+              "where the work happened". They are read from two different fold
+              fields and displayed on two different lines, because a hub confers
+              no responsibility and no authority over the component. */}
+          <Row k="Responsibility (organisation)" v={folded?.organisation ?? "— not yet claimed"}
+               color={folded?.organisation ? T.amber : T.grey} />
+          <Row k="Manufacturing hub (location)" v={folded?.hub ?? "— not yet recorded"}
+               color={folded?.hub ? T.teal : T.grey} />
           {folded?.organisation && folded.organisation !== pilot.id && (
             <div style={{ fontFamily: FONT.ui, fontSize: 12, color: T.pink,
               marginTop: 10, lineHeight: 1.55 }}>
@@ -189,9 +245,14 @@ export default function PilotEntry() {
         What happened
       </div>
 
-      {!trimmed ? (
+      {!operatorName ? (
+        <div style={{ fontFamily: FONT.ui, fontSize: 12.5, color: T.amber, lineHeight: 1.55 }}>
+          Enter the operator's name first. Every manufacturing record must be
+          attributable to a person — the pipeline refuses one that is not.
+        </div>
+      ) : !trimmed ? (
         <div style={{ fontFamily: FONT.ui, fontSize: 12.5, color: T.grey, fontStyle: "italic" }}>
-          Name the part first. Actions are offered from its lifecycle, so the
+          Name the part next. Actions are offered from its lifecycle, so the
           system has to know which part before it can say what may happen next.
         </div>
       ) : actions.length === 0 ? (
@@ -232,7 +293,11 @@ export default function PilotEntry() {
           </div>
           <Row k="Event" v={result.event.type} color={T.teal} />
           <Row k="Event id" v={result.event.eventId} />
+          {/* The two attributions, side by side, so they can never be confused. */}
+          <Row k="Operator (person)" v={result.event.person} color={T.teal} />
           <Row k="Organisation" v={result.event.organisation} color={T.amber} />
+          {/* Carried on the event since V1, projected onto the component only now. */}
+          <Row k="Hub (where)" v={result.event.hub ?? "—"} color={T.teal} />
           <Row k="Mission" v={result.event.mission ?? "—"} />
           <Row k="State" v={`${result.from} → ${after ?? "…"}`}
                color={stateColor(after ?? result.from)} />

@@ -3,12 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Forge-A-Truck-Thon coordination platform \u2014 showcase, keiretsu build board, and diaspora intake for the NAWEDOAM distributed-manufacturing build.",
+  "description": "Forge-A-Truck-Thon coordination platform — showcase, keiretsu build board, and diaspora intake for the NAWEDOAM distributed-manufacturing build.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/events.consumer.mjs && node test/emitters.consumer.mjs && node test/domains.consumer.mjs && node test/projections.consumer.mjs && node test/synchronisation.consumer.mjs && node test/story.consumer.mjs && node test/causality.consumer.mjs && node test/pilot.consumer.mjs && node test/design.audit.mjs && node test/kernel.audit.mjs"
+    "test": "node test/events.consumer.mjs && node test/emitters.consumer.mjs && node test/domains.consumer.mjs && node test/projections.consumer.mjs && node test/synchronisation.consumer.mjs && node test/story.consumer.mjs && node test/causality.consumer.mjs && node test/pilot.consumer.mjs && node test/identity.consumer.mjs && node test/lifecycle.consumer.mjs && node test/authority.consumer.mjs && node test/participation.consumer.mjs && node test/coordination.consumer.mjs && node test/scope.consumer.mjs && node test/acknowledgement.consumer.mjs && node test/studio.consumer.mjs && node test/canon-completeness.consumer.mjs && node test/design.audit.mjs && node test/kernel.audit.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "esbuild": "^0.21.5",
+    "supabase": "^2.114.0",
     "vite": "^5.4.8"
   }
 }

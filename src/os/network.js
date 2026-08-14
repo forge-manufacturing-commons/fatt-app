@@ -149,7 +149,29 @@ export const organisationsCapableOf = (componentClass) =>
     .filter((id, i, all) => all.indexOf(id) === i);
 
 /** Hubs an organisation is seed-associated with. */
-export const hubsOf = (organisationId) => organisationById(organisationId)?.hubs ?? [];
+/**
+ * Hubs an organisation operates at.  (E9.5)
+ *
+ * WHY IT TAKES AN EXTRA REGISTRY. This reader used to consult SEED_ORGANISATIONS
+ * alone, so `hubsOf("SOLC")` returned [] while the pilot configuration plainly
+ * said ["warri"] — it privileged seed data over the real organisation. That is
+ * the same defect `provenanceOfOrganisation` was written to avoid.
+ *
+ * It cannot import pilot.js: pilot.js imports THIS module, and a cycle would be
+ * worse than the bug. So additional registries are injected, exactly as
+ * `provenanceOfOrganisation` injects the seed registry from the other direction.
+ * There is still one source of truth per organisation — pilot records live only
+ * in pilot.js and are not copied here. `pilot.hubsOfOrganisation()` is the
+ * convenience wrapper that supplies them.
+ *
+ * Injected registries are searched FIRST, so a real organisation is never
+ * shadowed by a demonstration identity that happens to share an id.
+ */
+export const hubsOf = (organisationId, extraOrganisations = []) => {
+  const found = extraOrganisations.find((o) => o?.id === organisationId)
+    ?? organisationById(organisationId);
+  return found?.hubs ?? [];
+};
 
 /**
  * Does this organisation hold a capability matching a component's specification?
