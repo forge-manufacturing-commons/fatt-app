@@ -45,7 +45,15 @@ export async function runInference({ adapter, intent, view = {}, log = [], tools
   }
   let claims;
   try {
-    claims = await adapter({ intent, canon: view, tools, language: intent?.language ?? "en" });
+    // `message` and `log` were added in Phase 2.1 so an adapter can build its own
+    // BOUNDED context (§16) instead of a caller handing it one. The distinction
+    // matters: if the caller supplied the context, a caller could widen what a
+    // third-party model gets to see. Now only the adapter decides, from the fold.
+    claims = await adapter({
+      intent, canon: view, log, tools,
+      language: intent?.language ?? "en",
+      message: intent?.message ?? "",
+    });
   } catch (err) {
     return groundResponse(
       [unknown("", `the inference adapter failed: ${err?.message ?? String(err)}`)],

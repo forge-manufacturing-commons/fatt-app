@@ -81,6 +81,10 @@ const REALISERS = Object.freeze({
     cannotAct: () => `Zan iya shirya rikodin, amma ForgeOS na buƙatar tabbataccen shaidar injiniya kafin a rubuta shi. Ba zan iya ba wa kaina wannan izini ba.`,
     prepared: (type, c) => `Na shirya daftarin ${type} na ${c}.`,
     sourceLabel: () => "MAFARIN BAYANI · Forge Canon",
+    // PROVIDER FAILURE (§14). States what did not happen AND that the Canon is
+    // untouched — a participant's first worry when a system errors mid-task is
+    // whether it half-recorded something.
+    providerDown: () => "Forge AI ba zai iya kammala amsar a yanzu ba. Ba a canza Forge Canon ba.",
   },
   en: {
     state: (c, s) => `${c} is currently in ${s}.`,
@@ -109,6 +113,7 @@ const REALISERS = Object.freeze({
     cannotAct: () => `I can prepare the record, but ForgeOS requires an authorised engineering identity before it can be recorded. I cannot grant myself that authority.`,
     prepared: (type, c) => `I have prepared a draft ${type} for ${c}.`,
     sourceLabel: () => "CANON SOURCE · Forge Canon",
+    providerDown: () => "Forge AI is temporarily unable to complete the response. The Canon has not been changed.",
   },
   yo: {
     state: (c, s) => `${c} wà ní ${s} lọ́wọ́lọ́wọ́.`,
@@ -137,6 +142,7 @@ const REALISERS = Object.freeze({
     cannotAct: () => `Mo lè pèsè àkọsílẹ̀, ṣùgbọ́n ForgeOS béèrè ìdánimọ̀ onímọ̀ ẹ̀rọ tí a fọwọ́ sí kí ó tó kọ ọ́.`,
     prepared: (type, c) => `Mo pèsè àkọsílẹ̀ ${type} fún ${c}.`,
     sourceLabel: () => "ÌPÍLẸ̀ · Forge Canon",
+    providerDown: () => "Forge AI kò lè parí ìdáhùn báyìí. A kò yí Forge Canon padà.",
   },
   ig: {
     state: (c, s) => `${c} nọ na ${s} ugbu a.`,
@@ -165,6 +171,7 @@ const REALISERS = Object.freeze({
     cannotAct: () => `Enwere m ike ịkwadebe ndekọ ahụ, mana ForgeOS chọrọ njirimara injinia akwadoro tupu e dekọọ ya.`,
     prepared: (type, c) => `Akwadebere m ndekọ ${type} maka ${c}.`,
     sourceLabel: () => "ISI MMALITE · Forge Canon",
+    providerDown: () => "Forge AI enweghị ike imecha nzaghachi ugbu a. Agbanweghị Forge Canon.",
   },
   pcm: {
     state: (c, s) => `${c} dey ${s} right now.`,
@@ -193,6 +200,7 @@ const REALISERS = Object.freeze({
     cannotAct: () => `I fit prepare the record, but ForgeOS need authorised engineering identity before e go enter.`,
     prepared: (type, c) => `I don prepare draft ${type} for ${c}.`,
     sourceLabel: () => "CANON SOURCE · Forge Canon",
+    providerDown: () => "Forge AI no fit finish the answer now. Forge Canon no change at all.",
   },
 });
 

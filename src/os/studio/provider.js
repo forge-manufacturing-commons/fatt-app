@@ -33,7 +33,7 @@
 // ============================================================
 
 import { canonFact, canonDerived, interpretation, recommendation, unknown, roomLocal,
-         foldSource, CLAIM } from "./grounding.js";
+         foldSource, groundResponse, CLAIM } from "./grounding.js";
 
 /**
  * The Supabase client is loaded LAZILY, on the first actual call.
@@ -77,6 +77,39 @@ const FUNCTION_NAME = "forge-ai";
  * on facts that already grounded. This is what makes the provider an improvement
  * to the wording rather than a second opinion on the manufacturing.
  */
+/**
+ * Which fold fields each intent is ALLOWED to send. (Phase 2.1, §16)
+ *
+ * Phase 2 sent the same five component fields for every question. That was wrong
+ * in two ways. It leaks: a participant asking only "who is responsible?" had the
+ * component's hub, mission and specification handed to a third-party model for no
+ * reason. And it does not scale: the same habit applied to a Canon holding millions
+ * of events is how a context window becomes a cost centre and a privacy incident.
+ *
+ * So context is scoped to the RELATIONSHIP asked about. A location question sends
+ * the hub. A responsibility question sends the organisation. A participation
+ * question sends contributions[]. `state` accompanies most of them because a
+ * fluent sentence about a part usually needs to say what stage it is at — that is
+ * a deliberate inclusion, not a default.
+ */
+const CONTEXT_FIELDS = Object.freeze({
+  "component.state":         ["state", "organisation", "hub", "mission"],
+  "component.hub":           ["hub", "state"],
+  "component.who":           ["organisation", "state"],
+  "component.mission":       ["mission", "state"],
+  "component.contributions": ["contributions", "state"],
+  "component.directives":    ["directives", "state"],
+  "acknowledgement.status":  ["directives", "state"],
+  "component.history":       ["history", "state"],
+  "inspection.status":       ["history", "state"],
+  "component.next_action":   ["state", "mission"],
+  "specification.explain":   ["specification", "state"],
+  "mission.progress":        ["mission"],
+});
+
+/** Fields sent when the intent is unrecognised: the minimum that identifies the part. */
+const MINIMAL_FIELDS = Object.freeze(["state"]);
+
 export function boundedContext({ grounded, view = {}, intent = {} } = {}) {
   const out = [];
   const seen = new Set();
@@ -86,30 +119,45 @@ export function boundedContext({ grounded, view = {}, intent = {} } = {}) {
     out.push({ path, value });
   };
 
+  // Anything the DETERMINISTIC pass already verified. The model can only ever
+  // comment on facts that already grounded, which is what makes it an improvement
+  // to the wording rather than a second opinion on the manufacturing.
   for (const c of grounded?.claims ?? []) {
     if (c?.type !== CLAIM.CANON_FACT && c?.type !== CLAIM.CANON_DERIVED) continue;
     if (c.verified !== true) continue;
     if (c.source?.path) push(c.source.path, c.value);
-    for (const s of c.sources ?? []) push(s?.path, undefined);
   }
 
-  // The subject's own fields, so the model can form a whole sentence rather than
-  // a fragment. Still only fields the fold actually holds.
   const id = intent?.component;
   const comp = id ? view?.components?.[id] : null;
   if (comp) {
-    for (const f of ["state", "organisation", "hub", "mission", "specification"]) {
-      if (comp[f] != null) push(`components.${id}.${f}`, comp[f]);
+    const fields = CONTEXT_FIELDS[intent?.type] ?? MINIMAL_FIELDS;
+    for (const f of fields) {
+      const v = comp[f];
+      if (v == null) continue;
+      // Collections are sent as a COUNT, not as their contents. The model needs to
+      // know that three people contributed in order to say so; it does not need
+      // their names to form the sentence, and sending them would put personal data
+      // through a third party to no purpose.
+      if (Array.isArray(v)) push(`components.${id}.${f}`, v.length);
+      else push(`components.${id}.${f}`, v);
     }
   }
-  const m = intent?.mission ? (view?.missions ?? []).find((x) => x.id === intent.mission) : null;
-  if (m) {
+
+  const mid = intent?.mission ?? comp?.mission ?? null;
+  const m = mid ? (view?.missions ?? []).find((x) => x.id === mid) : null;
+  if (m && (intent?.type === "mission.progress" || intent?.type === "component.next_action")) {
     push(`missions.${m.id}.accepted`, m.accepted);
     push(`missions.${m.id}.target`, m.target);
     push(`missions.${m.id}.state`, m.state);
   }
   return out;
 }
+
+/** Every field name `boundedContext` is capable of sending. Used by the audit. */
+export const CONTEXT_FIELD_NAMES = Object.freeze(
+  [...new Set([...Object.values(CONTEXT_FIELDS).flat(), ...MINIMAL_FIELDS])],
+);
 
 /** Map a wire class onto a Forge claim. Unknown classes become UNKNOWN, never facts. */
 function toClaim(c) {
@@ -213,19 +261,33 @@ export function providerAdapter({ base, transport = callForgeAI, onStatus = null
   if (typeof base !== "function") {
     throw new Error("providerAdapter: a base adapter is required — the provider is never the only path");
   }
-  return async (ctx) => {
+  const build = (report) => {
+    const fn = async (ctx) => run(ctx, report);
+    // `withStatus` lets askForge observe the outcome without the adapter needing to
+    // know what a surface is. Without it, a provider failure is invisible to the
+    // participant even though the answer is correct — see the note in ask.js.
+    fn.withStatus = (cb) => build(cb);
+    return fn;
+  };
+  const run = async (ctx, report) => {
     // The deterministic pass runs FIRST, unconditionally. It establishes what the
     // Canon actually says, and it is what bounds the model's context.
     const baseClaims = await base(ctx);
     const list = Array.isArray(baseClaims) ? baseClaims : [baseClaims];
 
+    // CONTEXT IS BUILT HERE, FROM THE DETERMINISTIC RESULT (§16). The caller does
+    // not supply it, so a caller cannot widen what the model sees.
+    const grounded = groundResponse(list, { view: ctx?.canon ?? {}, log: ctx?.log ?? [] });
+    const context = boundedContext({ grounded, view: ctx?.canon ?? {}, intent: ctx?.intent ?? {} });
+
     const res = await transport({
       message: ctx?.message ?? "",
       language: ctx?.language ?? "en",
       intent: ctx?.intent ?? {},
-      context: ctx?.context ?? [],
+      context,
     });
     if (onStatus) onStatus(res);
+    if (report) report(res);
 
     if (res?.status !== PROVIDER.OK || !Array.isArray(res.claims) || !res.claims.length) {
       return list;
@@ -241,6 +303,8 @@ export function providerAdapter({ base, transport = callForgeAI, onStatus = null
     // a silently missing fact.
     return [...list, ...modelClaims];
   };
+
+  return build(onStatus);
 }
 
-export default { callForgeAI, providerAdapter, boundedContext, PROVIDER };
+export default { callForgeAI, providerAdapter, boundedContext, CONTEXT_FIELD_NAMES, PROVIDER };

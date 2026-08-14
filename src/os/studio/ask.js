@@ -92,7 +92,23 @@ export async function askForge({
     intent = Object.freeze({ ...intent, component: carried, componentFromSession: true });
   }
 
-  const grounded = await runInference({ adapter, intent, view, log, tools });
+  // The participant's words travel with the intent so a provider adapter can send
+  // them. They are DATA for the model, never an instruction to Forge — the intent
+  // was already resolved above, from those same words, before any model saw them.
+  intent = Object.freeze({ ...intent, message: String(message ?? "") });
+
+  // PROVIDER STATUS IS CAPTURED, NOT SWALLOWED (§14).
+  //
+  // In Phase 2 a provider failure fell back to the deterministic answer silently.
+  // The answer was correct, which is why it looked acceptable — but the participant
+  // could not tell whether they were reading a model's phrasing or Forge's own, and
+  // an operator could not tell that inference was down at all. Silence about a
+  // failure is its own kind of dishonesty. The status is now surfaced.
+  let providerStatus = null;
+  const observed = (res) => { providerStatus = res ?? null; };
+  const wired = adapter?.withStatus ? adapter.withStatus(observed) : adapter;
+
+  const grounded = await runInference({ adapter: wired, intent, view, log, tools });
   const planned = planResponse({ grounded, intent, view });
 
   // PREPARE is additive and strictly last. It cannot change the answer, and it
@@ -161,6 +177,21 @@ export async function askForge({
 
     mode,
     draft,
+
+    // INFERENCE PROVENANCE. Which path produced the words the participant is
+    // reading, and — when the provider failed — a sentence in their own language
+    // saying so and confirming the Canon is untouched.
+    provider: Object.freeze({
+      attempted: providerStatus !== null,
+      status: providerStatus?.status ?? null,
+      reason: providerStatus?.reason ?? null,
+      // A model's prose is only ever used when EVERY claim it made grounded.
+      usedModelPhrasing: false,
+      failed: providerStatus !== null && providerStatus.status !== "OK",
+      notice: providerStatus !== null && providerStatus.status !== "OK"
+        ? realiserFor(planned.language).r.providerDown()
+        : null,
+    }),
   });
 }
 

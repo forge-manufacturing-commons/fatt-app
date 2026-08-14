@@ -32,6 +32,8 @@ import { project } from "../os/projections.js";
 import { MISSIONS } from "../os/missions.js";
 import { RoomShell } from "../os/console.jsx";
 import { askForge, MODE } from "../os/studio/ask.js";
+import { providerAdapter, PROVIDER } from "../os/studio/provider.js";
+import { deterministicAdapter } from "../os/studio/infer.js";
 import { REALISED_LANGUAGES } from "../os/studio/respond.js";
 import { SUPPORTED_LANGUAGES } from "../os/i18n.js";
 
@@ -184,6 +186,26 @@ function Turn({ turn }) {
           {r?.answer}
         </div>
 
+        {/* PROVIDER FAILURE, STATED (§14). The answer above is still correct — it
+            came from the Canon — but the participant is told that the model could
+            not be reached AND that nothing was recorded. Silence about a failure is
+            its own kind of dishonesty. */}
+        {r?.provider?.failed && (
+          <div style={{ marginTop: 10, padding: "9px 12px", background: BLACK,
+            boxShadow: `inset 0 0 0 1px ${AMBER}` }}>
+            <div style={{ fontFamily: UI, fontWeight: 800, fontSize: 8.5, letterSpacing: "0.16em",
+              textTransform: "uppercase", color: AMBER, marginBottom: 5 }}>
+              Inference unavailable · answered from Forge Canon
+            </div>
+            <div style={{ fontFamily: UI, fontSize: 12, color: IVORY, opacity: 0.9 }}>
+              {r.provider.notice}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, marginTop: 5 }}>
+              {r.provider.status}{r.provider.reason ? ` · ${r.provider.reason}` : ""}
+            </div>
+          </div>
+        )}
+
         {/* A DRAFT IS NOT A RECORD, and the screen has to say so louder than it
             shows the draft. */}
         {r?.draft?.draft && (
@@ -271,11 +293,17 @@ export default function ForgeStudioRoom() {
     setBusy(true);
     setDraftText("");
     try {
+      // THE PROVIDER PATH IS WIRED AND ATTEMPTED. `deterministicAdapter` is the
+      // base and runs first, unconditionally, so if no provider is selected — or
+      // the network is down, or the model misbehaves — the Canon answer is already
+      // computed and stands unchanged. The model can only ever add phrasing to
+      // facts that already grounded.
       const result = await askForge({
         message, view, log,
         preferredLanguage: language,
         mode,
         session,
+        adapter: providerAdapter({ base: deterministicAdapter }),
       });
       setTurns((t) => [...t, { id: `${Date.now()}-${t.length}`, message, result }]);
       // The participant's language follows their own words: a confident detection
