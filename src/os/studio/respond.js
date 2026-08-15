@@ -42,6 +42,35 @@ import { INTENT } from "./intent.js";
 import { verifyPreserved } from "./terms.js";
 
 /**
+ * What KIND of statement each sentence is. (§8)
+ *
+ * The answer used to be a single joined string, and the surface rendered the whole
+ * thing under one "FORGE CANON" badge. For "Me ya kamata mu yi na gaba akan
+ * HUB-014?" that meant a verified Canon fact and an AI RECOMMENDATION arrived
+ * fused into one paragraph wearing the Canon's authority:
+ *
+ *   "HUB-014 yana cikin matakin manufacturing a halin yanzu.        <- CANON_FACT
+ *    Mataki na gaba da lifecycle ya ba da izini: submitForInspection" <- RECOMMENDATION
+ *
+ * The first is something ForgeOS recorded. The second is something ForgeOS
+ * SUGGESTS, and presenting it identically is precisely the confusion this whole
+ * architecture exists to prevent — one level up from the claim layer, in the
+ * rendering. So the planner now returns SEGMENTS and the surface labels each.
+ *
+ * CANON_ABSENCE is its own kind rather than a flavour of fact: "Forge Canon holds
+ * no record that X passed" is a true statement ABOUT the Canon, but it is not a
+ * recorded manufacturing fact and must not be badged as one.
+ */
+export const SEGMENT = Object.freeze({
+  CANON:        "CANON",         // a verified CANON_FACT or CANON_DERIVED
+  CANON_ABSENCE:"CANON_ABSENCE", // the Canon records nothing here
+  RECOMMENDATION:"RECOMMENDATION",// what ForgeOS suggests. Recorded nowhere.
+  AUTHORITY:    "AUTHORITY",     // what ForgeOS requires before acting
+  PREPARED:     "PREPARED",      // a draft, never an event
+  NOT_UNDERSTOOD:"NOT_UNDERSTOOD",
+});
+
+/**
  * Connective vocabulary per language. This is the ONLY place language-specific
  * wording lives, and it contains no manufacturing logic whatsoever — every entry
  * is a function of already-verified canonical values.
@@ -256,7 +285,12 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
   const mid = intent?.mission ?? null;
   const comp = id ? view?.components?.[id] : null;
 
-  const sentences = [];
+  // SEGMENTS, not one string. `answer` is still derived by joining them, so every
+  // existing caller keeps working, but a surface can now render each kind
+  // differently — and a test can assert that a recommendation is never inside a
+  // CANON segment.
+  const segments = [];
+  const add = (text, kind) => { segments.push(Object.freeze({ text, kind })); return true; };
   const sources = [];
   const bind = (claim) => { if (claim?.source?.path) sources.push(claim.source.path); return claim; };
 
@@ -282,7 +316,7 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
     if (!claim) return false;
     sources.push(p);
     mention(...values);
-    sentences.push(fn());
+    add(fn(), SEGMENT.CANON);
     return true;
   };
 
@@ -302,6 +336,9 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
       answer: inLanguage.text,
       language, fellBack,
       sources: Object.freeze([]),
+      // A Canon limitation is a statement about the Canon's SILENCE, so it is a
+      // CANON_ABSENCE segment. Badging it CANON would say ForgeOS recorded it.
+      segments: Object.freeze([Object.freeze({ text: inLanguage.text, kind: SEGMENT.CANON_ABSENCE })]),
       presented: 0, refused: 1, canonLimitation: true,
       // A refusal names the component it is about, so the identifier must survive.
       preserved: verifyPreserved([limitation.about].filter(Boolean).join(" "),
@@ -311,101 +348,101 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
 
   switch (intent?.type) {
     case INTENT.COMPONENT_STATE:
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       say(`components.${id}.state`, () => r.state(id, comp.state), id, comp.state);
       say(`components.${id}.organisation`, () => r.responsibility(id, comp.organisation), id, comp.organisation);
       say(`components.${id}.hub`, () => r.hub(id, comp.hub), id, comp.hub);
       say(`components.${id}.mission`, () => r.mission(id, comp.mission), id, comp.mission);
-      if (!sentences.length) sentences.push(r.unknownComponent(id ?? "—"));
+      if (!segments.length) add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE);
       break;
 
     case INTENT.COMPONENT_HUB:
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       mention(id);
-      if (!say(`components.${id}.hub`, () => r.hub(id, comp.hub), comp.hub)) sentences.push(r.noHub(id));
+      if (!say(`components.${id}.hub`, () => r.hub(id, comp.hub), comp.hub)) add(r.noHub(id), SEGMENT.CANON_ABSENCE);
       break;
 
     case INTENT.COMPONENT_WHO:
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       // NEVER cites the hub. Location is not responsibility — Canon P0-2.
       mention(id);
       if (!say(`components.${id}.organisation`, () => r.responsibility(id, comp.organisation), comp.organisation)) {
-        sentences.push(r.noResponsibility(id));
+        add(r.noResponsibility(id), SEGMENT.CANON_ABSENCE);
       }
       break;
 
     case INTENT.COMPONENT_MISSION:
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       mention(id);
       if (!say(`components.${id}.mission`, () => r.mission(id, comp.mission), comp.mission)) {
-        sentences.push(r.noMission(id));
+        add(r.noMission(id), SEGMENT.CANON_ABSENCE);
       }
       break;
 
     case INTENT.COMPONENT_CONTRIBUTIONS: {
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       const n = (comp.contributions ?? []).length;
       mention(id);
       if (n && say(`components.${id}.contributions`, () => r.contributions(id, n))) break;
-      sentences.push(r.noContributions(id));
+      add(r.noContributions(id), SEGMENT.CANON_ABSENCE);
       break;
     }
 
     case INTENT.COMPONENT_DIRECTIVES: {
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       const n = (comp.directives ?? []).length;
       mention(id);
       if (n && say(`components.${id}.directives`, () => r.directives(id, n))) break;
-      sentences.push(r.noDirectives(id));
+      add(r.noDirectives(id), SEGMENT.CANON_ABSENCE);
       break;
     }
 
     case INTENT.ACKNOWLEDGEMENT_STATUS: {
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       const resolved = (comp.directives ?? []).find((d) => d?.acknowledgement);
       mention(id);
       if (resolved && say(`components.${id}.directives`,
                           () => r.acknowledged(resolved.directedTo ?? resolved.person ?? "—",
                                                resolved.acknowledgement))) break;
-      sentences.push(r.notAcknowledged(id));
+      add(r.notAcknowledged(id), SEGMENT.CANON_ABSENCE);
       break;
     }
 
     case INTENT.COMPONENT_HISTORY: {
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       const n = (comp.history ?? []).length;
       mention(id);
       if (n && say(`components.${id}.history`, () => r.historyCount(id, n))) break;
-      sentences.push(r.noHistory(id));
+      add(r.noHistory(id), SEGMENT.CANON_ABSENCE);
       break;
     }
 
     case INTENT.INSPECTION_STATUS: {
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       // Only a PROVED history claim may assert a pass. Absence is stated as a
       // Canon absence, never as ignorance — Test 5 and Test 6 turn on this.
       const passed = (comp.history ?? []).some((h) => h.transition === "pass");
       mention(id);
       if (passed && say(`components.${id}.history`, () => r.inspectionPassed(id))) break;
-      sentences.push(r.inspectionUnknown(id));
+      add(r.inspectionUnknown(id), SEGMENT.CANON_ABSENCE);
       break;
     }
 
     case INTENT.COMPONENT_NEXT_ACTION: {
-      if (!comp) { sentences.push(r.unknownComponent(id ?? "—")); break; }
+      if (!comp) { add(r.unknownComponent(id ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       say(`components.${id}.state`, () => r.state(id, comp.state), id, comp.state);
       const rec = (grounded?.recommendations ?? [])[0];
-      if (rec?.text) sentences.push(r.nextActions(id, rec.text));
-      else sentences.push(r.noNextAction(id, comp.state));
+      if (rec?.text) add(r.nextActions(id, rec.text), SEGMENT.RECOMMENDATION);
+      else add(r.noNextAction(id, comp.state), SEGMENT.CANON_ABSENCE);
       break;
     }
 
     case INTENT.MISSION_PROGRESS: {
       const m = (view?.missions ?? []).find((x) => x.id === mid);
-      if (!m) { sentences.push(r.unknownComponent(mid ?? "—")); break; }
+      if (!m) { add(r.unknownComponent(mid ?? "—"), SEGMENT.CANON_ABSENCE); break; }
       if (say(`missions.${m.id}.accepted`, () => r.progress(m.id, m.accepted, m.target), m.id)) {
         const d = (grounded?.derived ?? [])[0];
-        if (d && isBinding(d)) sentences.push(r.remaining(Math.max(0, m.target - m.accepted)));
+        if (d && isBinding(d)) add(r.remaining(Math.max(0, m.target - m.accepted)), SEGMENT.CANON);
       }
       break;
     }
@@ -413,15 +450,15 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
     case INTENT.ACTION_REQUEST:
       // THE AUTHORITY BOUNDARY, IN THE USER'S LANGUAGE. Not "I can't" — what
       // ForgeOS requires. The refusal names the system's rule, not the AI's limit.
-      sentences.push(r.cannotAct());
+      add(r.cannotAct(), SEGMENT.AUTHORITY);
       break;
 
     default:
-      sentences.push(r.notUnderstood());
+      add(r.notUnderstood(), SEGMENT.NOT_UNDERSTOOD);
       break;
   }
 
-  const answer = sentences.join(" ");
+  const answer = segments.map((x) => x.text).join(" ");
   // The structural guarantee, checked rather than assumed: every canonical value
   // the Canon holds for this subject survives verbatim in the answer.
   //
@@ -438,7 +475,8 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
     language,
     fellBack,
     sources: Object.freeze([...new Set(sources)]),
-    presented: sentences.length,
+    presented: segments.length,
+    segments: Object.freeze(segments),
     refused: 0,
     canonLimitation: false,
     preserved,

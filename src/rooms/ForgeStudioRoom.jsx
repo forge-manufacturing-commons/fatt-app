@@ -182,9 +182,39 @@ function Turn({ turn }) {
           )}
         </div>
 
-        <div style={{ fontFamily: UI, fontSize: 14.5, lineHeight: 1.62, color: IVORY }}>
-          {r?.answer}
-        </div>
+        {/* SEGMENTED, NOT ONE PARAGRAPH (§8).
+            A recommendation is rendered with its own marker and a different colour
+            from a recorded fact, because "the lifecycle permits submitForInspection"
+            is something ForgeOS SUGGESTS and "HUB-014 is in manufacturing" is
+            something ForgeOS RECORDED. Fusing them into one styled block gave the
+            suggestion the Canon's authority. */}
+        {(r?.segments?.length ? r.segments : [{ text: r?.answer, kind: "CANON" }]).map((seg, k) => {
+          const isCanon = seg.kind === "CANON";
+          const tone = seg.kind === "RECOMMENDATION" ? AMBER
+                     : seg.kind === "AUTHORITY" ? PINK
+                     : seg.kind === "PREPARED" ? AMBER
+                     : MUTED;
+          return (
+            <div key={k} style={{ marginBottom: 7 }}>
+              {!isCanon && (
+                <div style={{ fontFamily: UI, fontWeight: 800, fontSize: 8, letterSpacing: "0.18em",
+                  textTransform: "uppercase", color: tone, marginBottom: 3 }}>
+                  {seg.kind === "RECOMMENDATION" ? "Recommendation · not recorded in Forge Canon"
+                   : seg.kind === "AUTHORITY" ? "ForgeOS requirement"
+                   : seg.kind === "PREPARED" ? "Draft only"
+                   : seg.kind === "CANON_ABSENCE" ? "Forge Canon holds no record"
+                   : "Not understood"}
+                </div>
+              )}
+              <div style={{ fontFamily: UI, fontSize: 14.5, lineHeight: 1.62,
+                color: isCanon ? IVORY : "rgba(245,241,233,.82)",
+                borderLeft: isCanon ? "none" : `2px solid ${tone}`,
+                paddingLeft: isCanon ? 0 : 9 }}>
+                {seg.text}
+              </div>
+            </div>
+          );
+        })}
 
         {/* PROVIDER FAILURE, STATED (§14). The answer above is still correct — it
             came from the Canon — but the participant is told that the model could

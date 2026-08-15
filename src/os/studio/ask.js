@@ -134,9 +134,21 @@ export async function askForge({
         : `${planned.answer} ${draftSentence(draft, planned.language)}`.trim())
     : planned.answer;
 
+  // PREPARE's draft sentence is its own segment kind, so a surface can never
+  // render "I have prepared a draft" with the same weight as a recorded fact.
+  const segments = draft?.draft
+    ? Object.freeze([
+        ...(intent.type === INTENT.UNKNOWN ? [] : planned.segments),
+        Object.freeze({ text: draftSentence(draft, planned.language), kind: "PREPARED" }),
+      ])
+    : planned.segments;
+
   return Object.freeze({
     // What the participant reads.
     answer,
+    // The SAME answer, split by what kind of statement each part is (§8). A
+    // recommendation and a Canon fact must never be presented identically.
+    segments,
     language: planned.language,
     languageFellBack: planned.fellBack,
 

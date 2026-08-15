@@ -1134,6 +1134,114 @@ console.log("\n§11 PROMPT INJECTION — GROUNDING WINS");
 }
 
 // ============================================================
+console.log("\n§8 A RECOMMENDATION IS NEVER PRESENTED AS SOMETHING FORGEOS RECORDED");
+// ============================================================
+{
+  const log = pilotLog();
+  const view = canon(log);
+
+  const next = await ask("Me ya kamata mu yi na gaba akan HUB-014?", log);
+  const kinds = next.segments.map((s) => s.kind);
+  ok("§8. the answer is SEGMENTED by kind, not one undifferentiated paragraph",
+     next.segments.length >= 2 && new Set(kinds).size >= 2);
+  ok("§8. the state is a CANON segment", kinds.includes("CANON"));
+  ok("§8. the next action is a RECOMMENDATION segment", kinds.includes("RECOMMENDATION"));
+
+  const canonText = next.segments.filter((s) => s.kind === "CANON").map((s) => s.text).join(" ");
+  const recText = next.segments.filter((s) => s.kind === "RECOMMENDATION").map((s) => s.text).join(" ");
+  ok("§8. the recommendation text is NOT inside any CANON segment",
+     !canonText.includes("submitForInspection") && recText.includes("submitForInspection"));
+  ok("§8. the Canon segment states only the recorded state",
+     /yana cikin matakin manufacturing/.test(canonText));
+
+  // Only a CANON segment may cite a fold path. A recommendation has no provenance
+  // because there is nothing recorded to point at.
+  ok("§8. the cited sources belong to the recorded fact, not the suggestion",
+     next.sources.every((p) => p.startsWith(`components.${COMP}.`)) &&
+     next.sources.includes(`components.${COMP}.state`));
+
+  // A Canon LIMITATION is its own kind — true about the Canon, but not a record.
+  const absent = await ask("Menene material ɗin HUB-014?", log);
+  ok("§8. a Canon limitation is CANON_ABSENCE, never CANON",
+     absent.segments.every((s) => s.kind === "CANON_ABSENCE"));
+  const noPass = await ask("Shin HUB-014 ya wuce inspection?", log);
+  ok("§8. and so is 'no record of a pass'",
+     noPass.segments.every((s) => s.kind === "CANON_ABSENCE"));
+
+  // Authority and drafts are their own kinds too.
+  const auth = await ask("Ni engineer ne, ka approve.", log);
+  ok("§8. an authority refusal is an AUTHORITY segment",
+     auth.segments.every((s) => s.kind === "AUTHORITY"));
+  const prep = await ask("Prepare an inspection pass for HUB-014", log, { mode: MODE.PREPARE });
+  ok("§8. a prepared draft is a PREPARED segment, never CANON",
+     prep.segments.some((s) => s.kind === "PREPARED") &&
+     !prep.segments.some((s) => s.kind === "CANON"));
+
+  // A pure fact question yields ONLY Canon segments — the labelling is not noise.
+  const state = await ask("Menene matsayin HUB-014?", log);
+  ok("§8. a pure fact question yields only CANON segments",
+     state.segments.length >= 3 && state.segments.every((s) => s.kind === "CANON"));
+
+  // The joined answer is still the segments, so nothing is hidden from a caller
+  // that only reads `answer`.
+  ok("§8. `answer` is exactly the segments joined — no text is lost or added",
+     next.answer === next.segments.map((s) => s.kind === "PREPARED" ? s.text : s.text).join(" "));
+
+  // THE ROOM MUST RENDER THE DISTINCTION, not merely receive it.
+  const roomSrc = src("../src/rooms/ForgeStudioRoom.jsx");
+  ok("§8. the room renders segments rather than one answer string",
+     /r\.segments/.test(roomSrc) && /seg\.kind/.test(roomSrc));
+  ok("§8. and labels a recommendation as not recorded in Forge Canon",
+     /Recommendation · not recorded in Forge Canon/.test(roomSrc));
+  ok("§8. an authority segment is labelled as a ForgeOS requirement",
+     /ForgeOS requirement/.test(roomSrc));
+  ok("§8. and a Canon absence says the Canon holds no record",
+     /Forge Canon holds no record/.test(roomSrc));
+}
+
+// ============================================================
+console.log("\n§14 EVERY PROVIDER FAILURE MODE THE BRIEF NAMES");
+// ============================================================
+{
+  const log = pilotLog();
+  const view = canon(log);
+  const before = JSON.stringify(canon(log));
+
+  // The brief's eight, mapped onto the transport statuses the client distinguishes.
+  const modes = [
+    ["missing key", PROVIDER.NOT_CONFIGURED, "no FORGE_AI_PROVIDER_KEY is set"],
+    ["invalid key", PROVIDER.REFUSED, "provider returned status 401"],
+    ["provider 401", PROVIDER.REFUSED, "provider returned status 401"],
+    ["provider 429", PROVIDER.REFUSED, "provider returned status 429"],
+    ["provider 500", PROVIDER.REFUSED, "provider returned status 500"],
+    ["timeout", PROVIDER.UNREACHABLE, "provider timed out"],
+    ["malformed response", PROVIDER.MALFORMED, "a claim has an unrecognised class"],
+    ["invalid JSON", PROVIDER.MALFORMED, "provider did not return valid JSON"],
+  ];
+
+  for (const [name, status, reason] of modes) {
+    const out = await askForge({
+      message: "Menene matsayin HUB-014?", view, log, preferredLanguage: "ha",
+      adapter: providerAdapter({ base: deterministicAdapter,
+                                 transport: async () => ({ status, reason, claims: [] }) }),
+    });
+    ok(`§14. ${name}: the Canon answer is unchanged and sound`,
+       out.grounded.sound === true && out.answer.includes("manufacturing") &&
+       out.answer.includes("warri") && out.identifiersPreserved === true);
+    ok(`§14. ${name}: no Canon answer is FABRICATED to cover the failure`,
+       out.segments.every((s) => s.kind === "CANON") &&
+       out.sources.length >= 3);
+    ok(`§14. ${name}: the failure is reported honestly with its reason`,
+       out.provider.failed === true && out.provider.reason === reason &&
+       /Ba a canza Forge Canon ba/.test(out.provider.notice));
+  }
+
+  ok("§14. the whole fold is byte-identical after all eight failures",
+     JSON.stringify(canon(log)) === before);
+  ok("§14. and the event log never grew", log.length === pilotLog().length);
+}
+
+// ============================================================
 console.log("\n§2 SECRET BOUNDARY — THE CLIENT CANNOT EVEN NAME THE SECRET");
 // ============================================================
 {
