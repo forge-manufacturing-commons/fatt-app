@@ -78,7 +78,45 @@ export const BINDING_ON_WIRE = Object.freeze(["CANON_FACT", "CANON_DERIVED"]);
  *   body      ({ model, prompt, maxTokens }) => object
  *   extract   (responseJson) => string     — the model's text
  */
-export const PROVIDER_PROFILES = Object.freeze({});
+export const PROVIDER_PROFILES = Object.freeze({
+  /**
+   * ANTHROPIC — explicitly selected by the operator in Phase 2.2.
+   *
+   * This is the same vendor Phase 2 assumed and Phase 2.1 removed, and the
+   * difference is the whole point: it is now a DECISION with a named owner rather
+   * than a default nobody chose. Every line below is vendor knowledge, and it is
+   * all confined to this object — `id`, `endpoint`, `headers`, `body`, `extract`
+   * are the only five places Forge permits it to exist.
+   *
+   * `max_tokens` is required by this API and has no safe omission, so it is passed
+   * from the caller rather than defaulted here. `model` is NEVER defaulted: an
+   * absent FORGE_AI_MODEL is a configuration error reported by resolveProfile, not
+   * a silent choice of somebody else's model on the operator's bill.
+   */
+  anthropic: Object.freeze({
+    id: "anthropic",
+    endpoint: "https://api.anthropic.com/v1/messages",
+    headers: ({ key }) => ({
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    }),
+    body: ({ model, prompt, maxTokens }) => ({
+      model,
+      max_tokens: maxTokens,
+      // The contract requires JSON back. A system instruction states the role; the
+      // participant's message travels inside the prompt already labelled as data.
+      system: "You are Forge AI. Reply with a single JSON object and nothing else. " +
+              "No prose before or after it, and no markdown fences.",
+      messages: [{ role: "user", content: prompt }],
+    }),
+    // Concatenates every text block. Returns "" when the shape is unfamiliar, which
+    // index.ts treats as PROVIDER_EMPTY rather than guessing at another field.
+    extract: (res) =>
+      Array.isArray(res?.content)
+        ? res.content.filter((p) => p?.type === "text").map((p) => p?.text ?? "").join("")
+        : "",
+  }),
+});
 
 export const PROVIDER_IDS = Object.freeze(Object.keys(PROVIDER_PROFILES));
 
