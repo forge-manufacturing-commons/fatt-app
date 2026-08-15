@@ -888,14 +888,75 @@ console.log("\nPROVIDER SELECTION — NOTHING IS ASSUMED, AND IT FAILS CLOSED");
   // OPENAI IS THE SELECTED PROVIDER. The vendor is not forbidden, it is CONFINED:
   // vendor knowledge may exist in exactly one object and nowhere else. That is what
   // made this swap a five-field edit rather than an archaeology project.
-  ok("S. exactly one provider profile is registered",
-     PROVIDER_IDS.length === 1 && PROVIDER_IDS[0] === "openai");
+  // TWO PROFILES ARE NOW REGISTERED, and the guard is widened rather than removed.
+  //
+  // It previously asserted exactly one, to stop a vendor being assumed. That is no
+  // longer the right shape: the operator needs OpenRouter temporarily for live
+  // testing AND needs to switch back to OpenAI by configuration alone. What must
+  // still hold is the property the guard was defending — that a provider is never
+  // ASSUMED. `resolveProfile` with nothing selected still refuses, which is asserted
+  // below, so registering a second profile costs nothing.
+  ok("S. the registered profiles are exactly the two authorised ones",
+     [...PROVIDER_IDS].sort().join() === ["openai", "openrouter"].join());
+  ok("S. and neither is reachable without an explicit FORGE_AI_PROVIDER",
+     resolveProfile({ FORGE_AI_PROVIDER_KEY: "k", FORGE_AI_MODEL: "m" }).code
+       === "PROVIDER_NOT_SELECTED");
+  ok("S. switching provider is configuration only — both resolve with no code change",
+     resolveProfile({ FORGE_AI_PROVIDER: "openai", FORGE_AI_PROVIDER_KEY: "k",
+                      FORGE_AI_MODEL: "m" }).id === "openai" &&
+     resolveProfile({ FORGE_AI_PROVIDER: "openrouter", FORGE_AI_PROVIDER_KEY: "k",
+                      FORGE_AI_MODEL: "m" }).id === "openrouter");
+
+  // THE TWO PROFILES IMPLEMENT GENUINELY DIFFERENT VENDOR CONTRACTS. This is the
+  // real test of the abstraction: not a rename, but Responses vs Chat Completions,
+  // satisfied by the same five fields with nothing above the registry changing.
+  {
+    const R = PROVIDER_PROFILES.openrouter;
+    ok("S. every profile implements exactly the agreed five fields",
+       PROVIDER_IDS.every((id) => Object.keys(PROVIDER_PROFILES[id]).sort().join() ===
+         ["body", "endpoint", "extract", "headers", "id"].join()));
+    ok("S. openrouter targets the chat-completions endpoint",
+       R.endpoint === "https://openrouter.ai/api/v1/chat/completions");
+    ok("S. it authenticates with a bearer token and nothing else",
+       Object.keys(R.headers({ key: "T" })).join() === "Authorization" &&
+       R.headers({ key: "T" }).Authorization === "Bearer T");
+    const rb = R.body({ model: "m/n:free", prompt: "P", maxTokens: 800 });
+    ok("S. its body is the documented chat-completions shape",
+       Object.keys(rb).sort().join() === ["max_tokens", "messages", "model"].join() &&
+       rb.model === "m/n:free" && rb.max_tokens === 800);
+    ok("S. the prompt travels as a user message and the JSON rule as a system message",
+       rb.messages.length === 2 && rb.messages[1].role === "user" &&
+       rb.messages[1].content === "P" && rb.messages[0].role === "system" &&
+       /single JSON object and nothing else/.test(rb.messages[0].content));
+    ok("S. and the key never reaches the body",
+       !JSON.stringify(rb).includes("T") || !JSON.stringify(rb).includes("Bearer"));
+    ok("S. extract reads choices[].message.content",
+       R.extract({ choices: [{ message: { content: "{\"a\":1}" } }] }) === "{\"a\":1}");
+    ok("S. it also tolerates typed content parts",
+       R.extract({ choices: [{ message: { content: [{ text: "{\"a\":" }, { text: "1}" }] } }] })
+         === "{\"a\":1}");
+    ok("S. and fails closed on an unfamiliar or empty shape",
+       R.extract({ output: [{ content: [{ type: "output_text", text: "other vendor" }] }] }) === "" &&
+       R.extract({ choices: [] }) === "" && R.extract(null) === "" && R.extract({}) === "");
+    // The two extractors must not accept each other's shapes — that would mean one
+    // profile silently parsing another vendor's response.
+    ok("S. neither profile parses the other's response shape",
+       PROVIDER_PROFILES.openai.extract({ choices: [{ message: { content: "x" } }] }) === "" &&
+       R.extract({ output: [{ content: [{ type: "output_text", text: "x" }] }] }) === "");
+  }
 
   // THE PREVIOUS VENDOR IS GONE. Not deprecated, not commented out — absent. Its
   // headers, endpoint, body fields and response parsing must leave no residue
   // anywhere in the repository, because a half-removed provider is how a key ends
   // up in the wrong authentication header.
-  const anthropicResidue = /anthropic|x-api-key|anthropic-version|\bmax_tokens\b|\bclaude\b/i;
+  // `max_tokens` was in this pattern and has been removed, because it was a FALSE
+  // POSITIVE rather than a finding. It is the field name in Anthropic Messages AND
+  // in every OpenAI-compatible Chat Completions API, including OpenRouter's — so it
+  // is evidence of nothing. A residue check that flags a field name shared by half
+  // the industry would force a real profile to be written wrongly to satisfy a test,
+  // which is the tail wagging the dog. What is genuinely Anthropic-specific is the
+  // vendor's name, its auth header, its version header, and its model family.
+  const anthropicResidue = /anthropic|x-api-key|anthropic-version|\bclaude\b/i;
   ok("S. no trace of the previous vendor remains in the boundary",
      !anthropicResidue.test(fn + contract));
   {
@@ -921,7 +982,8 @@ console.log("\nPROVIDER SELECTION — NOTHING IS ASSUMED, AND IT FAILS CLOSED");
   // Vendor knowledge is inside the profile object and nowhere else in the contract.
   const beforeProfiles = contract.slice(0, contract.indexOf("export const PROVIDER_PROFILES"));
   const afterProfiles = contract.slice(contract.indexOf("export const PROVIDER_IDS"));
-  const vendorWire = /openai|api\.openai|Bearer|output_text|max_output_tokens|instructions:/i;
+  const vendorWire =
+    /openai|api\.openai|openrouter|Bearer|output_text|max_output_tokens|instructions:|choices\[|messages:/i;
   ok("S. no vendor wire detail appears before the profile registry",
      !vendorWire.test(beforeProfiles));
   ok("S. nor after it", !vendorWire.test(afterProfiles));

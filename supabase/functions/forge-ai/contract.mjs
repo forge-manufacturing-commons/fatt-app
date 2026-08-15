@@ -144,6 +144,69 @@ export const PROVIDER_PROFILES = Object.freeze({
       return text;
     },
   }),
+
+  /**
+   * OPENROUTER — TEMPORARY, for live integration testing only.
+   *
+   * Added because the OpenAI account has no credit (`insufficient_quota /
+   * credit_balance_exhausted`), which blocked the live proof. It exists to
+   * exercise the boundary against a real model, not to become the production
+   * provider.
+   *
+   * BOTH PROFILES STAY REGISTERED. Switching back to OpenAI is
+   * `FORGE_AI_PROVIDER=openai` plus a model name — no code change, no redeploy of
+   * anything but configuration. That is the operator's explicit requirement and it
+   * is the whole reason the registry is a map rather than a single object.
+   *
+   * WIRE FORMAT, from the current official documentation: an OpenAI-compatible
+   * Chat Completions endpoint at /api/v1/chat/completions, Bearer authentication,
+   * a `messages` array of {role, content}, `max_tokens`, and a response carrying
+   * `choices[].message.content`.
+   *
+   * NOTE THE DIFFERENT SHAPE FROM THE PROFILE ABOVE. One is Responses
+   * (`input` + `instructions` -> `output[].content[].output_text`), the other is
+   * Chat Completions (`messages[]` -> `choices[].message.content`). Two genuinely
+   * different vendor contracts, both satisfied by the same five fields, with no
+   * change anywhere above this registry. That is the abstraction being tested by
+   * something harder than a rename.
+   */
+  openrouter: Object.freeze({
+    id: "openrouter",
+    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+    headers: ({ key }) => ({ Authorization: `Bearer ${key}` }),
+    body: ({ model, prompt, maxTokens }) => ({
+      model,
+      max_tokens: maxTokens,
+      // The JSON requirement travels as a system message here, which is this
+      // contract's equivalent of the other profile's `instructions`.
+      messages: [
+        { role: "system",
+          content: "You are Forge AI. Reply with a single JSON object and nothing else. " +
+                   "No prose before or after it, and no markdown fences." },
+        { role: "user", content: prompt },
+      ],
+    }),
+    /**
+     * Concatenate the assistant content from every choice.
+     *
+     * Returns "" for any shape it does not recognise, which index.ts turns into
+     * PROVIDER_EMPTY. A free-tier model that returns an empty or unexpected body
+     * therefore fails closed rather than being guessed at.
+     */
+    extract: (res) => {
+      if (!Array.isArray(res?.choices)) return "";
+      let text = "";
+      for (const choice of res.choices) {
+        const c = choice?.message?.content;
+        if (typeof c === "string") text += c;
+        // Some OpenAI-compatible servers return content as typed parts.
+        else if (Array.isArray(c)) {
+          for (const part of c) if (typeof part?.text === "string") text += part.text;
+        }
+      }
+      return text;
+    },
+  }),
 });
 
 export const PROVIDER_IDS = Object.freeze(Object.keys(PROVIDER_PROFILES));
