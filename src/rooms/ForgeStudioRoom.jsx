@@ -35,7 +35,13 @@ import { askForge, MODE } from "../os/studio/ask.js";
 import { providerAdapter, PROVIDER } from "../os/studio/provider.js";
 import { deterministicAdapter } from "../os/studio/infer.js";
 import { REALISED_LANGUAGES } from "../os/studio/respond.js";
-import { SUPPORTED_LANGUAGES } from "../os/i18n.js";
+// THE GLOBAL LANGUAGE, AND THE ONLY LANGUAGE STATE THIS ROOM MAY READ.
+// Phase 2 gave this room its own `useState("ha")` and a seven-chip selector. That
+// was a SECOND language system: ForgeOS could be in Urhobo while Forge Studio sat
+// in Hausa, and a participant had to choose their language twice. The room now
+// consumes the same store every other room consumes, so there is exactly one
+// preference (`forge-lang`) and one selector (the existing ForgeOS control).
+import { useLanguage } from "../os/useLanguage.js";
 
 // ============================================================
 // PLATFORM CONTRACT — what this room guarantees to the platform.
@@ -60,16 +66,6 @@ const { black: BLACK, ivory: IVORY, teal: TEAL, amber: AMBER, pink: PINK,
         surface: SURFACE, border: BORDER, grey: MUTED, green: GREEN } = T;
 const UI = "var(--forge-brand-font, 'Poppins', system-ui, sans-serif)";
 const MONO = "var(--forge-mono, ui-monospace, monospace)";
-
-/** Languages offered, in the order a Nigerian workshop would expect them. */
-const OFFERED = ["ha", "en", "yo", "ig", "pcm", "fr", "urh"];
-const LANGUAGE_LABEL = Object.fromEntries(
-  SUPPORTED_LANGUAGES.map((l) => [l.code, l.label ?? l.name ?? l.code]),
-);
-const NATIVE = {
-  ha: "Hausa", en: "English", yo: "Yorùbá", ig: "Igbo",
-  pcm: "Pidgin", fr: "Français", urh: "Urhobo",
-};
 
 /**
  * Starter questions, in Hausa first.
@@ -164,17 +160,13 @@ function Turn({ turn }) {
             padding: "2px 6px" }}>
             {refused ? "Canon limitation" : "Forge Canon"}
           </span>
-          {/* THE PROOF THAT LANGUAGE IS ONLY AN INTERFACE: the canonical intent is
-              shown next to every answer, so a Hausa question and an English one can
-              be seen resolving to the same query. */}
-          <span style={{ fontFamily: MONO, fontSize: 10.5, color: MUTED }}>
-            {r?.intent?.type}
-            {r?.intent?.component ? ` · ${r.intent.component}` : ""}
-          </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
-            {r?.detectedLanguage ?? "?"} → {r?.language}
-            {r?.mixedLanguage ? " · mixed" : ""}
-          </span>
+          {/* §17 — THE MACHINERY IS NOT THE PRODUCT.
+              The canonical intent, the detected language and the mixed-language flag
+              used to sit here on every answer. That taught the participant to read a
+              parser rather than an answer. They are still recorded and still
+              inspectable — they moved behind the Canon-source affordance below, next
+              to the provenance, where anyone who wants them can ask. What stays
+              visible is the answer, its source, and whether Forge Canon holds it. */}
           {r?.languageFellBack && (
             <span style={{ fontFamily: UI, fontSize: 9.5, color: AMBER }}>
               no realiser for that language — answered in English
@@ -269,6 +261,17 @@ function Turn({ turn }) {
                   <div key={s} style={{ fontFamily: MONO, fontSize: 10.5, color: IVORY,
                     opacity: 0.85 }}>{s}</div>
                 ))}
+                {/* The internals, on request only (§17). */}
+                <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, marginTop: 6 }}>
+                  intent {r?.intent?.type}
+                  {r?.intent?.component ? ` · ${r.intent.component}` : ""}
+                  {r?.intent?.fromSession ? " · subject carried from the conversation" : ""}
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
+                  language {r?.detectedLanguage ?? "?"} → {r?.language}
+                  {r?.mixedLanguage ? " · mixed" : ""}
+                  {r?.responseLanguageBecause ? ` · ${r.responseLanguageBecause}` : ""}
+                </div>
                 <div style={{ fontFamily: UI, fontSize: 10.5, color: MUTED, marginTop: 6 }}>
                   {r.grounded.facts} fact{r.grounded.facts === 1 ? "" : "s"}
                   {r.grounded.derived ? ` · ${r.grounded.derived} derived` : ""}
@@ -293,7 +296,8 @@ export default function ForgeStudioRoom() {
   // a reference to the function that could.
   const { log } = useForgeActivity();
 
-  const [language, setLanguage] = useState("ha");
+  // ONE LANGUAGE STATE, OWNED BY FORGEOS. Read, never written from here.
+  const { lang } = useLanguage();
   const [mode, setMode] = useState(MODE.ASK);
   const [draftText, setDraftText] = useState("");
   const [turns, setTurns] = useState([]);
@@ -330,15 +334,16 @@ export default function ForgeStudioRoom() {
       // facts that already grounded.
       const result = await askForge({
         message, view, log,
-        preferredLanguage: language,
+        preferredLanguage: lang,
         mode,
         session,
         adapter: providerAdapter({ base: deterministicAdapter }),
       });
       setTurns((t) => [...t, { id: `${Date.now()}-${t.length}`, message, result }]);
-      // The participant's language follows their own words: a confident detection
-      // moves the selector, so the next question starts where they actually are.
-      if (result.language && OFFERED.includes(result.language)) setLanguage(result.language);
+      // DELIBERATELY NOTHING HERE. Phase 2 wrote the detected language back into
+      // room state, which meant typing one English sentence silently re-set the
+      // participant's language. Detection informs THIS answer and nothing else;
+      // only the ForgeOS language control changes the global preference.
     } finally {
       setBusy(false);
     }
@@ -349,7 +354,7 @@ export default function ForgeStudioRoom() {
   // recorded there are no starters at all, and the empty state says so instead.
   const subject = components[0] ?? null;
   const starters = subject
-    ? (STARTERS[language] ?? STARTERS.en).map((q) => q.replaceAll("{C}", subject))
+    ? (STARTERS[lang] ?? STARTERS.en).map((q) => q.replaceAll("{C}", subject))
     : [];
 
   return (
@@ -367,29 +372,33 @@ export default function ForgeStudioRoom() {
         {/* ---------- CONVERSATION ---------- */}
         <div style={{ gridColumn: "1 / -1", maxWidth: 860 }}>
 
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 16 }}>
-            <div>
-              <Label>Language</Label>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {OFFERED.map((c) => (
-                  <Chip key={c} on={c === language} onClick={() => setLanguage(c)}
-                    title={REALISED_LANGUAGES.includes(c)
-                      ? `${LANGUAGE_LABEL[c] ?? c} — answers realised in this language`
-                      : `${LANGUAGE_LABEL[c] ?? c} — detected, but answers fall back to English`}>
-                    {NATIVE[c] ?? c}
-                    {!REALISED_LANGUAGES.includes(c) && (
-                      <span style={{ color: on_amber(c, language), marginLeft: 5 }}>*</span>
-                    )}
-                  </Chip>
-                ))}
+          {/* NO LANGUAGE SELECTOR HERE (§4).
+              The ForgeOS language control is the participant's language control. A
+              second selector in this room would mean choosing Urhobo twice, and would
+              let Forge Studio disagree with the rest of the OS. What IS shown is an
+              honest capability notice when the global language has UI translations but
+              no AI realiser yet — those are different capabilities, and conflating
+              them is exactly how fake language support ships. */}
+          {!REALISED_LANGUAGES.includes(lang) && (
+            <div style={{ marginBottom: 14, padding: "10px 13px", background: SURFACE,
+              borderLeft: `3px solid ${AMBER}` }}>
+              <div style={{ fontFamily: UI, fontWeight: 800, fontSize: 8.5,
+                letterSpacing: "0.16em", textTransform: "uppercase", color: AMBER,
+                marginBottom: 5 }}>
+                ForgeOS is set to {String(lang).toUpperCase()} · Forge AI has no realiser yet
               </div>
-              <div style={{ fontFamily: UI, fontSize: 10.5, color: MUTED, marginTop: 6 }}>
-                * detected, but no realiser yet — answered in English and labelled as such.
-                Ask in any language; the selector only decides what happens when detection is
-                genuinely uncertain.
+              <div style={{ fontFamily: UI, fontSize: 12, color: IVORY, opacity: 0.88,
+                lineHeight: 1.55 }}>
+                Answers will be written in English and labelled as such, rather than
+                machine-guessed in {String(lang).toUpperCase()}. The Forge Canon facts are
+                identical either way — only the wording differs. Ask in
+                {" "}{String(lang).toUpperCase()} regardless: the question is understood even
+                where the answer cannot yet be phrased.
               </div>
             </div>
+          )}
 
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 16 }}>
             <div>
               <Label>Mode</Label>
               <div style={{ display: "flex", gap: 6 }}>
@@ -444,7 +453,7 @@ export default function ForgeStudioRoom() {
             <input
               value={draftText}
               onChange={(e) => setDraftText(e.target.value)}
-              placeholder={language === "ha"
+              placeholder={lang === "ha"
                 ? "Yi tambaya game da wani component…"
                 : "Ask about a component…"}
               aria-label="Ask Forge Canon"
@@ -510,7 +519,3 @@ export default function ForgeStudioRoom() {
   );
 }
 
-/** Tiny helper so the asterisk stays legible on both chip states. */
-function on_amber(code, active) {
-  return code === active ? BLACK : AMBER;
-}

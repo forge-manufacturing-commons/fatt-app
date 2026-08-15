@@ -219,8 +219,17 @@ console.log("\nJ + K + L — LANGUAGE IS AN I/O LAYER, NOT IDENTITY");
     yo: `Kí ni mo yẹ kí n ṣe tókàn lori ${COMP}?`,
     ig: `Gịnị ka m kwesịrị ime ọzọ na ${COMP}?`,
   };
+  // PHASE 2.4 — each question is resolved with THAT participant's global ForgeOS
+  // language, because the response language now comes from the OS setting rather
+  // than from detection. A Hausa speaker has ForgeOS in Hausa; that is the case
+  // worth testing. The `understanding` map below keeps the original property under
+  // test — that the question is RECOGNISED as Hausa/Yoruba/Igbo — which detection
+  // still does and which is what these assertions were really defending.
   const intents = Object.fromEntries(
-    Object.entries(asked).map(([k, v]) => [k, resolveIntent(v)]),
+    Object.entries(asked).map(([k, v]) => [k, resolveIntent(v, { preferredLanguage: k })]),
+  );
+  const understanding = Object.fromEntries(
+    Object.entries(asked).map(([k, v]) => [k, resolveIntent(v, { preferredLanguage: "en" })]),
   );
 
   for (const [lang, it] of Object.entries(intents)) {
@@ -233,15 +242,39 @@ console.log("\nJ + K + L — LANGUAGE IS AN I/O LAYER, NOT IDENTITY");
   ok("J. semantics do not depend on language",
      new Set(Object.values(intents).map((i) => i.type)).size === 1);
 
-  // K — the response language follows the user.
+  // K — the response language follows the GLOBAL FORGEOS LANGUAGE (Phase 2.4).
+  //
+  // These four previously asserted that DETECTION chose the response language.
+  // Phase 2.4 inverted that precedence: ForgeOS owns the language, so a confident
+  // detection no longer overrides a preference the participant set. The assertions
+  // are updated rather than deleted, and the companion block below preserves what
+  // they actually defended — that each language is still UNDERSTOOD.
   ok("K. Hausa in, Hausa out", intents.ha.language === "ha");
   ok("K. Yoruba in, Yoruba out", intents.yo.language === "yo");
   ok("K. Igbo in, Igbo out", intents.ig.language === "ig");
   ok("K. English in, English out", intents.en.language === "en");
+  ok("K. and the response language is the global setting, not the detection",
+     Object.entries(intents).every(([k, it]) =>
+       it.language === k && /global ForgeOS language/.test(it.responseLanguageBecause)));
+
+  // COMPANION — UNDERSTANDING IS UNCHANGED. This is the property the four
+  // assertions above were really defending, and it must survive the precedence
+  // change: each question is still correctly identified as Hausa, Yoruba or Igbo.
+  ok("K. detection still identifies each language correctly",
+     understanding.ha.detectedLanguage === "ha" &&
+     understanding.yo.detectedLanguage === "yo" &&
+     understanding.ig.detectedLanguage === "ig");
+  ok("K. and a global English preference now answers in English despite that",
+     Object.values(understanding).every((it) => it.language === "en"));
+  ok("K. which is reported, so the override is never silent",
+     /detected in the question/.test(understanding.ha.responseLanguageBecause));
 
   const switched = resolveIntent("Ka yi min bayani da Turanci", { preferredLanguage: "ha" });
   ok("K. an explicit request for English switches the response",
-     switched.language === "en" && switched.responseLanguageBecause === "explicitly requested");
+     switched.language === "en" &&
+     /explicitly requested for this turn/.test(switched.responseLanguageBecause));
+  ok("K. and the wording says THIS TURN — it is not a preference change (§7)",
+     /this turn/.test(switched.responseLanguageBecause));
   ok("K. explicitLanguageRequest detects the switch",
      explicitLanguageRequest("Ka yi min bayani da Turanci") === "en");
 
@@ -250,15 +283,18 @@ console.log("\nJ + K + L — LANGUAGE IS AN I/O LAYER, NOT IDENTITY");
   ok("K. a two-token message is honestly uncertain", short.uncertain === true);
   const kept = resolveResponseLanguage({ detected: short, preferred: "ha" });
   ok("K. uncertainty keeps the stored preference rather than guessing",
-     kept.language === "ha" && /kept preference/.test(kept.because));
+     kept.language === "ha" && /global ForgeOS language/.test(kept.because));
+  ok("K. and a CONFIDENT detection now also keeps it — the OS setting wins either way",
+     resolveResponseLanguage({ detected: detectLanguage("Menene matsayin HUB-014?"),
+                               preferred: "ha" }).language === "ha");
 
   // L — mixed language is normal.
-  const mixed = resolveIntent(`Yanzu muna ready mu fara inspection na ${COMP}.`);
+  const mixed = resolveIntent(`Yanzu muna ready mu fara inspection na ${COMP}.`, { preferredLanguage: "ha" });
   ok("L. mixed Hausa/English is NOT rejected", mixed.type !== INTENT.UNKNOWN);
   ok("L. it is understood as an inspection question", mixed.type === INTENT.INSPECTION_STATUS);
   ok("L. the component is still extracted", mixed.component === COMP);
   ok("L. it is flagged as mixed", mixed.mixedLanguage === true);
-  ok("L. and answered in the dominant language", mixed.language === "ha");
+  ok("L. and answered in the global language", mixed.language === "ha");
 
   // An unrecognised message is UNKNOWN, not a guess.
   const nonsense = resolveIntent("qqq zzz");
@@ -523,7 +559,8 @@ console.log("\nEND-TO-END — the Phase 0/1 boundary, in Hausa, grounded");
   const view = canon(log);
   const question = `Me ya kamata mu yi da ${COMP} yanzu?`;
 
-  const intent = resolveIntent(question);
+  // Resolved with ForgeOS in Hausa — the participant's actual setting (Phase 2.4).
+  const intent = resolveIntent(question, { preferredLanguage: "ha" });
   ok("the Hausa question resolves to a canonical intent",
      intent.type === INTENT.COMPONENT_NEXT_ACTION);
   ok("it names the real component", intent.component === COMP);

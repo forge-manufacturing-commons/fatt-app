@@ -220,22 +220,49 @@ export function detectLanguage(text) {
 /**
  * Resolve which language to REPLY in.
  *
- * Rules, in order: an explicit request wins; a confident detection wins next;
- * otherwise keep the stored preference. Nothing is translated unnecessarily,
- * and a language is never switched on a weak signal.
+ * PRECEDENCE CHANGED IN PHASE 2.4, AND IT IS A USER-VISIBLE CHANGE.
+ *
+ *   was:  explicit request  >  confident detection  >  stored preference
+ *   now:  explicit request  >  GLOBAL PREFERENCE    >  confident detection
+ *
+ * The old order let DETECTION own the response language, which contradicts the
+ * architecture two ways. Forge Studio is a room inside ForgeOS, and ForgeOS owns
+ * the language: if a participant has set the OS to Hausa, typing one English
+ * sentence should not answer them in English. And detection's job is to UNDERSTAND
+ * what was said, never to decide what the application speaks — a detector that
+ * chooses the response language is a second language preference wearing a
+ * disguise, recomputed from scratch on every message.
+ *
+ * THE TRADE-OFF IS REAL AND WORTH NAMING. A participant who has never touched the
+ * language control sits on the default `en`, so typing Hausa now yields an English
+ * answer where it previously yielded Hausa. That is the correct reading of "ForgeOS
+ * owns the language" — the OS setting is a declaration, not a guess — but it does
+ * mean the multilingual experience begins with one deliberate act. Detection still
+ * runs, is still reported for the internals, and still drives intent resolution;
+ * it simply no longer overrides a choice the participant made.
+ *
+ * `explicit` remains first, and deliberately affects THIS TURN ONLY. "Answer this
+ * one in English" is answered in English while the global preference stays exactly
+ * where it was — nothing here writes any state.
  */
 export function resolveResponseLanguage({ detected, preferred = "en", explicit = null } = {}) {
   const supported = new Set(SUPPORTED_LANGUAGES.map((l) => l.code));
   if (explicit && supported.has(explicit)) {
-    return { language: explicit, because: "explicitly requested" };
+    return { language: explicit, because: "explicitly requested for this turn" };
   }
+  if (supported.has(preferred)) {
+    return {
+      language: preferred,
+      because: detected?.language && detected.language !== preferred
+        ? `global ForgeOS language (${detected.language} detected in the question)`
+        : "global ForgeOS language",
+    };
+  }
+  // No usable preference at all — fall back to what was actually understood.
   if (detected?.language && !detected.uncertain && supported.has(detected.language)) {
-    return { language: detected.language, because: "confidently detected" };
+    return { language: detected.language, because: "no global preference — used the detected language" };
   }
-  return {
-    language: supported.has(preferred) ? preferred : "en",
-    because: detected?.uncertain ? "detection uncertain — kept preference" : "no detection",
-  };
+  return { language: "en", because: "no global preference and no confident detection" };
 }
 
 /** "Explain it in English" / "Ka yi min bayani da Turanci" -> an explicit switch. */

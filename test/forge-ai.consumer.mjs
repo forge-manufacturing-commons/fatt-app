@@ -519,7 +519,7 @@ console.log("\nPROVIDER — THE BOUNDARY HOLDS WHEN THE MODEL MISBEHAVES OR IS A
 {
   const log = pilotLog();
   const view = canon(log);
-  const intent = resolveIntent("Menene matsayin HUB-014?");
+  const intent = resolveIntent("Menene matsayin HUB-014?", { preferredLanguage: "ha" });
 
   // NO SECRET IN THE CLIENT. The single most important assertion in this section.
   const client = src("../src/os/studio/provider.js");
@@ -636,11 +636,20 @@ console.log("\nLANGUAGE — RESPONSE LANGUAGE FOLLOWS THE USER, NEVER RANDOMLY")
   ok("L. every realised language is a supported language",
      REALISED_LANGUAGES.every((c) => SUPPORTED_LANGUAGES.some((l) => l.code === c)));
 
-  // A confident detection overrides the stored preference.
+  // PHASE 2.4 INVERTED THIS PRECEDENCE, and these two assertions are updated rather
+  // than deleted. They previously asserted that a confident DETECTION beat the stored
+  // preference. ForgeOS now owns the language: Forge Studio is a room inside it, so a
+  // participant who set the OS to Hausa is answered in Hausa even when they type one
+  // English sentence. Detection still runs and still drives INTENT — what changed is
+  // only who chooses the response language.
   const r = await ask("Menene matsayin HUB-014?", log, { preferredLanguage: "en" });
-  ok("L. a confident Hausa reading beats an English preference", r.language === "ha");
+  ok("L. a global English preference answers in English despite a Hausa question",
+     r.language === "en" && r.detectedLanguage === "ha");
   const r2 = await ask("What is the state of HUB-014?", log, { preferredLanguage: "ha" });
-  ok("L. and a confident English reading beats a Hausa preference", r2.language === "en");
+  ok("L. and a global Hausa preference answers in Hausa despite an English question",
+     r2.language === "ha" && r2.detectedLanguage === "en");
+  ok("L. both reach the SAME fold paths — only the wording moved",
+     [...r.sources].sort().join() === [...r2.sources].sort().join() && r.sources.length >= 3);
 
   // Uncertain input keeps the preference rather than guessing.
   const r3 = await ask("HUB-014", log, { preferredLanguage: "ha" });
@@ -1080,7 +1089,7 @@ console.log("\nPROVIDER SELECTION — NOTHING IS ASSUMED, AND IT FAILS CLOSED");
   // The client renders it as NOT_CONFIGURED and keeps answering from the Canon.
   const log = pilotLog();
   const view = canon(log);
-  const intent = resolveIntent("Menene matsayin HUB-014?");
+  const intent = resolveIntent("Menene matsayin HUB-014?", { preferredLanguage: "ha" });
   const notSelected = async () => ({ status: PROVIDER.NOT_CONFIGURED, claims: [], answer: null,
                                      reason: "no provider profile is registered" });
   const r = await runInference({
