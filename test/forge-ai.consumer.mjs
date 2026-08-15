@@ -524,7 +524,7 @@ console.log("\nPROVIDER — THE BOUNDARY HOLDS WHEN THE MODEL MISBEHAVES OR IS A
   // NO SECRET IN THE CLIENT. The single most important assertion in this section.
   const client = src("../src/os/studio/provider.js");
   ok("V. the client transport contains no provider key or endpoint",
-     !/api[_-]?key|sk-|anthropic\.com|openai\.com|VITE_.*(KEY|SECRET|TOKEN)/i.test(client));
+     !/api[_-]?key|sk-|openai\.com|api\.openai|Bearer\s|VITE_.*(KEY|SECRET|TOKEN)/i.test(client));
   const fn = src("../supabase/functions/forge-ai/index.ts");
   ok("V. the Edge Function reads its key from the server environment only",
      /Deno\.env\.get\(\s*["']FORGE_AI_PROVIDER_KEY["']\s*\)/.test(fn));
@@ -885,76 +885,131 @@ console.log("\nPROVIDER SELECTION — NOTHING IS ASSUMED, AND IT FAILS CLOSED");
   const fn = src("../supabase/functions/forge-ai/index.ts");
   const contract = src("../supabase/functions/forge-ai/contract.mjs");
 
-  // PHASE 2.2 — ANTHROPIC WAS EXPLICITLY SELECTED BY THE OPERATOR.
-  //
-  // Phase 2 assumed this vendor; Phase 2.1 removed the assumption; Phase 2.2
-  // reinstates it as a DECISION. So the guard changes shape rather than
-  // disappearing: the vendor is no longer forbidden, it is CONFINED. Vendor
-  // knowledge may exist in exactly one object and nowhere else, which is what
-  // makes swapping providers a five-field edit rather than an archaeology project.
+  // OPENAI IS THE SELECTED PROVIDER. The vendor is not forbidden, it is CONFINED:
+  // vendor knowledge may exist in exactly one object and nowhere else. That is what
+  // made this swap a five-field edit rather than an archaeology project.
   ok("S. exactly one provider profile is registered",
-     PROVIDER_IDS.length === 1 && PROVIDER_IDS[0] === "anthropic");
+     PROVIDER_IDS.length === 1 && PROVIDER_IDS[0] === "openai");
+
+  // THE PREVIOUS VENDOR IS GONE. Not deprecated, not commented out — absent. Its
+  // headers, endpoint, body fields and response parsing must leave no residue
+  // anywhere in the repository, because a half-removed provider is how a key ends
+  // up in the wrong authentication header.
+  const anthropicResidue = /anthropic|x-api-key|anthropic-version|\bmax_tokens\b|\bclaude\b/i;
+  ok("S. no trace of the previous vendor remains in the boundary",
+     !anthropicResidue.test(fn + contract));
+  {
+    const { readdirSync, statSync, readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const walk = (d) => readdirSync(d).flatMap((e) => {
+      const p = join(d, e);
+      if (/node_modules|\.git$|^dist/.test(e)) return [];
+      return statSync(p).isDirectory() ? walk(p) : /\.(js|jsx|mjs|ts|tsx|json)$/.test(e) ? [p] : [];
+    });
+    const repo = new URL("../", import.meta.url).pathname;
+    const offenders = [...walk(join(repo, "src")), ...walk(join(repo, "supabase"))]
+      .filter((f) => anthropicResidue.test(readFileSync(f, "utf8")));
+    ok("S. and none in src/ or supabase/ either",
+       offenders.length === 0 || `RESIDUE IN ${offenders.join(", ")}`);
+  }
 
   ok("S. the TRANSPORT knows no vendor at all",
-     !/anthropic|openai|gemini|groq|mistral|cohere|x-api-key|max_tokens|choices\[0\]/i.test(fn));
+     !/anthropic|openai|gemini|groq|mistral|cohere|x-api-key|max_tokens|choices\[0\]|Bearer/i.test(fn));
   ok("S. and asks the profile for its headers and body rather than building them",
      /profile\.headers\(/.test(fn) && /profile\.body\(/.test(fn) && /profile\.extract\(/.test(fn));
 
   // Vendor knowledge is inside the profile object and nowhere else in the contract.
   const beforeProfiles = contract.slice(0, contract.indexOf("export const PROVIDER_PROFILES"));
   const afterProfiles = contract.slice(contract.indexOf("export const PROVIDER_IDS"));
-  ok("S. no vendor name appears in the contract before the profile registry",
-     !/anthropic|x-api-key|max_tokens/i.test(beforeProfiles));
-  ok("S. nor after it", !/anthropic|x-api-key|max_tokens/i.test(afterProfiles));
+  const vendorWire = /openai|api\.openai|Bearer|output_text|max_output_tokens|instructions:/i;
+  ok("S. no vendor wire detail appears before the profile registry",
+     !vendorWire.test(beforeProfiles));
+  ok("S. nor after it", !vendorWire.test(afterProfiles));
 
   // NO OTHER VENDOR was invented alongside the selected one.
-  for (const vendor of ["openai", "gemini", "groq", "mistral", "cohere", "huggingface"]) {
-    ok(`S. no ${vendor} profile was invented`,
+  for (const vendor of ["anthropic", "gemini", "groq", "mistral", "cohere", "huggingface"]) {
+    ok(`S. no ${vendor} profile exists`,
        !new RegExp(vendor, "i").test(fn + contract) && !PROVIDER_IDS.includes(vendor));
   }
 
   // THE PROFILE ITSELF. Five fields, and the secret goes only into headers.
-  const P = PROVIDER_PROFILES.anthropic;
+  const P = PROVIDER_PROFILES.openai;
   ok("S. the profile implements exactly the agreed five fields",
      Object.keys(P).sort().join() === ["body", "endpoint", "extract", "headers", "id"].sort().join());
+  ok("S. it targets the Responses endpoint",
+     P.endpoint === "https://api.openai.com/v1/responses");
+
   const hdrs = P.headers({ key: "TEST-SECRET-VALUE" });
+  ok("S. authentication is an API key carried as a bearer token",
+     hdrs.Authorization === "Bearer TEST-SECRET-VALUE");
   ok("S. the key is placed in a header and appears nowhere else",
      JSON.stringify(hdrs).includes("TEST-SECRET-VALUE") &&
      !JSON.stringify(P.body({ model: "m", prompt: "p", maxTokens: 1 })).includes("TEST-SECRET-VALUE"));
+
+  // ONLY VERIFIED REQUEST FIELDS. Each of these was read from the official API
+  // reference; nothing was invented, and nothing unverified was added.
+  const body = P.body({ model: "chosen-model", prompt: "PROMPT-TEXT", maxTokens: 800 });
+  ok("S. the body sends only fields confirmed by the API reference",
+     Object.keys(body).sort().join() ===
+     ["input", "instructions", "max_output_tokens", "model"].join());
+  ok("S. the prompt travels as `input`", body.input === "PROMPT-TEXT");
+  ok("S. the JSON requirement travels as `instructions`",
+     /single JSON object and nothing else/.test(body.instructions));
+  ok("S. max_output_tokens is passed through and respects the documented minimum",
+     body.max_output_tokens === 800 && body.max_output_tokens >= 16);
   ok("S. the body carries the configured model, never a hardcoded one",
-     P.body({ model: "chosen-model", prompt: "p", maxTokens: 5 }).model === "chosen-model");
-  ok("S. and no model name is baked into the profile",
-     !/claude|gpt-|gemini-|llama/i.test(JSON.stringify(P.body({ model: "m", prompt: "p", maxTokens: 1 }))) &&
-     !/claude|gpt-|gemini-/i.test(contract));
-  ok("S. extract pulls the text out of a well-formed response",
-     P.extract({ content: [{ type: "text", text: "{\"a\":1}" }] }) === "{\"a\":1}");
-  ok("S. and returns empty for an unfamiliar shape rather than guessing",
+     body.model === "chosen-model");
+  ok("S. and no model name is baked into the profile or the contract",
+     !/gpt-|o\d-mini|claude|gemini-|llama/i.test(JSON.stringify(body)) &&
+     !/gpt-[0-9]|claude-|gemini-[0-9]/i.test(contract));
+
+  // EXTRACTION, against the documented response shape.
+  ok("S. extract reads output[].content[] output_text parts",
+     P.extract({ output: [{ type: "message",
+       content: [{ type: "output_text", text: "{\"a\":1}" }] }] }) === "{\"a\":1}");
+  ok("S. it concatenates multiple text parts and items",
+     P.extract({ output: [
+       { type: "message", content: [{ type: "output_text", text: "{\"a\":" }] },
+       { type: "message", content: [{ type: "output_text", text: "1}" }] },
+     ] }) === "{\"a\":1}");
+  ok("S. it ignores non-text parts such as reasoning",
+     P.extract({ output: [
+       { type: "reasoning", content: [{ type: "reasoning_text", text: "thinking" }] },
+       { type: "message", content: [{ type: "output_text", text: "OK" }] },
+     ] }) === "OK");
+  // A documented real outcome: status incomplete, reasoning only, NO message item.
+  ok("S. a truncated reasoning-only response yields empty, so it fails closed",
+     P.extract({ status: "incomplete",
+                 incomplete_details: { reason: "max_output_tokens" },
+                 output: [{ type: "reasoning", content: [] }] }) === "");
+  ok("S. and an unfamiliar shape yields empty rather than a guess",
      P.extract({ choices: [{ message: { content: "hi" } }] }) === "" &&
-     P.extract(null) === "" && P.extract({}) === "");
+     P.extract({ content: [{ type: "text", text: "old vendor shape" }] }) === "" &&
+     P.extract(null) === "" && P.extract({}) === "" && P.extract({ output: "nope" }) === "");
 
   // FOUR DISTINCT FAILURES, because the operator's next action differs for each.
   const cases = [
     ["nothing selected", {}, "PROVIDER_NOT_SELECTED"],
     ["an unknown selection", { FORGE_AI_PROVIDER: "acme" }, "PROVIDER_UNKNOWN"],
-    ["selected but no key", { FORGE_AI_PROVIDER: "anthropic" }, "PROVIDER_NOT_CONFIGURED"],
+    ["selected but no key", { FORGE_AI_PROVIDER: "openai" }, "PROVIDER_NOT_CONFIGURED"],
     ["selected with a key but no model",
-     { FORGE_AI_PROVIDER: "anthropic", FORGE_AI_PROVIDER_KEY: "k" }, "PROVIDER_NO_MODEL"],
+     { FORGE_AI_PROVIDER: "openai", FORGE_AI_PROVIDER_KEY: "k" }, "PROVIDER_NO_MODEL"],
   ];
   for (const [name, env, code] of cases) {
     const r = resolveProfile(env);
     ok(`S. ${name} -> ${code}`, r.ok === false && r.code === code);
   }
   ok("S. with nothing selected the reason names the registered options",
-     /set FORGE_AI_PROVIDER to one of: anthropic/.test(resolveProfile({}).reason));
+     /set FORGE_AI_PROVIDER to one of: openai/.test(resolveProfile({}).reason));
 
   // A FULLY CONFIGURED environment resolves, and NOTHING is defaulted silently.
-  const full = resolveProfile({ FORGE_AI_PROVIDER: "anthropic", FORGE_AI_PROVIDER_KEY: "k",
+  const full = resolveProfile({ FORGE_AI_PROVIDER: "openai", FORGE_AI_PROVIDER_KEY: "k",
                                 FORGE_AI_MODEL: "some-model" });
-  ok("S. a complete configuration resolves", full.ok === true && full.id === "anthropic");
+  ok("S. a complete configuration resolves", full.ok === true && full.id === "openai");
   ok("S. the model comes from the environment, never from code",
      full.model === "some-model");
   ok("S. the endpoint may be overridden for a proxy or a gateway",
-     resolveProfile({ FORGE_AI_PROVIDER: "anthropic", FORGE_AI_PROVIDER_KEY: "k",
+     resolveProfile({ FORGE_AI_PROVIDER: "openai", FORGE_AI_PROVIDER_KEY: "k",
                       FORGE_AI_MODEL: "m", FORGE_AI_ENDPOINT: "https://gw.internal/v1" })
        .endpoint === "https://gw.internal/v1");
   ok("S. and the resolved result never carries the key onwards",
@@ -1317,7 +1372,7 @@ console.log("\n§2 SECRET BOUNDARY — THE CLIENT CANNOT EVEN NAME THE SECRET");
   }
 
   // And no vendor credential shape anywhere in the client tree.
-  for (const pat of [/x-api-key/i, /anthropic-version/i, /\bsk-[A-Za-z0-9]{6}/,
+  for (const pat of [/x-api-key/i, /\bsk-[A-Za-z0-9]{6}/, /sk-proj-/i,
                      /api[_-]?key\s*[:=]\s*["'][^"']{8}/i]) {
     const hits = clientFiles.filter((f) => pat.test(readFile(f, "utf8")));
     ok(`§2. no client file carries a credential matching ${pat}`, hits.length === 0);

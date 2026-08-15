@@ -56,20 +56,20 @@ export const BINDING_ON_WIRE = Object.freeze(["CANON_FACT", "CANON_DERIVED"]);
 // ---------- provider profiles ----------
 
 /**
- * HOW a vendor's HTTP differs. Ships EMPTY, on purpose.
+ * HOW a vendor's HTTP differs. Exactly one profile, explicitly selected.
  *
- * Phase 2 hardcoded Anthropic: an `x-api-key` header, an `anthropic-version`
- * header, a `{model, max_tokens, messages}` body, `content[].text` parsing, and a
- * default endpoint of api.anthropic.com. No provider had been selected, so that
- * shape was invented — and it was worse than merely presumptuous. A participant
- * setting FORGE_AI_PROVIDER_KEY to an OpenAI or Groq key would have had that
- * SECRET TRANSMITTED in an Anthropic header to whatever endpoint was configured,
- * and the resulting failure would have looked like a model problem rather than a
- * misrouted credential.
+ * WHY THIS REGISTRY EXISTS AT ALL. An earlier pass hardcoded one vendor's wire
+ * format throughout the boundary before any vendor had been chosen. That was worse
+ * than merely presumptuous: a key belonging to a DIFFERENT vendor would have been
+ * transmitted in the wrong authentication header to whatever endpoint was
+ * configured, and the resulting failure would have read as a model problem rather
+ * than a misrouted credential. Everything above this registry is therefore
+ * provider-neutral, and `resolveProfile` fails closed rather than guessing which
+ * company holds the key.
  *
- * So the registry is empty and `resolveProfile` fails closed. Adding a profile is
- * a small, explicit act — five fields — performed once a provider is actually
- * chosen. Forge does not guess which company holds the key.
+ * The payoff is measurable: switching vendor is an edit to the object below and
+ * nothing else. No module above it, and no part of Forge Studio, the Canon,
+ * grounding, policy or the language layer changed when the provider changed.
  *
  * A profile must supply:
  *   id        the value FORGE_AI_PROVIDER must equal
@@ -80,41 +80,69 @@ export const BINDING_ON_WIRE = Object.freeze(["CANON_FACT", "CANON_DERIVED"]);
  */
 export const PROVIDER_PROFILES = Object.freeze({
   /**
-   * ANTHROPIC — explicitly selected by the operator in Phase 2.2.
+   * OPENAI — Responses API. Explicitly selected by the operator.
    *
-   * This is the same vendor Phase 2 assumed and Phase 2.1 removed, and the
-   * difference is the whole point: it is now a DECISION with a named owner rather
-   * than a default nobody chose. Every line below is vendor knowledge, and it is
-   * all confined to this object — `id`, `endpoint`, `headers`, `body`, `extract`
-   * are the only five places Forge permits it to exist.
+   * This replaced the previously selected vendor's profile entirely; no trace of
+   * that vendor's wire format remains anywhere in ForgeOS, and the test suite
+   * asserts it by grep. The swap touched exactly this object, which is the property
+   * the provider abstraction was built to deliver: changing model vendor is a
+   * five-field edit, not a migration.
    *
-   * `max_tokens` is required by this API and has no safe omission, so it is passed
-   * from the caller rather than defaulted here. `model` is NEVER defaulted: an
-   * absent FORGE_AI_MODEL is a configuration error reported by resolveProfile, not
+   * EVERY FIELD BELOW WAS READ FROM THE OFFICIAL API REFERENCE, NOT REMEMBERED.
+   *   input              string or array of input items. A bare string is a text
+   *                      input equivalent to a user-role message.
+   *   instructions       a system/developer message inserted into the context.
+   *   max_output_tokens  upper bound on generated tokens, minimum 16.
+   *   output             array of items; a message item carries `content[]` whose
+   *                      parts are typed, and a text part is `output_text`.
+   *
+   * WHAT IS DELIBERATELY *NOT* SENT. The Responses API has a structured-output
+   * facility, and using it would tighten the JSON guarantee. I could not confirm
+   * its exact parameter shape from the reference within this pass, and inventing a
+   * request field is precisely what this phase forbids — so the JSON requirement is
+   * carried by `instructions` instead. That is weaker at the provider and costs
+   * nothing at the boundary: validateModelOutput already rejects anything that is
+   * not the agreed shape, and index.ts refuses to regex-salvage prose. A model that
+   * ignores the instruction produces PROVIDER_MALFORMED, never a fact.
+   *
+   * `model` is NEVER defaulted. An absent FORGE_AI_MODEL is PROVIDER_NO_MODEL, not
    * a silent choice of somebody else's model on the operator's bill.
    */
-  anthropic: Object.freeze({
-    id: "anthropic",
-    endpoint: "https://api.anthropic.com/v1/messages",
-    headers: ({ key }) => ({
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    }),
+  openai: Object.freeze({
+    id: "openai",
+    endpoint: "https://api.openai.com/v1/responses",
+    // API-key authentication, as a bearer token. The key arrives from Deno.env and
+    // is placed here and nowhere else.
+    headers: ({ key }) => ({ Authorization: `Bearer ${key}` }),
     body: ({ model, prompt, maxTokens }) => ({
       model,
-      max_tokens: maxTokens,
-      // The contract requires JSON back. A system instruction states the role; the
-      // participant's message travels inside the prompt already labelled as data.
-      system: "You are Forge AI. Reply with a single JSON object and nothing else. " +
-              "No prose before or after it, and no markdown fences.",
-      messages: [{ role: "user", content: prompt }],
+      input: prompt,
+      max_output_tokens: maxTokens,
+      instructions:
+        "You are Forge AI. Reply with a single JSON object and nothing else. " +
+        "No prose before or after it, and no markdown fences.",
     }),
-    // Concatenates every text block. Returns "" when the shape is unfamiliar, which
-    // index.ts treats as PROVIDER_EMPTY rather than guessing at another field.
-    extract: (res) =>
-      Array.isArray(res?.content)
-        ? res.content.filter((p) => p?.type === "text").map((p) => p?.text ?? "").join("")
-        : "",
+    /**
+     * Pull the assistant text out of the `output` array.
+     *
+     * Walks output items, takes their `content` parts, keeps `output_text` parts and
+     * concatenates. Returns "" for any shape it does not recognise — including a
+     * response whose status is `incomplete` with reasoning-only output and no
+     * message item, which is a real and documented outcome when the token cap is
+     * hit. index.ts turns "" into PROVIDER_EMPTY, so an unfamiliar or truncated
+     * response fails closed instead of being guessed at.
+     */
+    extract: (res) => {
+      if (!Array.isArray(res?.output)) return "";
+      let text = "";
+      for (const item of res.output) {
+        if (!Array.isArray(item?.content)) continue;
+        for (const part of item.content) {
+          if (part?.type === "output_text" && typeof part.text === "string") text += part.text;
+        }
+      }
+      return text;
+    },
   }),
 });
 
