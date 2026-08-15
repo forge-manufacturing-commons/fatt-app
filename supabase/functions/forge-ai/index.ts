@@ -89,7 +89,28 @@ async function callProvider(prompt: string) {
     });
 
     if (!res.ok) {
-      return { ok: false, code: "PROVIDER_ERROR", reason: `provider returned status ${res.status}` };
+      // STATUS, PLUS THE PROVIDER'S OWN ERROR CODE — and nothing else.
+      //
+      // Reporting the bare status proved to be too little. A 429 can mean "slow
+      // down" or "this account has no credit", and those require opposite responses
+      // from the operator; a 400 can mean a model name that does not exist.
+      // Diagnosing that from outside the function was impossible, so the short,
+      // enum-like `type` and `code` fields are now surfaced.
+      //
+      // WHAT IS STILL NEVER REPEATED: the response body, any message text, and
+      // anything that could echo the request or the credential. Both fields are
+      // length-capped and a parse failure is swallowed — a diagnostic must not
+      // become a leak, and must not turn a provider error into a function crash.
+      let detail = "";
+      try {
+        const e = (await res.json())?.error;
+        const bits = [e?.type, e?.code]
+          .filter((v) => typeof v === "string")
+          .map((v) => v.slice(0, 40));
+        if (bits.length) detail = ` (${[...new Set(bits)].join(" / ")})`;
+      } catch { /* no parsable error envelope — the status alone stands */ }
+      return { ok: false, code: "PROVIDER_ERROR",
+               reason: `provider returned status ${res.status}${detail}` };
     }
 
     const body = await res.json();
