@@ -26,7 +26,29 @@ import { COMPONENT_CLASS, SEED_ORGANISATIONS } from "../network.js";
 import { PILOT_ORGANISATIONS } from "../pilot.js";
 import { MISSIONS } from "../missions.js";
 
-/** Canon vocabulary that must survive translation verbatim. */
+/**
+ * Canon vocabulary that must survive translation verbatim.
+ *
+ * HUB IDS WERE MISSING, AND THAT WAS A REAL HOLE. Found while building the Urhobo
+ * pack: `findProtectedTerms("warri")` returned nothing. Hub names are lowercase, so
+ * the `identifier` shape pattern — which requires an uppercase run — never caught
+ * them either. A hub is a Canon value that appears in almost every manufacturing
+ * answer ("Ana yin aikin CHS-014 a warri"), and nothing was protecting it during
+ * translation; only the response planner's own `verifyPreserved` call happened to
+ * cover it, because it passes spoken values in explicitly.
+ *
+ * DERIVED FROM THE ORGANISATION REGISTRIES THIS FILE ALREADY IMPORTS, not from
+ * STUDIO_HUBS. My first attempt imported STUDIO_HUBS directly and tripped a Phase 2
+ * guard — "Studio does not import ForgeStudio.js, the frozen token layer is
+ * untouched" — which fired exactly as intended. Reading ids out of that layer is
+ * harmless in itself, but the guard was written deliberately and the right response
+ * to a guard is to satisfy it, not to loosen it.
+ *
+ * Every hub an organisation operates is enumerated here, which is precisely the set
+ * that can appear on a manufacturing event: `hub` is written by an emitter from the
+ * acting organisation's own hubs. A hub in STUDIO_HUBS that no organisation operates
+ * cannot reach the Canon, so it does not need protecting.
+ */
 export const CANON_TERMS = Object.freeze([
   ...Object.values(EVENT_TYPES).flatMap((d) => Object.values(d)),
   ...componentState.states(),
@@ -35,6 +57,7 @@ export const CANON_TERMS = Object.freeze([
   ...Object.values(COMPONENT_CLASS),
   ...[...PILOT_ORGANISATIONS, ...SEED_ORGANISATIONS].map((o) => o.id),
   ...MISSIONS.flatMap((m) => [m.id, m.specification].filter(Boolean)),
+  ...[...PILOT_ORGANISATIONS, ...SEED_ORGANISATIONS].flatMap((o) => o.hubs ?? []),
 ]);
 
 /**
