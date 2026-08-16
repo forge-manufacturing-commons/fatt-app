@@ -113,6 +113,12 @@ const REALISERS = Object.freeze({
     // PROVIDER FAILURE (§14). States what did not happen AND that the Canon is
     // untouched — a participant's first worry when a system errors mid-task is
     // whether it half-recorded something.
+    whyState: (c, s) => `${c} yana cikin matakin ${s} saboda abin da aka rubuta a Forge Canon.`,
+    whyBlocked: (c, w) => `Forge Canon ba ta da rikodin ${w} na ${c}, don haka aikin bai ci gaba ba.`,
+    gapsHeld: (c, list) => `Abin da Forge Canon ta rubuta game da ${c}: ${list}.`,
+    gapsMissing: (c, list) => `Abin da ba a rubuta ba tukuna: ${list}.`,
+    canonYoung: (c) => `Ba ni da isasshen bayanin Forge Canon game da ${c} tukuna.`,
+    needSubject: () => `Wane component kake nufi? Ka ba ni sunansa, sannan zan duba Forge Canon.`,
     providerDown: () => "Forge AI ba zai iya kammala amsar a yanzu ba. Ba a canza Forge Canon ba.",
   },
   en: {
@@ -142,6 +148,12 @@ const REALISERS = Object.freeze({
     cannotAct: () => `I can prepare the record, but ForgeOS requires an authorised engineering identity before it can be recorded. I cannot grant myself that authority.`,
     prepared: (type, c) => `I have prepared a draft ${type} for ${c}.`,
     sourceLabel: () => "CANON SOURCE · Forge Canon",
+    whyState: (c, s) => `${c} is in ${s} because that is what Forge Canon records.`,
+    whyBlocked: (c, w) => `Forge Canon holds no recorded ${w} for ${c}, so the work has not moved on.`,
+    gapsHeld: (c, list) => `What Forge Canon records about ${c}: ${list}.`,
+    gapsMissing: (c, list) => `What is not recorded yet: ${list}.`,
+    canonYoung: (c) => `I do not have enough recorded Forge Canon information about ${c} yet.`,
+    needSubject: () => `Which component do you mean? Name it and I will check Forge Canon.`,
     providerDown: () => "Forge AI is temporarily unable to complete the response. The Canon has not been changed.",
   },
   yo: {
@@ -171,6 +183,12 @@ const REALISERS = Object.freeze({
     cannotAct: () => `Mo lè pèsè àkọsílẹ̀, ṣùgbọ́n ForgeOS béèrè ìdánimọ̀ onímọ̀ ẹ̀rọ tí a fọwọ́ sí kí ó tó kọ ọ́.`,
     prepared: (type, c) => `Mo pèsè àkọsílẹ̀ ${type} fún ${c}.`,
     sourceLabel: () => "ÌPÍLẸ̀ · Forge Canon",
+    whyState: (c, s) => `${c} wà ní ${s} nítorí ìyẹn ni Forge Canon kọ sílẹ̀.`,
+    whyBlocked: (c, w) => `Forge Canon kò ní àkọsílẹ̀ ${w} fún ${c}, nítorí náà iṣẹ́ kò tẹ̀síwájú.`,
+    gapsHeld: (c, list) => `Ohun tí Forge Canon kọ nípa ${c}: ${list}.`,
+    gapsMissing: (c, list) => `Ohun tí a kò kọ sílẹ̀: ${list}.`,
+    canonYoung: (c) => `Mi kò ní àkọsílẹ̀ Forge Canon tó nípa ${c} síbẹ̀.`,
+    needSubject: () => `Ohun èlò wo ni ẹ ń sọ? Sọ orúkọ rẹ̀, màá wo Forge Canon.`,
     providerDown: () => "Forge AI kò lè parí ìdáhùn báyìí. A kò yí Forge Canon padà.",
   },
   ig: {
@@ -200,6 +218,12 @@ const REALISERS = Object.freeze({
     cannotAct: () => `Enwere m ike ịkwadebe ndekọ ahụ, mana ForgeOS chọrọ njirimara injinia akwadoro tupu e dekọọ ya.`,
     prepared: (type, c) => `Akwadebere m ndekọ ${type} maka ${c}.`,
     sourceLabel: () => "ISI MMALITE · Forge Canon",
+    whyState: (c, s) => `${c} nọ na ${s} n\u2019ihi na nke ahụ bụ ihe Forge Canon dekọrọ.`,
+    whyBlocked: (c, w) => `Forge Canon enweghị ndekọ ${w} maka ${c}, ya mere ọrụ agaghị n\u2019ihu.`,
+    gapsHeld: (c, list) => `Ihe Forge Canon dekọrọ gbasara ${c}: ${list}.`,
+    gapsMissing: (c, list) => `Ihe a na-edekọbeghị: ${list}.`,
+    canonYoung: (c) => `Enweghị m ozi Forge Canon zuru ezu gbasara ${c} ugbu a.`,
+    needSubject: () => `Kedu akụrụngwa ị na-ekwu? Kpọọ aha ya, m ga-elele Forge Canon.`,
     providerDown: () => "Forge AI enweghị ike imecha nzaghachi ugbu a. Agbanweghị Forge Canon.",
   },
   pcm: {
@@ -229,6 +253,12 @@ const REALISERS = Object.freeze({
     cannotAct: () => `I fit prepare the record, but ForgeOS need authorised engineering identity before e go enter.`,
     prepared: (type, c) => `I don prepare draft ${type} for ${c}.`,
     sourceLabel: () => "CANON SOURCE · Forge Canon",
+    whyState: (c, s) => `${c} dey ${s} because na wetin Forge Canon record.`,
+    whyBlocked: (c, w) => `Forge Canon no get any recorded ${w} for ${c}, so the work no move forward.`,
+    gapsHeld: (c, list) => `Wetin Forge Canon record about ${c}: ${list}.`,
+    gapsMissing: (c, list) => `Wetin dem no record yet: ${list}.`,
+    canonYoung: (c) => `I no get enough Forge Canon information about ${c} yet.`,
+    needSubject: () => `Which component you dey talk about? Give me the name, I go check Forge Canon.`,
     providerDown: () => "Forge AI no fit finish the answer now. Forge Canon no change at all.",
   },
 });
@@ -444,6 +474,58 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
         const d = (grounded?.derived ?? [])[0];
         if (d && isBinding(d)) add(r.remaining(Math.max(0, m.target - m.accepted)), SEGMENT.CANON);
       }
+      break;
+    }
+
+    // (Phase 3) EXPLANATION — three claim classes in one answer, never merged.
+    //
+    // A participant asking "why?" wants the recorded state, the thing the Canon does
+    // NOT hold that is keeping it there, and what could be done. Those are CANON,
+    // CANON_ABSENCE and RECOMMENDATION respectively, and the whole value of the
+    // answer depends on the reader being able to tell them apart.
+    case INTENT.COMPONENT_WHY: {
+      // §18 — ASK, DO NOT GUESS. A bare "Why?" with no subject in the conversation is
+      // a question Forge cannot answer yet, and "no record of anything called —" is a
+      // non-sentence. Asking which component is the honest reply.
+      if (!id) { add(r.needSubject(), SEGMENT.NOT_UNDERSTOOD); break; }
+      if (!comp) { add(r.unknownComponent(id), SEGMENT.CANON_ABSENCE); break; }
+      say(`components.${id}.state`, () => r.whyState(id, comp.state), id, comp.state);
+
+      // THE ABSENCE IS NAMED, NOT GUESSED. Only a lifecycle stage the Canon can be
+      // asked about is reported, and only when it is genuinely unrecorded.
+      const passed = (comp.history ?? []).some((h) => h.transition === "pass");
+      if (!passed) add(r.whyBlocked(id, "inspection"), SEGMENT.CANON_ABSENCE);
+
+      const next = (grounded?.recommendations ?? [])[0];
+      if (next?.text) add(r.nextActions(id, next.text), SEGMENT.RECOMMENDATION);
+      break;
+    }
+
+    // WHAT THE CANON DOES NOT HOLD. Absence as the answer, itemised so a young Canon
+    // is useful rather than embarrassing (§19).
+    case INTENT.CANON_GAPS: {
+      if (!id) { add(r.needSubject(), SEGMENT.NOT_UNDERSTOOD); break; }
+      if (!comp) { add(r.unknownComponent(id), SEGMENT.CANON_ABSENCE); break; }
+      const held = [];
+      const missing = [];
+      const note = (label, present) => (present ? held : missing).push(label);
+      note("state", Boolean(comp.state));
+      note("organisation", Boolean(comp.organisation));
+      note("hub", Boolean(comp.hub));
+      note("mission", Boolean(comp.mission));
+      note("specification", Boolean(comp.specification));
+      note("history", (comp.history ?? []).length > 0);
+      note("contributions", (comp.contributions ?? []).length > 0);
+      note("directives", (comp.directives ?? []).length > 0);
+
+      if (held.length) {
+        mention(id);
+        sources.push(`components.${id}.state`);
+        add(r.gapsHeld(id, held.join(", ")), SEGMENT.CANON);
+      } else {
+        add(r.canonYoung(id), SEGMENT.CANON_ABSENCE);
+      }
+      if (missing.length) add(r.gapsMissing(id, missing.join(", ")), SEGMENT.CANON_ABSENCE);
       break;
     }
 

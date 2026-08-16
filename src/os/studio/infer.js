@@ -193,18 +193,44 @@ export const deterministicAdapter = ({ intent, canon }) => {
         ? [canonFact(String(comp.history.length), foldSource(`components.${id}.history`))]
         : [unknown(`${id} history`, "no transition is recorded for this component")];
 
+    // (Phase 3) The explanation intent needs the same facts as a state question PLUS
+    // the lifecycle's own opinion of what may happen next. It asserts nothing the
+    // fold does not hold; the "why" is assembled by the planner from these claims.
+    case INTENT.COMPONENT_WHY: {
+      const next = componentState.transitions(comp.state);
+      return [
+        canonFact(`${id} ${comp.state}`, foldSource(`components.${id}.state`)),
+        interpretation(`${comp.state} — ${componentState.means(comp.state) ?? ""}`),
+        next.length
+          ? recommendation(next.join(" | "))
+          : unknown(`${id} next`, `the lifecycle permits no transition from "${comp.state}"`),
+      ];
+    }
+
+    // What the Canon holds is a fact; what it lacks is an absence. Both come from the
+    // same read, so the planner can itemise them without a second query.
+    case INTENT.CANON_GAPS:
+      return [
+        canonFact(`${id} ${comp.state}`, foldSource(`components.${id}.state`)),
+      ];
+
     case INTENT.COMPONENT_WHO:
-      // DELIBERATELY DOES NOT CITE `comp.hub`. A hub is where the work happened,
-      // not who answers for it. Returning the hub to a "who is responsible?"
-      // question would silently reintroduce the confusion E9 was built to remove
-      // — and would invent a workshop-head authority the Canon does not hold.
+      // RESPONSIBILITY ONLY. Two things are deliberately absent.
+      //
+      // `comp.hub`, because a hub is where the work happened and not who answers for
+      // it — citing it here would reintroduce the confusion E9 removed and imply a
+      // workshop-head authority the Canon does not hold.
+      //
+      // And `contributions` and `history`, which this branch USED TO RETURN. That was
+      // a §7 violation found by the context-minimisation test: a "who is responsible?"
+      // question was answered with participation counts and transition counts as
+      // well, which collapses three distinct relationships into one reply AND widened
+      // the context sent to the model. Participation and performance have their own
+      // intents; a participant who wants them can ask for them.
       return [
         comp.organisation
           ? canonFact(`${comp.organisation}`, foldSource(`components.${id}.organisation`))
           : unknown("responsibility", "no organisation has claimed responsibility"),
-        canonFact(String((comp.contributions ?? []).length),
-                  foldSource(`components.${id}.contributions`)),
-        canonFact(String((comp.history ?? []).length), foldSource(`components.${id}.history`)),
       ];
 
     case INTENT.INSPECTION_STATUS: {

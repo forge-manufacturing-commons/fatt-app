@@ -109,6 +109,27 @@ const STARTERS = {
   urh: ["{C}"],
 };
 
+/**
+ * Starters for a Canon with no components yet (§21).
+ *
+ * Deliberately entity-free. The temptation with an empty Canon is to suggest a
+ * plausible-looking part id so the screen has something to show — which is exactly
+ * the invented-subject failure the browser proof caught in Phase 2.
+ */
+const EMPTY_STARTERS = {
+  en: ["What information is currently recorded?",
+       "What can Forge help me with?",
+       "How does ForgeOS decide what is true?"],
+  ha: ["Wane bayani ne aka rubuta yanzu?",
+       "A cikin me Forge zai taimaka mini?",
+       "Yaya ForgeOS ke tabbatar da gaskiya?"],
+  yo: ["Kí ni a kọ sílẹ̀ lọ́wọ́lọ́wọ́?", "Kí ni Forge lè ràn mí lọ́wọ́?"],
+  ig: ["Gịnị ka e dekọrọ ugbu a?", "Gịnị ka Forge nwere ike inyere m aka?"],
+  pcm: ["Wetin dey recorded now?", "Wetin Forge fit help me with?"],
+  fr: ["Quelles informations sont enregistrées ?"],
+  urh: ["What information is currently recorded?"],
+};
+
 function Chip({ children, on, onClick, title, tone = TEAL }) {
   return (
     <button type="button" onClick={onClick} title={title}
@@ -222,9 +243,12 @@ function Turn({ turn }) {
             <div style={{ fontFamily: UI, fontSize: 12, color: IVORY, opacity: 0.9 }}>
               {r.provider.notice}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, marginTop: 5 }}>
-              {r.provider.status}{r.provider.reason ? ` · ${r.provider.reason}` : ""}
-            </div>
+            {/* §14 — PROVIDER_TIMEOUT IS NOT A SENTENCE.
+                The raw status and reason used to be printed here. "REFUSED · provider
+                timed out" is a developer's diagnostic and it made a healthy Canon
+                answer look like a broken system. The human sentence above is the whole
+                message now; the code is kept on the result object for the console and
+                for tests, where it belongs. */}
           </div>
         )}
 
@@ -298,7 +322,6 @@ export default function ForgeStudioRoom() {
 
   // ONE LANGUAGE STATE, OWNED BY FORGEOS. Read, never written from here.
   const { lang } = useLanguage();
-  const [mode, setMode] = useState(MODE.ASK);
   const [draftText, setDraftText] = useState("");
   const [turns, setTurns] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -332,10 +355,13 @@ export default function ForgeStudioRoom() {
       // the network is down, or the model misbehaves — the Canon answer is already
       // computed and stands unchanged. The model can only ever add phrasing to
       // facts that already grounded.
+      // MODE INFERRED FROM THE MESSAGE (§3). A verb that asks Forge to draft an
+      // event means PREPARE; anything else is a question. The participant never picks.
+      const wantsDraft = /\b(prepare|draft|shirya|kwadebe|pèsè)\b/i.test(message);
       const result = await askForge({
         message, view, log,
         preferredLanguage: lang,
-        mode,
+        mode: wantsDraft ? MODE.PREPARE : MODE.ASK,
         session,
         adapter: providerAdapter({ base: deterministicAdapter }),
       });
@@ -353,9 +379,14 @@ export default function ForgeStudioRoom() {
   // A suggestion is only offered if the Canon can be asked it. With no components
   // recorded there are no starters at all, and the empty state says so instead.
   const subject = components[0] ?? null;
+  // §21 — WHEN THE CANON IS EMPTY, OFFER GENERIC STARTERS RATHER THAN NONE.
+  // Previously an empty Canon produced no suggestions at all, which left a new
+  // participant staring at a blank box. These ask about ForgeOS itself and about
+  // what IS recorded, so they are answerable with no components at all — and they
+  // invent no entity, which is the rule that matters.
   const starters = subject
     ? (STARTERS[lang] ?? STARTERS.en).map((q) => q.replaceAll("{C}", subject))
-    : [];
+    : (EMPTY_STARTERS[lang] ?? EMPTY_STARTERS.en);
 
   return (
     <RoomShell
@@ -398,30 +429,34 @@ export default function ForgeStudioRoom() {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 16 }}>
-            <div>
-              <Label>Mode</Label>
-              <div style={{ display: "flex", gap: 6 }}>
-                {[MODE.ASK, MODE.EXPLAIN, MODE.PREPARE].map((m) => (
-                  <Chip key={m} on={m === mode} onClick={() => setMode(m)}
-                    tone={m === MODE.PREPARE ? AMBER : TEAL}
-                    title={m === MODE.PREPARE
-                      ? "Draft a canonical event. It is never published and never authorised."
-                      : m === MODE.EXPLAIN ? "Answer, plus what the lifecycle means."
-                      : "Read Forge Canon and answer."}>
-                    {m}
-                  </Chip>
-                ))}
-              </div>
-              {mode === MODE.PREPARE && (
-                <div style={{ fontFamily: UI, fontSize: 10.5, color: AMBER, marginTop: 6,
-                  maxWidth: 300 }}>
-                  PREPARE builds a draft event object only. ForgeOS still requires an
-                  authorised identity and all four gates to record it.
-                </div>
-              )}
+          {/* NO MODE SELECTOR (§3). ONE CONVERSATION.
+              ASK / EXPLAIN / PREPARE were three chips a participant had to understand
+              and choose between before they could ask anything — a developer's mental
+              model pushed onto the person using it. The modes still exist inside
+              askForge, but the MODE IS NOW INFERRED FROM WHAT THEY SAY: "prepare an
+              inspection pass" prepares, everything else asks. Nobody should have to
+              flip a switch to be understood. */}
+
+          {/* CLEAR CONVERSATION (§20). Session memory only, so clearing is a local
+              act — and the label says so, because a participant has no way to know
+              that discarding a chat does not discard manufacturing history. */}
+          {turns.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center",
+              gap: 10, marginBottom: 10 }}>
+              <span style={{ fontFamily: UI, fontSize: 10.5, color: MUTED }}>
+                {lang === "ha"
+                  ? "Share tattaunawa ba ya canza Forge Canon."
+                  : "Clearing the conversation does not change Forge Canon."}
+              </span>
+              <button type="button" onClick={() => setTurns([])}
+                style={{ fontFamily: UI, fontWeight: 700, fontSize: 9.5, letterSpacing: "0.12em",
+                  textTransform: "uppercase", padding: "7px 11px", cursor: "pointer",
+                  background: "transparent", color: MUTED,
+                  border: `1px solid ${BORDER}` }}>
+                {lang === "ha" ? "Share" : "Clear"}
+              </button>
             </div>
-          </div>
+          )}
 
           {/* transcript */}
           <div style={{ minHeight: 120, marginBottom: 14 }}>
@@ -450,15 +485,25 @@ export default function ForgeStudioRoom() {
           {/* ---------- INPUT SEAM ---------- */}
           <form onSubmit={(e) => { e.preventDefault(); submit(draftText); }}
             style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-            <input
+            {/* MULTILINE, WITH ENTER TO SEND (§20). A textarea rather than an input
+                because a participant describing a situation writes more than one line,
+                and a single-line box quietly teaches them to write less. Enter sends,
+                Shift+Enter makes a new line — the convention people already know from
+                every chat application, so nothing has to be explained. */}
+            <textarea
               value={draftText}
               onChange={(e) => setDraftText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(draftText); }
+              }}
+              rows={Math.min(6, Math.max(1, draftText.split("\n").length))}
               placeholder={lang === "ha"
-                ? "Yi tambaya game da wani component…"
-                : "Ask about a component…"}
+                ? "Yi tambaya game da aikinka…"
+                : "Ask Forge anything about your work…"}
               aria-label="Ask Forge Canon"
               style={{ flex: 1, boxSizing: "border-box", fontFamily: UI, fontSize: 14,
-                padding: "13px 15px", background: BLACK, color: IVORY,
+                padding: "13px 15px", background: BLACK, color: IVORY, resize: "vertical",
+                minHeight: 46, lineHeight: 1.5,
                 border: `1px solid ${BORDER}`, outline: "none" }}
             />
             {/* VOICE SEAM. Disabled, and honest about why. A microphone would call

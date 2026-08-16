@@ -62,6 +62,14 @@ export const INTENT = Object.freeze({
   COMPONENT_CONTRIBUTIONS: "component.contributions",
   COMPONENT_DIRECTIVES:    "component.directives",
   COMPONENT_HISTORY:       "component.history",
+  // (Phase 3) EXPLANATION. "Why is it still in manufacturing?" is the question a
+  // participant actually asks, and it is not a state lookup: the answer is a
+  // recorded fact PLUS what the Canon does not hold PLUS what the lifecycle permits
+  // next. Three different claim classes in one reply, which is why it needs its own
+  // intent rather than being folded into component.state.
+  COMPONENT_WHY:           "component.status_explanation",
+  // What the Canon does NOT hold about a subject. Absence as a first-class answer.
+  CANON_GAPS:              "canon.gaps",
   ACKNOWLEDGEMENT_STATUS:  "acknowledgement.status",
   INSPECTION_STATUS:       "inspection.status",
   SPECIFICATION_EXPLAIN:   "specification.explain",
@@ -107,7 +115,7 @@ const PHRASES = Object.freeze({
     // of the same question and must land on the same intent.
     ha: ["menene matsayin", "menene matsayi", "matsayin", "matsayi", "menene state",
          "state ɗin", "state din", "yana ina", "halin yanzu", "yaya", "ina", "a ina",
-         "me ya sa", "wane matakin", "wane mataki"],
+         "wane matakin", "wane mataki"],
     yo: ["ipò", "ipo", "báwo", "bawo", "níbo", "nibo", "kí ni ipò"],
     ig: ["kedu", "ebee", "ọnọdụ", "onodu", "kedu ọnọdụ"],
     pcm: ["how far", "wetin dey happen", "where"],
@@ -179,6 +187,27 @@ const PHRASES = Object.freeze({
     ig: ["a nabatara iwu", "ha nabatara"],
     pcm: ["dem accept the order", "dem gree"],
     fr: ["l'instruction a-t-elle été acceptée"],
+  },
+  // WHY. Deliberately short markers, because a follow-up is usually one word. Weight
+  // is word count, so any fuller question outranks a bare "why".
+  [INTENT.COMPONENT_WHY]: {
+    en: ["why", "why is", "why not", "why still", "how come", "for what reason",
+         "what is blocking", "what's blocking", "why has not", "why hasn't"],
+    ha: ["me ya sa", "don me", "saboda me", "me ke hana"],
+    yo: ["kí ló dé", "kilode", "nítorí kí ni"],
+    ig: ["gịnị kpatara", "maka gịnị"],
+    pcm: ["why", "wetin cause am", "wetin dey block am"],
+    fr: ["pourquoi", "qu'est-ce qui bloque"],
+  },
+  [INTENT.CANON_GAPS]: {
+    en: ["what information is missing", "what is missing", "what's missing",
+         "what does forge canon not have", "what do you not know", "what don't you know",
+         "what is not recorded", "what is unknown"],
+    ha: ["me ya ɓace", "me ba a rubuta ba", "menene ba a sani ba"],
+    yo: ["kí ni kò sí", "kí ni ó ṣàìsí"],
+    ig: ["gịnị na-efu", "gịnị a na-amaghị"],
+    pcm: ["wetin dey miss", "wetin you no know"],
+    fr: ["quelles informations manquent", "qu'est-ce qui manque"],
   },
   [INTENT.COMPONENT_HISTORY]: {
     en: ["what happened to", "history of", "what has happened", "when was", "when did",

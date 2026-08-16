@@ -424,8 +424,18 @@ console.log("\nROOM_LOCAL — THE STUDIO CANNOT SEE ROOM-LOCAL DATA");
      /\{C\}/.test(roomSrc) && !/"Menene matsayin HUB-\d+\?"/.test(roomSrc));
   ok("R. and the template is filled from the fold's own components",
      /components\[0\]/.test(roomSrc) && /replaceAll\("\{C\}"/.test(roomSrc));
-  ok("R. with no components recorded, no question is suggested",
-     /subject\s*\?\s*\(STARTERS/.test(roomSrc) && /:\s*\[\]/.test(roomSrc));
+  // SUPERSEDED BY §21, AND UPDATED RATHER THAN DELETED. This asserted that an empty
+  // Canon produced NO starters. That was the Phase 2 answer to "never suggest a
+  // question about an entity the Canon does not hold", and it was too blunt: it left
+  // a new participant staring at an empty box. §21 asks for GENERIC starters instead.
+  //
+  // The property being defended is unchanged and re-asserted below: a suggestion may
+  // never name an entity. Generic starters ask about ForgeOS itself and about what is
+  // recorded, so they are answerable with an empty Canon and invent nothing.
+  ok("R. an empty Canon falls back to generic starters, not to an invented entity",
+     /subject\s*\?\s*\(STARTERS/.test(roomSrc) && /EMPTY_STARTERS\[lang\]/.test(roomSrc));
+  ok("R. and no generic starter names a component id",
+     !/EMPTY_STARTERS[\s\S]{0,900}(CHS|HUB|FTT)-\d/.test(roomSrc));
 
   // A room-local claim still cannot be promoted, even carrying a real path.
   const view = canon(pilotLog());
