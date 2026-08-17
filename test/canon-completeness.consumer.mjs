@@ -336,11 +336,26 @@ console.log("\nG — THE ADAPTER ANSWERS HUB AND REFUSES THE REST, HONESTLY");
   const run = async (text) => runInference({
     adapter: deterministicAdapter, intent: resolveIntent(text), view, log });
 
-  // "Where is HUB-014?" already resolved to COMPONENT_STATE — no new intent was
-  // needed for P0-2, only the fold field.
+  // SUPERSEDED AND CORRECTED BY THE CONVERSATIONAL PHASE, not weakened.
+  //
+  // This used to assert COMPONENT_STATE, because "where is" was mis-filed under the
+  // state markers and P0-2 needed only the fold field to be projected. That routing
+  // was wrong on its own terms and §6 makes it explicit: "Where is it?" is a LOCATION
+  // question. It now resolves to COMPONENT_HUB, which is the intent whose whole job is
+  // the hub — and the three assertions below are unchanged and still pass, which is
+  // the point. The guard was protecting the RIGHT PROPERTY (the hub comes back as a
+  // fact, cited to `components.X.hub`) through the WRONG INTENT.
+  //
+  // It also fixes an over-answer (§21): via COMPONENT_STATE this question returned
+  // state, responsibility, hub and mission — four facts for a one-field question.
   const where = resolveIntent(`Where is ${COMP}?`);
-  ok("G. a location question resolves to an existing intent",
-     where.type === INTENT.COMPONENT_STATE && where.component === COMP);
+  ok("G. a location question resolves to the location intent",
+     where.type === INTENT.COMPONENT_HUB && where.component === COMP);
+  // AND THE COMPANION: the old routing must not come back silently. A state question
+  // is still a state question, so the two are genuinely distinguished rather than one
+  // having simply swallowed the other.
+  ok("G. and a state question still resolves to the state intent",
+     resolveIntent(`What is the state of ${COMP}?`).type === INTENT.COMPONENT_STATE);
 
   const g1 = await run(`Where is ${COMP}?`);
   ok("G. the hub is returned as a Canon fact",

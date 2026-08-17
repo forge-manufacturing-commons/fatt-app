@@ -412,8 +412,25 @@ console.log("\nSEGMENTATION — §8 regression guard under a mixed live-shaped r
   const roomSrc = src("../src/rooms/ForgeStudioRoom.jsx");
   ok("SEG. the room labels a recommendation as not recorded in Forge Canon",
      /Recommendation · not recorded in Forge Canon/.test(roomSrc));
-  ok("SEG. the room only omits a label for the CANON kind",
-     /const isCanon = seg\.kind === "CANON"/.test(roomSrc) && /!isCanon && \(/.test(roomSrc));
+  // WIDENED FROM ONE UNLABELLED KIND TO TWO, AND THE PROPERTY IS UNCHANGED.
+  //
+  // This guarded the right thing — a segment that is NOT a recorded Canon fact must
+  // carry a marker saying what it is instead — by pinning the exact expression that
+  // decided it. The conversational phase added CLARIFY, which is the one other kind
+  // that must render unlabelled: "Which one do you mean — CHS-014 or HUB-002?" is an
+  // ordinary reply, and a badge above it would turn a normal question into a
+  // diagnostic, which is what §20 asks us to stop doing.
+  //
+  // So the guard now names BOTH kinds explicitly and — this is the part that matters —
+  // asserts that every OTHER kind still gets a label. Pinned to the property, not to
+  // an expression, so the next kind added cannot slip through unlabelled.
+  ok("SEG. the room omits a label for exactly the CANON and CLARIFY kinds",
+     /const plain = seg\.kind === "CANON" \|\| seg\.kind === "CLARIFY"/.test(roomSrc) &&
+     /!plain && \(/.test(roomSrc));
+  for (const labelled of ["RECOMMENDATION", "AUTHORITY", "PREPARED", "CANON_ABSENCE"]) {
+    ok(`SEG. and ${labelled} still carries a marker`,
+       new RegExp(`seg\\.kind === "${labelled}"`).test(roomSrc));
+  }
 }
 
 // ============================================================
@@ -436,9 +453,15 @@ console.log("\nPROVIDER FAILURE IS NEVER SILENTLY CONVERTED INTO AN ANSWER");
       adapter: providerAdapter({ base: deterministicAdapter,
                                  transport: async () => ({ ...res, claims: [] }) }),
     });
+    // The Hausa notice was rewritten for §12 (lead with what was lost, then hand over
+    // to the Canon). The diagnostic `reason` is asserted EXACTLY as before — that
+    // channel is unchanged — and the participant-facing sentence is asserted by
+    // property rather than by literal, which is what stopped this from being three
+    // failures for one wording change.
     ok(`FAIL-SAFE. ${name}: the failure is reported, not hidden`,
        r.provider.failed === true && r.provider.reason === res.reason &&
-       /Ba a canza Forge Canon ba/.test(r.provider.notice));
+       /Ba a canza kome ba/.test(r.provider.notice) &&
+       /Forge Canon/.test(r.provider.notice));
     ok(`FAIL-SAFE. ${name}: no answer is fabricated — every segment is CANON from the fold`,
        r.grounded.sound === true && r.segments.every((s) => s.kind === "CANON") &&
        r.sources.length >= 3);

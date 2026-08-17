@@ -28,11 +28,13 @@
 // ============================================================
 
 import { createCanonTools } from "./canonTools.js";
-import { resolveIntent, INTENT } from "./intent.js";
+import { INTENT } from "./intent.js";
 import { groundResponse, CLAIM, isBinding } from "./grounding.js";
 import { runInference, deterministicAdapter } from "./infer.js";
 import { planResponse, realiserFor } from "./respond.js";
 import { prepareDraft } from "./prepare.js";
+import { understand, UNDERSTOOD_BY } from "./understand.js";
+import { remember } from "./conversation.js";
 
 export const MODE = Object.freeze({
   ASK: "ASK",
@@ -66,7 +68,14 @@ function draftSentence(draft, language) {
  *                           Forge AI answers with NO provider attached.
  * @param session            prior turns, for resolving "the component we discussed".
  *                           Session memory only — it is not persisted and does not
- *                           outrank the Canon.
+ *                           outrank the Canon. Superseded by `conversation`, and
+ *                           still honoured so every existing caller keeps working.
+ * @param conversation       the richer memory from conversation.js, which knows how
+ *                           many subjects are in play and can therefore tell a
+ *                           carry-forward from an ambiguity.
+ * @param interpreter        optional model-backed understanding (understand.js).
+ *                           Absent means deterministic-only, which is the offline
+ *                           behaviour and fully supported rather than degraded.
  */
 export async function askForge({
   message,
@@ -76,21 +85,35 @@ export async function askForge({
   mode = MODE.ASK,
   adapter = deterministicAdapter,
   session = null,
+  conversation = null,
+  interpreter = null,
 } = {}) {
   const tools = createCanonTools(view, log);
-
-  let intent = resolveIntent(message, { preferredLanguage });
 
   // SESSION CONTINUITY, WITHOUT PRETENDING TO REMEMBER. "What about the one we
   // discussed?" names no component, so the last component of THIS session is
   // carried forward. It is conversational context and nothing more: it can only
   // ever supply an identifier to look up in the Canon, never a fact. If the
   // carried id is not in the Canon, the answer is still "no record of that".
-  let carried = null;
-  if (!intent.component && session?.lastComponent) {
-    carried = session.lastComponent;
-    intent = Object.freeze({ ...intent, component: carried, componentFromSession: true });
-  }
+  //
+  // A BARE `session.lastComponent` IS PROMOTED TO A ONE-TURN CONVERSATION rather than
+  // handled by a second code path. Every caller written against the old shape keeps
+  // working, and the ambiguity logic in conversation.js applies to both — which it
+  // could not if `session` were still resolved by its own `if`. One subject in play
+  // is exactly what a `lastComponent` describes, so the promotion is lossless.
+  const memory = conversation
+    ?? (session?.lastComponent
+          ? remember(null, { message: String(session.lastComponent), view,
+                             intent: { component: session.lastComponent } })
+          : null);
+
+  // UNDERSTANDING (§4). The stage this phase added: the Canon resolves the entity,
+  // the conversation resolves the reference, ambiguity becomes a question, and a
+  // model is consulted only where the deterministic read cannot answer at all.
+  let intent = await understand({
+    message, view, preferredLanguage, conversation: memory, interpreter,
+  });
+  const carried = intent.componentFromSession === true;
 
   // The participant's words travel with the intent so a provider adapter can send
   // them. They are DATA for the model, never an instruction to Forge — the intent
@@ -117,7 +140,15 @@ export async function askForge({
   // asked for lives in the VERB ("record the pass", "an amince") and the resolved
   // intent only carries the fact that something was requested. Without the text,
   // PREPARE could never name an event type and always returned an empty draft.
-  const draft = mode === MODE.PREPARE
+  //
+  // AND IT CANNOT FIRE WHILE FORGE IS STILL ASKING WHICH COMPONENT (§7). "Prepare
+  // the inspection pass" with two parts in play must produce a question, not a draft
+  // naming whichever one happened to sort first. A draft is not an event, but it is a
+  // document with a component id on it that a participant may act on — drafting
+  // against a guessed subject is exactly the confident-and-wrong outcome the
+  // clarification path exists to prevent.
+  const clarifying = (planned.clarifying ?? []).length > 0;
+  const draft = mode === MODE.PREPARE && !clarifying
     ? prepareDraft({ intent, view, language: planned.language, text: String(message ?? "") })
     : null;
 
@@ -167,7 +198,22 @@ export async function askForge({
       subject: intent.subject ?? null,
       confidence: intent.confidence,
       fromSession: Boolean(carried),
+      // HOW the sentence was understood: the phrase table, the model, or neither
+      // because Forge is asking which component. Diagnostics and tests only — §20
+      // keeps it off the screen unless the participant opens the provenance panel.
+      understoodBy: intent.understoodBy ?? UNDERSTOOD_BY.DETERMINISTIC,
+      operation: intent.operation ?? null,
+      // Set when a model proposed something Forge refused: an operation it does not
+      // perform, or an entity the Canon does not hold. Recorded rather than hidden,
+      // because a proposal being rejected often is how you find out the understanding
+      // stage is misconfigured rather than merely unlucky.
+      proposalRejected: intent.proposalRejected ?? null,
     }),
+
+    // §7 — THE CANDIDATES FORGE IS ASKING BETWEEN. Empty on every ordinary turn. The
+    // answer above is already the question, in the participant's language; this is
+    // the machine-readable form, for the room's quick-reply buttons and for the suite.
+    clarifying: planned.clarifying ?? Object.freeze([]),
     detectedLanguage: intent.detectedLanguage ?? null,
     languageConfidence: intent.languageConfidence ?? 0,
     mixedLanguage: Boolean(intent.mixedLanguage),

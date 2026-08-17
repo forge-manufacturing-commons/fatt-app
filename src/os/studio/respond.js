@@ -68,6 +68,11 @@ export const SEGMENT = Object.freeze({
   AUTHORITY:    "AUTHORITY",     // what ForgeOS requires before acting
   PREPARED:     "PREPARED",      // a draft, never an event
   NOT_UNDERSTOOD:"NOT_UNDERSTOOD",
+  // (conversational phase §7) A QUESTION BACK. Not a failure and not an absence —
+  // Forge understood the sentence and needs one more word to act on it. It has its
+  // own kind so a surface can render it as a prompt rather than as an error, and so a
+  // test can prove the participant is never shown "AMBIGUOUS_ENTITY".
+  CLARIFY:      "CLARIFY",
 });
 
 /**
@@ -119,7 +124,16 @@ const REALISERS = Object.freeze({
     gapsMissing: (c, list) => `Abin da ba a rubuta ba tukuna: ${list}.`,
     canonYoung: (c) => `Ba ni da isasshen bayanin Forge Canon game da ${c} tukuna.`,
     needSubject: () => `Wane component kake nufi? Ka ba ni sunansa, sannan zan duba Forge Canon.`,
-    providerDown: () => "Forge AI ba zai iya kammala amsar a yanzu ba. Ba a canza Forge Canon ba.",
+    // §7 — A QUESTION BACK, IN THE PARTICIPANT'S OWN LANGUAGE. Two candidates are
+    // joined with the language's own "or"; more than two are listed. Never a code.
+    clarify: (list) => `Wanne kake nufi — ${list}?`,
+    or: " ko ",
+    // §12 — THE PREAMBLE COMES FIRST, THEN THE CANON ANSWER. It names what was lost
+    // (the conversational phrasing), what still holds (the recorded facts), and that
+    // nothing was written — which is a participant's first fear when a system errors
+    // in the middle of their work.
+    providerDown: () =>
+      "Ban iya kammala sashen tattaunawa na wannan a yanzu ba, amma ga abin da Forge Canon ta rubuta. Ba a canza kome ba.",
   },
   en: {
     state: (c, s) => `${c} is currently in ${s}.`,
@@ -154,7 +168,10 @@ const REALISERS = Object.freeze({
     gapsMissing: (c, list) => `What is not recorded yet: ${list}.`,
     canonYoung: (c) => `I do not have enough recorded Forge Canon information about ${c} yet.`,
     needSubject: () => `Which component do you mean? Name it and I will check Forge Canon.`,
-    providerDown: () => "Forge AI is temporarily unable to complete the response. The Canon has not been changed.",
+    clarify: (list) => `Which one do you mean — ${list}?`,
+    or: " or ",
+    providerDown: () =>
+      "I could not complete the conversational part of that just now, but here is what Forge Canon currently records. Nothing has been changed.",
   },
   yo: {
     state: (c, s) => `${c} wà ní ${s} lọ́wọ́lọ́wọ́.`,
@@ -189,7 +206,10 @@ const REALISERS = Object.freeze({
     gapsMissing: (c, list) => `Ohun tí a kò kọ sílẹ̀: ${list}.`,
     canonYoung: (c) => `Mi kò ní àkọsílẹ̀ Forge Canon tó nípa ${c} síbẹ̀.`,
     needSubject: () => `Ohun èlò wo ni ẹ ń sọ? Sọ orúkọ rẹ̀, màá wo Forge Canon.`,
-    providerDown: () => "Forge AI kò lè parí ìdáhùn báyìí. A kò yí Forge Canon padà.",
+    clarify: (list) => `Èwo ni ẹ ń sọ — ${list}?`,
+    or: " tàbí ",
+    providerDown: () =>
+      "Mi kò lè parí apá ìjíròrò náà báyìí, ṣùgbọ́n èyí ni ohun tí Forge Canon kọ sílẹ̀. A kò yí ohunkóhun padà.",
   },
   ig: {
     state: (c, s) => `${c} nọ na ${s} ugbu a.`,
@@ -224,7 +244,10 @@ const REALISERS = Object.freeze({
     gapsMissing: (c, list) => `Ihe a na-edekọbeghị: ${list}.`,
     canonYoung: (c) => `Enweghị m ozi Forge Canon zuru ezu gbasara ${c} ugbu a.`,
     needSubject: () => `Kedu akụrụngwa ị na-ekwu? Kpọọ aha ya, m ga-elele Forge Canon.`,
-    providerDown: () => "Forge AI enweghị ike imecha nzaghachi ugbu a. Agbanweghị Forge Canon.",
+    clarify: (list) => `Kedu nke ị na-ekwu — ${list}?`,
+    or: " ma ọ bụ ",
+    providerDown: () =>
+      "Enweghị m ike imecha akụkụ mkparịta ụka nke ahụ ugbu a, mana nke a bụ ihe Forge Canon dekọrọ. Agbanweghị ihe ọ bụla.",
   },
   pcm: {
     state: (c, s) => `${c} dey ${s} right now.`,
@@ -259,7 +282,10 @@ const REALISERS = Object.freeze({
     gapsMissing: (c, list) => `Wetin dem no record yet: ${list}.`,
     canonYoung: (c) => `I no get enough Forge Canon information about ${c} yet.`,
     needSubject: () => `Which component you dey talk about? Give me the name, I go check Forge Canon.`,
-    providerDown: () => "Forge AI no fit finish the answer now. Forge Canon no change at all.",
+    clarify: (list) => `Which one you mean — ${list}?`,
+    or: " abi ",
+    providerDown: () =>
+      "I no fit finish the conversation part of that one now, but see wetin Forge Canon record. Nothing change at all.",
   },
 });
 
@@ -349,6 +375,39 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
     add(fn(), SEGMENT.CANON);
     return true;
   };
+
+  // ============================================================
+  // §7 — AMBIGUITY IS A QUESTION, NOT A GUESS AND NOT AN ERROR.
+  //
+  // This returns FIRST, before any Canon reading is spoken, because there is nothing
+  // to speak: understanding stopped at "which one?" and no fold path was read. Three
+  // properties the tests turn on:
+  //
+  //   * the candidates are CANON IDS, interpolated verbatim and `mention`ed so the
+  //     preservation check covers them — a clarification that mangled "CHS-014" would
+  //     be a worse failure than the ambiguity it is resolving
+  //   * ZERO sources and ZERO facts, because nothing was proved
+  //   * the participant sees a sentence in their own language. `AMBIGUOUS_ENTITY`
+  //     stays on the result object for the provenance panel and the suite, and never
+  //     reaches a screen.
+  // ============================================================
+  const candidates = intent?.clarify?.candidates ?? [];
+  if (candidates.length) {
+    const list = candidates.length === 2
+      ? candidates.join(r.or ?? " or ")
+      : candidates.join(", ");
+    const text = r.clarify(list);
+    mention(...candidates);
+    return Object.freeze({
+      answer: text,
+      language, fellBack,
+      sources: Object.freeze([]),
+      segments: Object.freeze([Object.freeze({ text, kind: SEGMENT.CLARIFY })]),
+      presented: 1, refused: 0, canonLimitation: false,
+      clarifying: Object.freeze([...candidates]),
+      preserved: verifyPreserved(candidates.join(" "), text).preserved,
+    });
+  }
 
   // A Canon-limitation refusal takes the whole response. Mixing "here are three
   // facts" with "the Canon does not record what you asked" buries the refusal.
@@ -561,6 +620,7 @@ export function planResponse({ grounded, intent, view = {} } = {}) {
     segments: Object.freeze(segments),
     refused: 0,
     canonLimitation: false,
+    clarifying: Object.freeze([]),
     preserved,
   });
 }

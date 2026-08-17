@@ -109,17 +109,38 @@ const PHRASES = Object.freeze({
     fr: ["prochaine étape", "que faire", "que reste"],
   },
   [INTENT.COMPONENT_STATE]: {
-    en: ["what is happening", "what's happening", "current state", "status of", "where is",
+    // "where is" USED TO BE HERE AND IT WAS WRONG. §6 requires "Where is it?" to
+    // resolve to LOCATION, and this entry sent it to a state lookup instead — which
+    // then answered with state, responsibility, hub AND mission, over-answering a
+    // one-field question (§21) as well as answering the wrong one.
+    //
+    // The interesting part is that no test caught it and the escalation path could
+    // not either: the phrase table matched CONFIDENTLY, so `deterministicIsSufficient`
+    // returned true and the model was never consulted. This is precisely the failure
+    // mode named in understand.js's header, found by probing the conversation rather
+    // than by reading the table. A marker on the wrong intent is invisible to a suite
+    // that only asserts the intents it already believes in.
+    en: ["what is happening", "what's happening", "current state", "status of",
          "what state", "what is the state"],
     // "matsayi" is status/position. "menene state ɗin" is the code-switched form
     // of the same question and must land on the same intent.
+    // "status ɗin" completes a code-switch pattern that was already half-present:
+    // "state ɗin" was here and "status ɗin" was not, though a Nigerian engineer uses
+    // both interchangeably — §17's own example sentence is "Menene status ɗin CHS-014?".
+    // This is finishing an existing pattern, not starting a phrase dictionary.
     ha: ["menene matsayin", "menene matsayi", "matsayin", "matsayi", "menene state",
-         "state ɗin", "state din", "yana ina", "halin yanzu", "yaya", "ina", "a ina",
+         "state ɗin", "state din", "menene status", "status ɗin", "status din",
+         "yana ina", "halin yanzu", "yaya", "ina", "a ina",
          "wane matakin", "wane mataki"],
     yo: ["ipò", "ipo", "báwo", "bawo", "níbo", "nibo", "kí ni ipò"],
     ig: ["kedu", "ebee", "ọnọdụ", "onodu", "kedu ọnọdụ"],
-    pcm: ["how far", "wetin dey happen", "where"],
-    fr: ["état actuel", "où est", "quel est l'état"],
+    // A BARE "where" WAS HERE AND IT WAS A LANDMINE. As a single-word marker it
+    // matched ANY sentence containing "where", in any language, and it is the reason
+    // removing "where is" from the English list above did not fix "Where is it?" —
+    // the Pidgin entry kept catching it. A one-word marker for a word this common is
+    // not a Pidgin fact about the question; it is a wildcard.
+    pcm: ["how far", "wetin dey happen", "e dey which state"],
+    fr: ["état actuel", "quel est l'état"],
   },
   // RESPONSIBILITY. "alhaki" is the Hausa word for responsibility/accountability —
   // it is the discriminator that separates this from participation below.
@@ -136,14 +157,27 @@ const PHRASES = Object.freeze({
   // MANUFACTURING LOCATION. Distinct from state because the Canon holds it in a
   // different field, closed by Canon P0-2. "ake kera" = "is being manufactured".
   [INTENT.COMPONENT_HUB]: {
-    en: ["which hub", "what hub", "where was it made", "where is it made", "where is it being made",
+    // §6 REQUIRES "Where is it?" TO MEAN LOCATION, and the bare locative forms now
+    // live here where they belong. `hub` is MANUFACTURING LOCATION in the fold
+    // (Canon P0-2), so "where is X" is a one-field answer — which also fixes the §21
+    // over-answering this question used to produce by reaching COMPONENT_STATE and
+    // reciting state, responsibility, hub and mission together.
+    en: ["which hub", "what hub", "where is it", "where is", "where's it", "where's",
+         "where was it made", "where is it made", "where is it being made",
          "where was it manufactured", "where is it manufactured", "which workshop", "what workshop"],
+    // "Ina yake?" IS THE HAUSA FOR "Where is it?" and it belonged here from the
+    // start. It was missing, so §16's locative follow-up fell through to the state
+    // markers ("ina" alone means "where") and answered with four facts instead of the
+    // hub — the same mis-filing as the English "where is", found the same way. Note
+    // "yana ina" stays on COMPONENT_STATE: it is the copular "how is it", not a
+    // locative, which is why the two are separate entries rather than one.
     ha: ["a ina ake kera", "ina ake kera", "ake kera", "a ina aka kera", "aka kera",
-         "a wane hub", "wane hub", "a ina ake yin", "ina ake yin", "a wace bita"],
+         "a wane hub", "wane hub", "a ina ake yin", "ina ake yin", "a wace bita",
+         "ina yake", "a ina yake", "ina take", "a ina take"],
     yo: ["ibi tí wọ́n ń ṣe", "níbo ni wọ́n ń ṣe", "ilé iṣẹ́ wo"],
     ig: ["ebee ka a na-emere", "ebee ka e mere", "ụlọ ọrụ ole"],
-    pcm: ["which hub", "where dem make am", "where dem dey make am"],
-    fr: ["quel atelier", "où est-il fabriqué"],
+    pcm: ["which hub", "where dem make am", "where dem dey make am", "where e dey", "where am dey"],
+    fr: ["quel atelier", "où est-il fabriqué", "où est"],
   },
   [INTENT.COMPONENT_MISSION]: {
     en: ["what mission", "which mission", "part of what mission", "part of which mission",

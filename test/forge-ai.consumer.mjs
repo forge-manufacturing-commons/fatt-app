@@ -1141,8 +1141,23 @@ console.log("\nPROVIDER FAILURE — SAFE, VISIBLE, AND THE CANON IS UNTOUCHED");
     ok(`F. ${name}: the failure is VISIBLE, not swallowed`,
        out.provider.attempted === true && out.provider.failed === true &&
        out.provider.status === res.status);
-    ok(`F. ${name}: and the notice says the Canon has not been changed, in Hausa`,
-       /Ba a canza Forge Canon ba/.test(out.provider.notice));
+    // THE WORDING CHANGED IN THE CONVERSATIONAL PHASE; THE PROPERTY DID NOT.
+    //
+    // This asserted the literal string "Ba a canza Forge Canon ba". §12 requires the
+    // notice to LEAD with what was lost and then hand over to the Canon answer, so
+    // the Hausa sentence was rewritten and the literal stopped matching. Six failures
+    // that were all one wording change is exactly the shape of a guard pinned to a
+    // string rather than to a property, so it is now pinned to the property: the
+    // notice is in Hausa, it names Forge Canon, and it says nothing was changed.
+    ok(`F. ${name}: and the notice says nothing was changed, in Hausa`,
+       /Ba a canza kome ba/.test(out.provider.notice) &&
+       /Forge Canon/.test(out.provider.notice));
+    // §12 COMPANION — AND IT IS A SENTENCE, NOT A DIAGNOSTIC. The status and reason
+    // are still on the result object for this suite to read; they must not be in the
+    // words. "REFUSED · provider timed out" made a healthy Canon answer look broken.
+    ok(`F. ${name}: and carries no diagnostic code a participant would have to decode`,
+       !/PROVIDER_|TIMEOUT|MALFORMED|UNREACHABLE|REFUSED|NOT_CONFIGURED|\b(401|429|500)\b/
+          .test(out.provider.notice));
   }
 
   ok("F. the fold is byte-identical after every provider failure",
@@ -1415,9 +1430,18 @@ console.log("\n§14 EVERY PROVIDER FAILURE MODE THE BRIEF NAMES");
     ok(`§14. ${name}: no Canon answer is FABRICATED to cover the failure`,
        out.segments.every((s) => s.kind === "CANON") &&
        out.sources.length >= 3);
+    // Same wording change as section F. The reason is still carried EXACTLY — that is
+    // the diagnostic channel and it is unchanged — while the participant-facing
+    // sentence is the §12 one.
     ok(`§14. ${name}: the failure is reported honestly with its reason`,
        out.provider.failed === true && out.provider.reason === reason &&
-       /Ba a canza Forge Canon ba/.test(out.provider.notice));
+       /Ba a canza kome ba/.test(out.provider.notice));
+    // §12 — THE PREAMBLE LEADS WITH WHAT WAS LOST, THEN DEFERS TO THE CANON. A
+    // participant should learn that the conversational part failed and that the facts
+    // below are still Forge Canon's, in that order.
+    ok(`§14. ${name}: and the notice hands over to the Canon rather than just erroring`,
+       /Forge Canon/.test(out.provider.notice) &&
+       out.provider.reason !== out.provider.notice);
   }
 
   ok("§14. the whole fold is byte-identical after all eight failures",

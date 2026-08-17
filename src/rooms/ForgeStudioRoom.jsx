@@ -32,9 +32,12 @@ import { project } from "../os/projections.js";
 import { MISSIONS } from "../os/missions.js";
 import { RoomShell } from "../os/console.jsx";
 import { askForge, MODE } from "../os/studio/ask.js";
-import { providerAdapter, PROVIDER } from "../os/studio/provider.js";
+import { providerAdapter, providerInterpreter, PROVIDER } from "../os/studio/provider.js";
 import { deterministicAdapter } from "../os/studio/infer.js";
 import { REALISED_LANGUAGES } from "../os/studio/respond.js";
+// CONVERSATION MEMORY (conversational phase §6, §7). Session-only: it lives in React
+// state, it is never written to storage, and it carries IDENTIFIERS rather than facts.
+import { emptyConversation, remember } from "../os/studio/conversation.js";
 // THE GLOBAL LANGUAGE, AND THE ONLY LANGUAGE STATE THIS ROOM MAY READ.
 // Phase 2 gave this room its own `useState("ha")` and a seven-chip selector. That
 // was a SECOND language system: ForgeOS could be in Urhobo while Forge Studio sat
@@ -152,11 +155,13 @@ function Label({ children }) {
 }
 
 /** One exchange. The provenance is available but never forced on the reader. */
-function Turn({ turn }) {
+function Turn({ turn, onPick }) {
   const [open, setOpen] = useState(false);
   const r = turn.result;
   const refused = r?.canonLimitation;
   const unsound = r && r.grounded.sound === false;
+  // §7 — Forge is asking which component, not failing to answer one.
+  const asking = (r?.clarifying?.length ?? 0) > 0;
 
   return (
     <div style={{ marginBottom: 18 }}>
@@ -171,15 +176,33 @@ function Turn({ turn }) {
 
       {/* what Forge Canon answered */}
       <div style={{ background: SURFACE, clipPath: FORGE_CLIPS.panelTR,
-        borderLeft: `3px solid ${refused ? AMBER : unsound ? PINK : TEAL}`,
+        borderLeft: `3px solid ${asking ? TEAL : refused ? AMBER : unsound ? PINK : TEAL}`,
         padding: "13px 16px" }}>
+
+        {/* §12 — THE PROVIDER NOTICE COMES FIRST, THEN THE CANON ANSWER.
+            It used to sit below the answer, which meant a participant read four facts
+            and only then learned something had gone wrong. §12 asks for the opposite
+            order: say what could not be done, then hand over to what Forge Canon
+            records. The raw status and reason are still on the result object for the
+            console and the suite; the words here are a sentence. */}
+        {r?.provider?.failed && (
+          <div style={{ marginBottom: 11, padding: "9px 12px", background: BLACK,
+            boxShadow: `inset 0 0 0 1px ${AMBER}` }}>
+            <div style={{ fontFamily: UI, fontSize: 12.5, color: IVORY, opacity: 0.92,
+              lineHeight: 1.55 }}>
+              {r.provider.notice}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap",
           marginBottom: 9 }}>
+          {/* §7/§20 — A CLARIFYING QUESTION IS NOT AN ERROR AND MUST NOT WEAR AN
+              ERROR'S BADGE. Forge understood the sentence; it needs one more word. */}
           <span style={{ fontFamily: UI, fontWeight: 800, fontSize: 8.5, letterSpacing: "0.18em",
-            textTransform: "uppercase", background: refused ? AMBER : TEAL, color: BLACK,
-            padding: "2px 6px" }}>
-            {refused ? "Canon limitation" : "Forge Canon"}
+            textTransform: "uppercase", background: asking ? TEAL : refused ? AMBER : TEAL,
+            color: BLACK, padding: "2px 6px" }}>
+            {asking ? "Forge AI" : refused ? "Canon limitation" : "Forge Canon"}
           </span>
           {/* §17 — THE MACHINERY IS NOT THE PRODUCT.
               The canonical intent, the detected language and the mixed-language flag
@@ -202,6 +225,11 @@ function Turn({ turn }) {
             something ForgeOS RECORDED. Fusing them into one styled block gave the
             suggestion the Canon's authority. */}
         {(r?.segments?.length ? r.segments : [{ text: r?.answer, kind: "CANON" }]).map((seg, k) => {
+          // A CLARIFY segment is styled like an ordinary reply, not like a labelled
+          // exception. It is the one non-CANON kind that carries no marker line,
+          // because "Which one do you mean — CHS-014 or HUB-002?" explains itself and
+          // a badge above it would turn a normal question into a diagnostic (§20).
+          const plain = seg.kind === "CANON" || seg.kind === "CLARIFY";
           const isCanon = seg.kind === "CANON";
           const tone = seg.kind === "RECOMMENDATION" ? AMBER
                      : seg.kind === "AUTHORITY" ? PINK
@@ -209,7 +237,7 @@ function Turn({ turn }) {
                      : MUTED;
           return (
             <div key={k} style={{ marginBottom: 7 }}>
-              {!isCanon && (
+              {!plain && (
                 <div style={{ fontFamily: UI, fontWeight: 800, fontSize: 8, letterSpacing: "0.18em",
                   textTransform: "uppercase", color: tone, marginBottom: 3 }}>
                   {seg.kind === "RECOMMENDATION" ? "Recommendation · not recorded in Forge Canon"
@@ -220,37 +248,36 @@ function Turn({ turn }) {
                 </div>
               )}
               <div style={{ fontFamily: UI, fontSize: 14.5, lineHeight: 1.62,
-                color: isCanon ? IVORY : "rgba(245,241,233,.82)",
-                borderLeft: isCanon ? "none" : `2px solid ${tone}`,
-                paddingLeft: isCanon ? 0 : 9 }}>
+                color: plain ? IVORY : "rgba(245,241,233,.82)",
+                borderLeft: plain ? "none" : `2px solid ${tone}`,
+                paddingLeft: plain ? 0 : 9 }}>
                 {seg.text}
               </div>
             </div>
           );
         })}
 
-        {/* PROVIDER FAILURE, STATED (§14). The answer above is still correct — it
-            came from the Canon — but the participant is told that the model could
-            not be reached AND that nothing was recorded. Silence about a failure is
-            its own kind of dishonesty. */}
-        {r?.provider?.failed && (
-          <div style={{ marginTop: 10, padding: "9px 12px", background: BLACK,
-            boxShadow: `inset 0 0 0 1px ${AMBER}` }}>
-            <div style={{ fontFamily: UI, fontWeight: 800, fontSize: 8.5, letterSpacing: "0.16em",
-              textTransform: "uppercase", color: AMBER, marginBottom: 5 }}>
-              Inference unavailable · answered from Forge Canon
-            </div>
-            <div style={{ fontFamily: UI, fontSize: 12, color: IVORY, opacity: 0.9 }}>
-              {r.provider.notice}
-            </div>
-            {/* §14 — PROVIDER_TIMEOUT IS NOT A SENTENCE.
-                The raw status and reason used to be printed here. "REFUSED · provider
-                timed out" is a developer's diagnostic and it made a healthy Canon
-                answer look like a broken system. The human sentence above is the whole
-                message now; the code is kept on the result object for the console and
-                for tests, where it belongs. */}
+        {/* §7 — THE CLARIFICATION IS ANSWERABLE IN ONE TAP.
+            Forge asked which component; these are the candidates it is choosing
+            between, and they are Canon ids so tapping one cannot name a part that
+            does not exist. A participant is never required to use them — typing the
+            id, or anything else, works exactly the same. */}
+        {asking && (
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 10 }}>
+            {r.clarifying.map((id) => (
+              <button key={id} type="button" onClick={() => onPick?.(id)}
+                style={{ fontFamily: MONO, fontSize: 12, padding: "7px 12px",
+                  background: "transparent", color: TEAL, cursor: "pointer",
+                  border: `1px solid ${TEAL}` }}>
+                {id}
+              </button>
+            ))}
           </div>
         )}
+
+        {/* §14 — the provider notice is rendered ABOVE the answer now (see the top of
+            this panel), because §12 asks Forge to say what it could not do before
+            handing over to what the Canon records. */}
 
         {/* A DRAFT IS NOT A RECORD, and the screen has to say so louder than it
             shows the draft. */}
@@ -331,13 +358,18 @@ export default function ForgeStudioRoom() {
   // there is exactly one manufacturing truth and this is it.
   const view = useMemo(() => project(log, MISSIONS), [log]);
 
-  // SESSION MEMORY ONLY. It carries an identifier forward so "what about that
-  // one?" resolves, and it disappears on reload. Nothing here is persisted, and
-  // nothing here outranks the Canon.
-  const session = useMemo(() => ({
-    lastComponent: [...turns].reverse().find((t) => t.result?.intent?.component)
-      ?.result?.intent?.component ?? null,
-  }), [turns]);
+  // SESSION MEMORY ONLY, AND NOW A REAL CONVERSATION (§6, §7).
+  //
+  // This was a `useMemo` that reduced the transcript to a single `lastComponent`.
+  // That is enough to carry a subject forward and NOT enough to notice when two
+  // subjects are in play — so a bare "Where is it?" after a turn mentioning two parts
+  // silently picked one. conversation.js keeps every subject each turn named, which is
+  // what makes the §7 clarification possible at all.
+  //
+  // STILL NOT PERSISTED. React state, discarded on reload. §26 lists persistent
+  // conversation storage as a STOP condition and this phase has no authorisation for
+  // it, so there is no localStorage, no table and no cache here.
+  const [conversation, setConversation] = useState(emptyConversation);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [turns.length, busy]);
 
@@ -362,10 +394,18 @@ export default function ForgeStudioRoom() {
         message, view, log,
         preferredLanguage: lang,
         mode: wantsDraft ? MODE.PREPARE : MODE.ASK,
-        session,
+        conversation,
         adapter: providerAdapter({ base: deterministicAdapter }),
+        // UNDERSTANDING, THROUGH THE SAME EDGE FUNCTION AND THE SAME SECRET
+        // BOUNDARY (§4). Consulted only when the deterministic read cannot answer,
+        // so an ordinary question costs no extra call — and when the provider is
+        // absent or down, understanding falls back and the Canon answer still lands.
+        interpreter: providerInterpreter({ language: lang }),
       });
       setTurns((t) => [...t, { id: `${Date.now()}-${t.length}`, message, result }]);
+      // The subject is recorded AFTER the answer, from the intent Forge actually
+      // resolved — so a carried subject stays in play for the turn after next.
+      setConversation((c) => remember(c, { message, view, intent: result.intent }));
       // DELIBERATELY NOTHING HERE. Phase 2 wrote the detected language back into
       // room state, which meant typing one English sentence silently re-set the
       // participant's language. Detection informs THIS answer and nothing else;
@@ -448,7 +488,7 @@ export default function ForgeStudioRoom() {
                   ? "Share tattaunawa ba ya canza Forge Canon."
                   : "Clearing the conversation does not change Forge Canon."}
               </span>
-              <button type="button" onClick={() => setTurns([])}
+              <button type="button" onClick={() => { setTurns([]); setConversation(emptyConversation()); }}
                 style={{ fontFamily: UI, fontWeight: 700, fontSize: 9.5, letterSpacing: "0.12em",
                   textTransform: "uppercase", padding: "7px 11px", cursor: "pointer",
                   background: "transparent", color: MUTED,
@@ -474,7 +514,10 @@ export default function ForgeStudioRoom() {
                 </div>
               </div>
             )}
-            {turns.map((t) => <Turn key={t.id} turn={t} />)}
+            {/* `onPick` answers a clarifying question by sending the id straight back
+                through `submit` — the same one seam text and a future voice transcript
+                use. A tap is a message; it is not a second input path. */}
+            {turns.map((t) => <Turn key={t.id} turn={t} onPick={submit} />)}
             {busy && (
               <div style={{ fontFamily: UI, fontSize: 12, color: TEAL, letterSpacing: "0.1em",
                 textTransform: "uppercase" }}>Reading Forge Canon…</div>

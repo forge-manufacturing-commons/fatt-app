@@ -34,7 +34,7 @@ import { INTENT, resolveIntent } from "../src/os/studio/intent.js";
 import { askForge, MODE } from "../src/os/studio/ask.js";
 import { providerAdapter, PROVIDER, boundedContext } from "../src/os/studio/provider.js";
 import { deterministicAdapter } from "../src/os/studio/infer.js";
-import { REALISED_LANGUAGES } from "../src/os/studio/respond.js";
+import { REALISED_LANGUAGES, realiserFor } from "../src/os/studio/respond.js";
 import { stripComments } from "./lib/source.mjs";
 
 let pass = 0, fail = 0;
@@ -396,11 +396,22 @@ console.log("\nY–AD  PROVIDER");
                                  transport: async () => ({ ...res, claims: [] }) }) });
     ok(`${label}: the Canon answer still lands`,
        r.grounded.sound === true && r.answer.includes("manufacturing"));
+    // REWRITTEN FOR §12, WHICH ASKS FOR A SPECIFIC SHAPE OF SENTENCE.
+    //
+    // Phase 3's notice was "Forge AI is temporarily unable to complete the response.
+    // The Canon has not been changed." — a true statement that leads with the system's
+    // problem. §12 asks it to lead with what the participant lost and then hand over:
+    // "I could not complete the conversational part of that just now, but here is what
+    // Forge Canon currently records." So this now asserts the STRUCTURE §12 specifies
+    // rather than the old literal.
     ok(`${label}: the notice is a sentence, not a code`,
-       /temporarily unable/.test(r.provider.notice) &&
-       !/PROVIDER_|TIMEOUT|429|MALFORMED/.test(r.provider.notice));
-    ok(`${label}: and it states the Canon has not been changed`,
-       /Canon has not been changed/.test(r.provider.notice));
+       /could not complete/i.test(r.provider.notice) &&
+       !/PROVIDER_|TIMEOUT|429|MALFORMED|UNREACHABLE|NOT_CONFIGURED/.test(r.provider.notice));
+    ok(`${label}: and it hands over to Forge Canon rather than just erroring`,
+       /Forge Canon/.test(r.provider.notice) &&
+       /records/i.test(r.provider.notice));
+    ok(`${label}: and it states nothing was changed`,
+       /Nothing has been changed/i.test(r.provider.notice));
   }
 
   // §14 — THE RAW CODE MUST NOT BE RENDERED.
@@ -409,8 +420,25 @@ console.log("\nY–AD  PROVIDER");
      !/\{r\.provider\.status\}/.test(room));
   ok("§14. nor the raw reason", !/\{r\.provider\.reason/.test(room));
   ok("§14. it renders the human notice instead", /\{r\.provider\.notice\}/.test(room));
-  ok("§14. and still labels the answer as coming from Forge Canon",
-     /answered from Forge Canon/i.test(room));
+  // THE LABEL IS GONE AND THE PROPERTY IS STRONGER.
+  //
+  // Phase 3 rendered an uppercase strip — "Inference unavailable · answered from Forge
+  // Canon" — above the notice. §12 asks the notice ITSELF to say both of those things
+  // and to come FIRST, so the strip became a heading restating the sentence beneath
+  // it, and the sentence is the thing a participant actually reads. The strip was
+  // removed and the notice moved above the answer.
+  //
+  // So this now asserts ORDER, which the label version could not: the notice must be
+  // rendered before the segment map. That is the §12 requirement — say what could not
+  // be done, then hand over to what the Canon records — and it is checkable here
+  // because the room is one file read top to bottom.
+  ok("§14. the notice is rendered ABOVE the answer, as §12 requires",
+     room.indexOf("r.provider.notice") > 0 &&
+     room.indexOf("r?.segments?.length") > 0 &&
+     room.indexOf("r.provider.notice") < room.indexOf("r?.segments?.length"));
+  ok("§14. and the notice text itself names Forge Canon (asserted in respond.js)",
+     /Forge Canon/.test(realiserFor("en").r.providerDown()) &&
+     /could not complete/i.test(realiserFor("en").r.providerDown()));
 
   // AD — zero Canon mutations across every failure.
   ok("AD. the Canon is byte-identical after all provider failures",
@@ -475,8 +503,13 @@ console.log("\nAH–AN  UI");
      /Recommendation · not recorded in Forge Canon/.test(room));
   ok("AL. the prepared badge says not published and not authorised",
      /not published · not authorised/i.test(room));
-  ok("AM. the provider failure message is human",
-     /Inference unavailable/i.test(room) && !/\{r\.provider\.status\}/.test(room));
+  // AM — same change as §14 above: the uppercase "Inference unavailable" strip was
+  // removed because the notice sentence now carries the whole message (§12). What must
+  // remain true is that the room renders the SENTENCE and never the code.
+  ok("AM. the provider failure message is a human sentence, not a code",
+     /\{r\.provider\.notice\}/.test(room) &&
+     !/\{r\.provider\.status\}/.test(room) && !/\{r\.provider\.reason/.test(room) &&
+     !/PROVIDER_TIMEOUT|PROVIDER_MALFORMED/.test(room));
   ok("AN. the language is inherited from the global setting",
      /const \{ lang \} = useLanguage\(\)/.test(room) && /preferredLanguage: lang/.test(room));
 

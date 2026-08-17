@@ -35,6 +35,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   LIMITS, resolveProfile, validateAsk, validateModelOutput, buildPrompt,
+  validateInterpret, validateInterpretOutput, buildInterpretPrompt,
 } from "./contract.mjs";
 
 const CORS = {
@@ -63,7 +64,7 @@ const refuse = (reason: string, code: string, status = 200) =>
  * is where secrets usually leak. A provider error is reported by STATUS ONLY; the
  * body can contain the request back and is never repeated.
  */
-async function callProvider(prompt: string) {
+async function callProvider(prompt: string, maxTokens = 800) {
   const env = {
     FORGE_AI_PROVIDER: Deno.env.get("FORGE_AI_PROVIDER"),
     FORGE_AI_PROVIDER_KEY: Deno.env.get("FORGE_AI_PROVIDER_KEY"),
@@ -85,7 +86,7 @@ async function callProvider(prompt: string) {
         "content-type": "application/json",
         ...profile.headers({ key: env.FORGE_AI_PROVIDER_KEY }),
       },
-      body: JSON.stringify(profile.body({ model, prompt, maxTokens: 800 })),
+      body: JSON.stringify(profile.body({ model, prompt, maxTokens })),
     });
 
     if (!res.ok) {
@@ -152,6 +153,40 @@ Deno.serve(async (req: Request) => {
     body = await req.json();
   } catch {
     return refuse("body was not valid JSON", "BAD_REQUEST", 400);
+  }
+
+  // TWO OPERATIONS, ONE FUNCTION, SEPARATE CONTRACTS.
+  //
+  // `interpret` reads a sentence and proposes a request. `ask` answers a question
+  // from bounded Canon facts. They share the transport, the secret and the timeout,
+  // and share NOTHING else — different validator in, different validator out. An
+  // absent `op` is `ask`, so a client deployed before this operation existed keeps
+  // working with no change.
+  const op = (body as { op?: unknown })?.op;
+  if (op === "interpret") {
+    const asked = validateInterpret(body);
+    if (!asked.ok) return refuse(asked.reason, "BAD_REQUEST", 400);
+
+    // A SMALLER TOKEN BUDGET, because the reply is one short JSON object naming an
+    // operation and an identifier. This is not the 20-second timeout being changed —
+    // §26 forbids that and LIMITS.timeoutMs is untouched. It is the generation cap,
+    // and keeping it tight is what stops the understanding stage from doubling the
+    // cost and latency of every turn.
+    const provider = await callProvider(buildInterpretPrompt(asked.interpret), 120);
+    if (!provider.ok) return refuse(provider.reason, provider.code);
+
+    const shaped = validateInterpretOutput(provider.raw, asked.interpret);
+    if (!shaped.ok) return refuse(shaped.reason, "PROVIDER_MALFORMED");
+
+    // NO `answer` AND NO `claims`, deliberately, even as empty values. An
+    // interpretation asserts nothing about manufacturing, and a response shaped like
+    // an answer invites a client to treat it as one.
+    return json({
+      ok: true,
+      verified: false,
+      intent: shaped.value.intent,
+      entity: shaped.value.entity,
+    });
   }
 
   const checked = validateAsk(body);

@@ -34,6 +34,34 @@ export const LIMITS = Object.freeze({
 export const LANGUAGES = Object.freeze(["en", "ha", "yo", "ig", "pcm", "urh", "fr"]);
 
 /**
+ * The two operations this endpoint performs. (conversational phase, §9)
+ *
+ *   ask        the participant's question + bounded Canon facts -> claims + prose
+ *   interpret  the participant's SENTENCE -> a proposed { intent, entity }
+ *
+ * THEY ARE SEPARATE BECAUSE THEY CARRY DIFFERENT RISK AND DIFFERENT DATA.
+ *
+ * `ask` sends Canon VALUES and receives claims that must be re-resolved against the
+ * fold. `interpret` sends NO values at all — only the sentence, the operation names
+ * Forge performs, and the ids the Canon holds — and receives no claims, no sources
+ * and no facts. There is nothing in an interpret response that could be mistaken for
+ * a manufacturing truth, which is the entire reason understanding was given its own
+ * operation instead of being bolted onto the answer call as one more optional field.
+ *
+ * A body with no `op` is an `ask`, so every already-deployed client keeps working.
+ */
+export const OPERATIONS = Object.freeze(["ask", "interpret"]);
+
+/** Interpretation is a much smaller job than answering, and is budgeted as one. */
+export const INTERPRET_LIMITS = Object.freeze({
+  operations: 64,      // operation names the client may offer
+  entities: 40,        // Canon ids the client may offer for resolution
+  recent: 6,           // prior participant messages, for follow-up interpretation
+  entity: 64,          // characters of a proposed entity
+  operation: 64,       // characters of a proposed operation name
+});
+
+/**
  * The classes the client's grounding layer knows.
  *
  * A class outside this set is a MALFORMED RESPONSE, not a new kind of truth. Note
@@ -313,6 +341,183 @@ export function validateAsk(body) {
   };
 }
 
+// ---------- interpret: request validation ----------
+
+/**
+ * Validate an interpret request.
+ *
+ * Returns a NORMALISED object, for the same reason `validateAsk` does: an unknown
+ * property cannot survive into the prompt, so a caller cannot smuggle an instruction
+ * through a field this function never read.
+ *
+ * WHAT IS REFUSED OUTRIGHT, AND WHY IT MATTERS MORE HERE THAN IN `ask`.
+ *
+ * An interpret request may carry `entities` — Canon identifiers — and it may NOT
+ * carry values, paths or context of any kind. If a caller could attach
+ * `components.CHS-014.state = "manufacturing"` to an interpretation request, the
+ * model would be reading manufacturing data during a job that has no grounding step
+ * afterwards to check it against, because an interpret response contains no claims to
+ * ground. So the absence of a context field is not an omission — it is the control,
+ * and `context` arriving on an interpret body is a rejection rather than an ignored
+ * extra.
+ */
+export function validateInterpret(body) {
+  if (typeof body !== "object" || body === null) {
+    return { ok: false, reason: "body must be an object" };
+  }
+
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  if (!message) return { ok: false, reason: "`message` is required" };
+  if (message.length > LIMITS.message) {
+    return { ok: false, reason: `\`message\` exceeds ${LIMITS.message} characters` };
+  }
+
+  const language = typeof body.language === "string" ? body.language : "en";
+  if (!LANGUAGES.includes(language)) {
+    return { ok: false, reason: `unsupported language "${language}"` };
+  }
+
+  // NO CANON VALUES ON AN INTERPRET REQUEST. See the note above.
+  if (body.context !== undefined || body.canonContext !== undefined) {
+    return { ok: false,
+             reason: "an interpret request may not carry Canon context — interpretation " +
+                     "reads the sentence, not the manufacturing" };
+  }
+
+  const operations = (Array.isArray(body.operations) ? body.operations : [])
+    .filter((o) => typeof o === "string" && o && o.length <= INTERPRET_LIMITS.operation);
+  if (!operations.length) {
+    return { ok: false, reason: "`operations` is required — the model may only propose from a closed set" };
+  }
+  if (operations.length > INTERPRET_LIMITS.operations) {
+    return { ok: false, reason: `\`operations\` exceeds ${INTERPRET_LIMITS.operations} entries` };
+  }
+
+  // Identifiers only. A shape check, not a truth check: whether an id is real is the
+  // client's business, and it re-resolves every proposal against the fold regardless.
+  const entities = (Array.isArray(body.entities) ? body.entities : [])
+    .filter((e) => typeof e === "string" && e && e.length <= INTERPRET_LIMITS.entity)
+    .slice(0, INTERPRET_LIMITS.entities);
+
+  const recent = (Array.isArray(body.recent) ? body.recent : [])
+    .filter((m) => typeof m === "string" && m)
+    .slice(-INTERPRET_LIMITS.recent)
+    .map((m) => m.slice(0, LIMITS.message));
+
+  return { ok: true, interpret: { message, language, operations, entities, recent } };
+}
+
+// ---------- interpret: response validation ----------
+
+/**
+ * Reject anything that is not a proposed request. NEVER REPAIR IT.
+ *
+ * The accepted shape is deliberately tiny:
+ *
+ *   { "intent": "<one of the offered operations>", "entity": "<id or null>" }
+ *
+ * THREE THINGS THIS REFUSES THAT A MODEL WILL EVENTUALLY TRY.
+ *
+ * An operation outside the offered set is rejected here rather than passed along for
+ * the client to puzzle over — the client would reject it too, but a boundary that
+ * lets a known-bad value through is a boundary that is not doing its job.
+ *
+ * A `claims`, `answer`, `source`, `state` or `value` field means the model answered
+ * the manufacturing question instead of reading the sentence. That is refused
+ * outright rather than stripped, because a response that misunderstood its own job
+ * this badly should not have its salvageable part used. There is no grounding step
+ * after an interpretation to catch a fact that slipped through.
+ *
+ * `entity` is a STRING OR NULL and is never trusted. It is a candidate the client
+ * resolves against the live fold; a model naming a part that does not exist produces
+ * an unresolved reference, and Forge says it has no record.
+ */
+export function validateInterpretOutput(raw, interpret) {
+  if (typeof raw !== "object" || raw === null) {
+    return { ok: false, reason: "model output was not an object" };
+  }
+
+  for (const forbidden of ["claims", "answer", "source", "sources", "state", "value", "fact"]) {
+    if (raw[forbidden] !== undefined) {
+      return { ok: false,
+               reason: `an interpretation may not carry \`${forbidden}\` — it proposes a ` +
+                       "request, it does not assert anything about manufacturing" };
+    }
+  }
+
+  const name = typeof raw.intent === "string" ? raw.intent.trim()
+             : typeof raw.operation === "string" ? raw.operation.trim() : "";
+  if (!name) return { ok: false, reason: "model output has no `intent` string" };
+  if (!interpret.operations.includes(name)) {
+    return { ok: false, reason: `model proposed an operation outside the offered set: "${name}"` };
+  }
+
+  let entity = null;
+  if (raw.entity !== undefined && raw.entity !== null) {
+    if (typeof raw.entity !== "string") return { ok: false, reason: "`entity` must be a string or null" };
+    const e = raw.entity.trim();
+    if (e.length > INTERPRET_LIMITS.entity) return { ok: false, reason: "`entity` is too long" };
+    entity = e || null;
+  }
+
+  return { ok: true, value: { intent: name, entity } };
+}
+
+/**
+ * The instruction an interpreting model receives.
+ *
+ * Note what is NOT in this prompt: any manufacturing value, any fold path, any
+ * lifecycle state, and any invitation to answer the question. The model is asked to
+ * do one job — classify a sentence and name the thing it is about — and told plainly
+ * that a proposal is validated afterwards, which is true and worth it knowing.
+ *
+ * The recent messages are the PARTICIPANT'S OWN WORDS and never Forge's answers. A
+ * model that could see prior answers could reuse a fact from one as though it had
+ * established it, and the interpret path has no grounding stage to catch that.
+ */
+export function buildInterpretPrompt(interpret) {
+  const entities = interpret.entities.length
+    ? interpret.entities.join("\n")
+    : "(Forge Canon currently records no entities)";
+  const recent = interpret.recent.length
+    ? interpret.recent.map((m, i) => `${i + 1}. ${m}`).join("\n")
+    : "(this is the first message)";
+
+  return [
+    "You are the understanding stage of Forge AI, a manufacturing operating system.",
+    "Your ONLY job is to read one sentence and report what it is asking for.",
+    "You are NOT answering it. You have no manufacturing facts and you must assert none.",
+    "",
+    "RULES:",
+    "1. Choose exactly one operation from the OPERATIONS list. Never invent a name.",
+    "2. If no operation fits, choose the closest READ operation. Do not invent one.",
+    "3. `entity` must be copied EXACTLY from the ENTITIES list, or be null. Never spell",
+    "   an identifier differently and never propose one that is not listed.",
+    "4. Resolve references. 'it', 'that hub', 'this component' and a question with no",
+    "   subject at all usually mean the entity from the RECENT MESSAGES.",
+    "5. If the sentence could mean two different listed entities, return entity null.",
+    "6. A request to approve, sign off, publish or record anything is `action.request`.",
+    "   Choosing it authorises nothing; it only lets Forge explain what it requires.",
+    "7. Your proposal is validated against the live Canon after you answer. An",
+    "   operation outside the list, or an entity Forge does not hold, is discarded.",
+    "",
+    "OPERATIONS (choose one):",
+    interpret.operations.join(", "),
+    "",
+    "ENTITIES recorded in Forge Canon (copy one exactly, or use null):",
+    entities,
+    "",
+    "RECENT MESSAGES from this participant, oldest first:",
+    recent,
+    "",
+    "CURRENT MESSAGE to interpret:",
+    interpret.message,
+    "",
+    "Reply with JSON only:",
+    '{"intent":"<operation>","entity":"<identifier or null>"}',
+  ].join("\n");
+}
+
 // ---------- response validation ----------
 
 /**
@@ -446,6 +651,8 @@ export function buildPrompt(ask) {
 
 export default {
   LIMITS, LANGUAGES, CLAIM_CLASSES, BINDING_ON_WIRE,
+  OPERATIONS, INTERPRET_LIMITS,
   PROVIDER_PROFILES, PROVIDER_IDS, resolveProfile,
   validateAsk, validateModelOutput, buildPrompt,
+  validateInterpret, validateInterpretOutput, buildInterpretPrompt,
 };

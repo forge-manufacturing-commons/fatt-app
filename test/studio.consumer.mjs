@@ -515,9 +515,24 @@ console.log("\n§20 — OFFLINE, NO PROVIDER, NO KEY");
   // named Supabase Edge Function, and the secret lives in that function's server
   // environment. The offline guarantee this section was written to defend survived
   // the phase that was supposed to break it.
-  ok(`§20. the studio layer is ${files.length} modules`, files.length === 10);
+  // THE CONVERSATIONAL PHASE WIDENED IT AGAIN, 10 -> 14: entity.js, conversation.js,
+  // request.js, understand.js. Updated with a companion, never loosened — and the
+  // result is the same one Phase 2 produced, which is why the guard is worth keeping.
+  // The understanding stage is the first part of Forge AI whose PURPOSE is to consult
+  // a model, and it still contains no fetch, no provider name and no key: it takes an
+  // `interpreter` function as an argument and provider.js supplies one over the same
+  // named Edge Function. Moving the model to the front of the pipeline did not move
+  // the secret into the client.
+  ok(`§20. the studio layer is ${files.length} modules`, files.length === 14);
   ok("§20. and the four Phase 2 additions are present",
      ["respond.js", "ask.js", "prepare.js", "provider.js"].every((f) => files.includes(f)));
+  ok("§20. and the four conversational-phase additions are present",
+     ["entity.js", "conversation.js", "request.js", "understand.js"].every((f) => files.includes(f)));
+  // The understanding stage takes its model as an INJECTED function. If that ever
+  // becomes a direct call, the loop below catches the fetch — this states the shape.
+  ok("§20. understand.js consults a model only through an injected interpreter",
+     /interpreter\s*=\s*null/.test(sources.find((s) => s.f === "understand.js").src) &&
+     /typeof interpreter !== "function"/.test(sources.find((s) => s.f === "understand.js").src));
   for (const { f, src } of sources) {
     ok(`§20. ${f} makes no network call`, !/\bfetch\s*\(|XMLHttpRequest|WebSocket|axios/.test(src));
     ok(`§20. ${f} names no AI provider`,

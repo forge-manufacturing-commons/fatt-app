@@ -87,6 +87,40 @@ export const CANON_SILENCE = Object.freeze({
   urh: (subject, about) => `Forge Canon vwo ${subject}${about ? ` kẹ ${about}` : ""}-ọ.`,
 });
 
+/**
+ * Subjects that plausibly EXIST somewhere, just not linked into Forge Canon. (§11, §18)
+ *
+ * A drawing, an inspection photograph or a measured reading almost certainly exists
+ * on somebody's laptop, in a folder, or on paper in the workshop. Saying only "Forge
+ * Canon does not contain drawing content" is true but leaves the participant thinking
+ * ForgeOS is asserting the drawing does not exist. The extra clause distinguishes
+ * "not recorded here" from "not real", which is the same distinction the whole
+ * CANON / ROOM_LOCAL / UNKNOWN split exists to protect, applied to wording.
+ *
+ * DELIBERATELY NARROW. `material` and `tolerance` are not here: they are properties
+ * of a part, not artefacts that live in a filing cabinet, and inviting the
+ * participant to go and find the material somewhere else is not helpful. The
+ * distinction is between a MISSING LINK and a MISSING FIELD.
+ *
+ * AND STILL NO DOCUMENT SYSTEM. This is one clause of wording. It names no filename,
+ * no path, no store and no location, because §18 forbids manufacturing a document
+ * reference and this phase builds no document store. Forge says where the information
+ * is NOT; it does not speculate about where it is.
+ */
+export const EXISTS_ELSEWHERE = Object.freeze(["drawing", "evidence", "measurement", "specTitle"]);
+
+export const CANON_SILENCE_ELSEWHERE = Object.freeze({
+  en:  () => "If it exists elsewhere, it has not been linked into Forge Canon yet.",
+  ha:  () => "Idan yana wani wuri, ba a haɗa shi da Forge Canon ba tukuna.",
+  yo:  () => "Bí ó bá wà níbòmíràn, a kò tí ì so ó mọ́ Forge Canon.",
+  ig:  () => "Ọ bụrụ na ọ dị ebe ọzọ, ejikọtabeghị ya na Forge Canon.",
+  pcm: () => "If e dey somewhere else, dem no link am into Forge Canon yet.",
+  fr:  () => "S'il existe ailleurs, il n'a pas encore été lié à Forge Canon.",
+  // Urhobo is intentionally absent — `notRecorded` falls back to English and says so
+  // rather than machine-guessing a sentence. Fabricated Urhobo is the failure the
+  // language pack was built to make impossible, and a second clause is no exception.
+});
+
 export const SOURCE_KIND = Object.freeze({ FOLD: "fold", EVENT: "event" });
 
 const freeze = (o) => Object.freeze(o);
@@ -141,9 +175,14 @@ export const roomLocal = (text, origin) =>
 export const notRecorded = (subjectKey, about = null, language = "en") => {
   const subject = NOT_RECORDED_BY_CANON[subjectKey] ?? String(subjectKey ?? "that information");
   const stem = CANON_SILENCE[language] ?? CANON_SILENCE.en;
+  // §11 — the second clause, only for artefacts that could genuinely be elsewhere,
+  // and only in a language that has a written stem for it.
+  const tail = EXISTS_ELSEWHERE.includes(subjectKey)
+    ? (CANON_SILENCE_ELSEWHERE[language] ?? CANON_SILENCE_ELSEWHERE.en)()
+    : null;
   return freeze({
     type: CLAIM.UNKNOWN,
-    text: stem(subject, about),
+    text: tail ? `${stem(subject, about)} ${tail}` : stem(subject, about),
     source: null,
     reason: `not recorded by Forge Canon: ${subject}`,
     canonLimitation: true,
@@ -339,6 +378,7 @@ export default {
   CLAIM, SOURCE_KIND, canonFact, canonDerived, BINDING_CLASSES, isBinding,
   interpretation, recommendation, unknown,
   roomLocal, notRecorded, isCanonLimitation, NOT_RECORDED_BY_CANON, CANON_SILENCE,
+  EXISTS_ELSEWHERE, CANON_SILENCE_ELSEWHERE,
   foldSource, eventSource, resolveFoldPath, verifyClaim, groundResponse,
   assertsEventOccurred, fromConversation,
 };

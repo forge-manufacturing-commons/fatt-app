@@ -122,10 +122,26 @@ export function boundedContext({ grounded, view = {}, intent = {} } = {}) {
   // Anything the DETERMINISTIC pass already verified. The model can only ever
   // comment on facts that already grounded, which is what makes it an improvement
   // to the wording rather than a second opinion on the manufacturing.
+  //
+  // A COLLECTION IS SENT AS A COUNT HERE TOO, AND IT WAS NOT.
+  //
+  // The field loop below has always counted arrays, and the comment there explains
+  // why: the model needs to know that three people contributed in order to say so and
+  // does not need their names. But this loop pushed `c.value` — the value that
+  // `verifyClaim` resolved from the fold — and for a claim citing
+  // `components.CHS-014.history` that value IS THE WHOLE ARRAY, with every
+  // transition, timestamp and the name of the person who performed it.
+  //
+  // So "What happened to CHS-014?" was sending personal data and full event detail to
+  // a third-party model, past a minimisation rule that was already written and already
+  // correct one loop further down. The two paths disagreed and the weaker one won,
+  // which is the ordinary way a minimisation guarantee is lost — not by someone
+  // deciding to send more, but by a second code path nobody re-checked. Found by the
+  // §10 assertion that history is sent as a number.
   for (const c of grounded?.claims ?? []) {
     if (c?.type !== CLAIM.CANON_FACT && c?.type !== CLAIM.CANON_DERIVED) continue;
     if (c.verified !== true) continue;
-    if (c.source?.path) push(c.source.path, c.value);
+    if (c.source?.path) push(c.source.path, Array.isArray(c.value) ? c.value.length : c.value);
   }
 
   const id = intent?.component;
@@ -250,6 +266,65 @@ export async function callForgeAI({ message, language, intent, context, signal }
 }
 
 /**
+ * Ask the provider to INTERPRET a sentence. Returns { intent, entity } or null.
+ *
+ * A different call from `callForgeAI` because it is a different job with different
+ * risk, and the difference is worth stating precisely:
+ *
+ *   callForgeAI        sends Canon VALUES, receives CLAIMS, and every claim is
+ *                      re-resolved against the fold before anyone reads it.
+ *   callForgeInterpret sends NO values — the sentence, the operations Forge performs,
+ *                      the ids the Canon holds — and receives a PROPOSAL that
+ *                      request.js validates against the fold.
+ *
+ * Neither can produce a fact on its own authority. But only the first has a grounding
+ * stage after it, which is exactly why the second is not allowed to carry facts at
+ * all: there would be nothing downstream to catch one.
+ *
+ * NEVER THROWS, and null is a completely ordinary return. A failed interpretation
+ * costs the model's understanding of one sentence; the deterministic read is already
+ * computed and stands, so the participant gets an answer either way (§12).
+ */
+export async function callForgeInterpret({ message, language, operations, entities, recent } = {}) {
+  const { supabase, isConfigured } = await getSupabase();
+  if (!isConfigured || !supabase) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
+      body: {
+        op: "interpret",
+        message: String(message ?? ""),
+        language: String(language ?? "en"),
+        operations: Array.isArray(operations) ? operations : [],
+        entities: Array.isArray(entities) ? entities : [],
+        recent: Array.isArray(recent) ? recent : [],
+      },
+    });
+    if (error || !data || data.ok !== true) return null;
+    if (typeof data.intent !== "string" || !data.intent) return null;
+    return {
+      intent: data.intent,
+      entity: typeof data.entity === "string" ? data.entity : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Adapt the interpret transport to the `interpreter` signature understand.js expects.
+ *
+ * `entities` arrives from `interpretContext` as "HUB-002 (component)" strings, which
+ * is the form a model reads most reliably. They are sent through as-is and the model
+ * copies one back; `validateProposedEntity` then resolves whatever it returns against
+ * the fold, so a model echoing the parenthetical or mangling the spacing still lands
+ * on the right id — or on none, which is also a correct outcome.
+ */
+export function providerInterpreter({ transport = callForgeInterpret, language = "en" } = {}) {
+  return async ({ message, operations, entities, recent }) =>
+    transport({ message, language, operations, entities, recent });
+}
+
+/**
  * Build an adapter that asks the provider, and falls back to `base` on any failure.
  *
  * The fallback is not a degraded mode — `base` is the deterministic adapter, which
@@ -307,4 +382,5 @@ export function providerAdapter({ base, transport = callForgeAI, onStatus = null
   return build(onStatus);
 }
 
-export default { callForgeAI, providerAdapter, boundedContext, CONTEXT_FIELD_NAMES, PROVIDER };
+export default { callForgeAI, callForgeInterpret, providerInterpreter,
+                 providerAdapter, boundedContext, CONTEXT_FIELD_NAMES, PROVIDER };
