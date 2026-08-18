@@ -56,7 +56,7 @@
 
 import { resolveIntent, INTENT } from "./intent.js";
 import { resolveSubject, lastIntentType, RESOLUTION } from "./conversation.js";
-import { validateRequest, REQUEST, PROPOSABLE } from "./request.js";
+import { validateRequest, validateOperation, REQUEST, PROPOSABLE } from "./request.js";
 import { canonEntities } from "./entity.js";
 
 /** How the intent in front of you was arrived at. Diagnostics and tests only. */
@@ -80,9 +80,42 @@ export const UNDERSTOOD_BY = Object.freeze({
  * Escalating it would invite the model to fill a gap ForgeOS has, which is §18's and
  * §11's whole concern.
  */
+/**
+ * The intents Forge can actually ANSWER.
+ *
+ * RECOGNISED IS NOT THE SAME AS ANSWERABLE, and conflating them cost a real answer.
+ *
+ * "where can I find the drawing for the 002 hub" matched the SEARCH marker "find".
+ * SEARCH needs no subject, so the deterministic read looked complete, escalation was
+ * skipped — and then `infer.js` has no SEARCH branch and `planResponse` has no SEARCH
+ * case, so the participant received "I did not read that as a question Forge Canon can
+ * answer" for a question Forge Canon can answer perfectly well. The phrase table was
+ * confident and the pipeline was empty.
+ *
+ * This is the failure mode named in the header of this file, caught by acting as a
+ * participant rather than by reading the table — and §18 rules out the tempting fix.
+ * Adding "where can I find the drawing" as a marker would have fixed that sentence and
+ * left the next one broken, because the defect is not a missing phrase: it is that
+ * SUFFICIENCY WAS MEASURED AGAINST RECOGNITION INSTEAD OF AGAINST THE ABILITY TO
+ * ANSWER. So sufficiency now requires an intent the responder implements, and any
+ * future intent that is recognised before it is answerable escalates instead of
+ * producing a shrug.
+ *
+ * ACTION_REQUEST is answerable — the answer is the authority boundary, which is a real
+ * and important reply. SEARCH and UNKNOWN are not.
+ */
+const ANSWERABLE = Object.freeze([
+  INTENT.COMPONENT_STATE, INTENT.COMPONENT_NEXT_ACTION, INTENT.COMPONENT_WHY,
+  INTENT.COMPONENT_WHO, INTENT.COMPONENT_CONTRIBUTIONS, INTENT.COMPONENT_DIRECTIVES,
+  INTENT.COMPONENT_HISTORY, INTENT.COMPONENT_HUB, INTENT.COMPONENT_MISSION,
+  INTENT.INSPECTION_STATUS, INTENT.ACKNOWLEDGEMENT_STATUS, INTENT.CANON_GAPS,
+  INTENT.SPECIFICATION_EXPLAIN, INTENT.MISSION_PROGRESS, INTENT.ACTION_REQUEST,
+]);
+
 function deterministicIsSufficient(intent) {
   if (intent?.subject) return true;
   if (intent?.type === INTENT.UNKNOWN) return false;
+  if (!ANSWERABLE.includes(intent?.type)) return false;
   const needsSubject = [
     INTENT.COMPONENT_STATE, INTENT.COMPONENT_NEXT_ACTION, INTENT.COMPONENT_WHY,
     INTENT.COMPONENT_WHO, INTENT.COMPONENT_CONTRIBUTIONS, INTENT.COMPONENT_DIRECTIVES,
@@ -153,6 +186,31 @@ export async function understand({
   //    question instead (§7). Asking costs one turn; answering about the wrong part
   //    is a wrong manufacturing statement delivered with full confidence.
   if (subject.how === RESOLUTION.AMBIGUOUS) {
+    // THE OPERATION MAY STILL BE UNDERSTOOD WHILE THE ENTITY IS NOT.
+    //
+    // "What is its status?" is not in the phrase table — the table has "what is the
+    // state" and "status of", not the pronoun form — so offline there is no pending
+    // question to keep, and answering the clarification led straight back to "I did
+    // not understand". §8's own example sentence falls in exactly this gap.
+    //
+    // Adding "what is its status" as a marker is the fix §18 forbids, and it would
+    // leave the next pronoun form broken. The real observation is that AMBIGUITY IS
+    // ABOUT THE ENTITY, NOT THE OPERATION: Forge can ask the model what is being asked
+    // while still refusing to let it decide what the question is about. So the
+    // interpreter is consulted for the OPERATION NAME ONLY, through `validateOperation`,
+    // which accepts no entity and can return none.
+    //
+    // This costs one call in the rare ambiguous case and it is the call that makes the
+    // clarification worth asking. If the interpreter is absent or refuses, `pendingType`
+    // is null and Forge still asks which component — just without being able to resume,
+    // which is the honest offline limit rather than a wrong answer.
+    let pendingType = base.type !== INTENT.UNKNOWN ? base.type : null;
+    if (!pendingType && typeof interpreter === "function") {
+      try {
+        const proposal = await interpreter(interpretContext({ message, view, conversation }));
+        pendingType = validateOperation(proposal ?? {});
+      } catch { /* a failed interpreter leaves the clarification unresumable, not wrong */ }
+    }
     return Object.freeze({
       ...base,
       type: INTENT.UNKNOWN,
@@ -160,6 +218,24 @@ export async function understand({
       clarify: Object.freeze({ candidates: subject.candidates }),
       understoodBy: UNDERSTOOD_BY.CLARIFY,
       componentFromSession: false,
+      // THE PENDING QUESTION IS REMEMBERED, OR THE CLARIFICATION IS A DEAD END.
+      //
+      // Found by answering Forge's own question: it asked "Which one do you mean —
+      // CHS-014 or HUB-002?", I typed "HUB-002", and it replied "I did not read that
+      // as a question Forge Canon can answer." Forge had asked for exactly one word,
+      // received exactly that word, and then had no idea why it had asked.
+      //
+      // The cause was that this branch overwrote `type` with UNKNOWN, so `remember`
+      // recorded UNKNOWN as the turn's intent and `lastIntentType` refused to carry
+      // it. The intent WAS resolved — "What is its status?" reads as component.state
+      // before the subject is even looked at — so nothing needed re-deriving; it was
+      // being thrown away. `type` still becomes UNKNOWN because no read happened and
+      // no fact may be spoken, and the question that was pending travels alongside it.
+      //
+      // A clarification that cannot be answered is worse than a guess: a guess is
+      // wrong once, while this makes the participant repeat a whole sentence to a
+      // system that just demonstrated it was listening.
+      pendingType,
     });
   }
 
@@ -216,7 +292,26 @@ export async function understand({
     return intent;
   }
 
-  const validated = validateRequest(proposal ?? {}, { view });
+  // THE MODEL MAY PROPOSE THE OPERATION AND LEAVE THE ENTITY TO FORGE.
+  //
+  // `entity: null` is the CORRECT, CAUTIOUS answer for a model that has read the
+  // sentence but is not certain which part is meant — and rule 5 of the interpret
+  // prompt explicitly asks for it. Yet a null entity used to make `validateRequest`
+  // return NEEDS_SUBJECT and the whole proposal was discarded, so the safest possible
+  // model behaviour was punished with the worst outcome: the question went unanswered
+  // even though Forge had already resolved the subject from the Canon and the
+  // conversation one step earlier. Found by "search for CHS-014", where the subject was
+  // never in doubt.
+  //
+  // So the already-resolved subject is offered as the FALLBACK entity. Nothing is
+  // loosened: whatever the model DID propose still wins and is still resolved against
+  // the fold by `validateProposedEntity`, and the fallback is an id Forge derived
+  // itself and has already verified exists. The model gains no ability to name a
+  // subject — it gains the ability to decline to.
+  const proposed = (typeof proposal === "object" && proposal !== null)
+    ? { ...proposal, entity: proposal.entity ?? proposal.component ?? intent.component ?? null }
+    : proposal;
+  const validated = validateRequest(proposed ?? {}, { view });
 
   if (validated.status === REQUEST.AMBIGUOUS_ENTITY) {
     return Object.freeze({

@@ -56,7 +56,8 @@ import { canonEntities, resolveEntity, entitiesNamed, validateProposedEntity,
          refersToSomething } from "../src/os/studio/entity.js";
 import { emptyConversation, remember, subjectsInPlay, resolveSubject,
          RESOLUTION, MAX_TURNS } from "../src/os/studio/conversation.js";
-import { SEMANTIC_INTENTS, PROPOSABLE, REQUEST, validateRequest } from "../src/os/studio/request.js";
+import { SEMANTIC_INTENTS, PROPOSABLE, REQUEST, validateRequest,
+         validateOperation } from "../src/os/studio/request.js";
 import { understand, UNDERSTOOD_BY, interpretContext } from "../src/os/studio/understand.js";
 import { validateInterpret, validateInterpretOutput, buildInterpretPrompt,
          INTERPRET_LIMITS, OPERATIONS } from "../supabase/functions/forge-ai/contract.mjs";
@@ -524,6 +525,174 @@ console.log("\n§23 — INJECTION, AUTHORITY, FABRICATION, FAKE DOCUMENTS");
 
   ok("§23. not one adversarial turn changed the Canon",
      JSON.stringify(canon(log)) === before && log.length === beforeLen);
+}
+
+// ============================================================
+console.log("\nCLOSURE — RECOGNISED IS NOT ANSWERABLE; A CLARIFICATION IS NOT A DEAD END");
+// ============================================================
+//
+// Two defects found by behaving like a participant against the finished build, not by
+// reading code. Both were architectural and both are fixed above the phrase table,
+// because §18 rules out the alternative.
+{
+  const log = synthLog({ two: true });
+  const view = canon(log);
+  const seeded = remember(null, { message: COMP, view, intent: { component: COMP } });
+
+  /** Operation-only interpreter: it proposes a question and never an entity. */
+  const asker = async ({ message }) => {
+    const m = String(message).toLowerCase();
+    if (/status|state|happening|fabrication/.test(m)) return { intent: "component.state", entity: null };
+    if (/responsible|who|owns|assigned/.test(m))      return { intent: "component.responsibility", entity: null };
+    if (/where|location/.test(m))                     return { intent: "component.location", entity: null };
+    if (/publish|approve|sign off/.test(m))           return { intent: "action.request", entity: null };
+    return { intent: "component.state", entity: null };
+  };
+
+  // ---- DEFECT 1: a recognised-but-unanswerable intent blocked escalation ----
+  //
+  // "search for CHS-014" matched the SEARCH marker "find"/"search". SEARCH needs no
+  // subject, so the deterministic read looked complete and the model was never asked —
+  // and neither infer.js nor planResponse has a SEARCH branch, so the participant got
+  // "I did not read that as a question Forge Canon can answer". Confident table, empty
+  // pipeline.
+  const searchOffline = await askForge({ message: "search for CHS-014", view, log,
+                                         preferredLanguage: "en", conversation: seeded });
+  ok("a SEARCH match is no longer treated as a sufficient understanding",
+     searchOffline.intent.understoodBy === UNDERSTOOD_BY.DETERMINISTIC &&
+     searchOffline.intent.type === INTENT.SEARCH);
+  const searchOnline = await askForge({ message: "search for CHS-014", view, log,
+                                        preferredLanguage: "en", conversation: seeded,
+                                        interpreter: asker });
+  ok("so it escalates and becomes an answerable question",
+     searchOnline.intent.understoodBy === UNDERSTOOD_BY.MODEL &&
+     searchOnline.grounded.facts > 0);
+  ok("and the participant is no longer told Forge did not understand",
+     !/did not read that as a question/.test(searchOnline.answer));
+  ok("SEARCH is deliberately absent from the answerable set — it has no responder",
+     !/INTENT\.SEARCH/.test(
+       readFileSync(new URL("../src/os/studio/understand.js", import.meta.url), "utf8")
+         .split("const ANSWERABLE")[1].split("]")[0]));
+
+  // A Canon limitation still short-circuits, which is the OTHER half of the rule: a
+  // drawing question must not be escalated in the hope of a better answer (§11, §18).
+  const drawing = await askForge({ message: "where can I find the drawing for the 002 hub",
+                                   view, log, preferredLanguage: "en" });
+  ok("a document question is still answered without a model, as a Canon limitation",
+     drawing.canonLimitation === true && drawing.answer.includes(OTHER));
+
+  // ---- DEFECT 2: answering a clarification led back to "I did not understand" ----
+  //
+  // Forge asked "Which one do you mean — CHS-014 or HUB-002?", I typed "HUB-002", and
+  // it had no idea why it had asked. The clarify branch overwrote `type` with UNKNOWN,
+  // so `remember` recorded UNKNOWN and `lastIntentType` refused to carry it.
+  const resume = async (question, choice, interpreter) => {
+    let c = remember(null, { message: `Compare ${COMP} and ${OTHER}.`, view, intent: { component: null } });
+    const amb = await askForge({ message: question, view, log, preferredLanguage: "en",
+                                 conversation: c, interpreter });
+    c = remember(c, { message: question, view, intent: amb.intent });
+    const picked = await askForge({ message: choice, view, log, preferredLanguage: "en",
+                                    conversation: c, interpreter });
+    return { amb, picked };
+  };
+
+  const r1 = await resume("What is its status?", OTHER, asker);
+  ok("a clarification carries the question it was asking",
+     r1.amb.clarifying.length === 2 && r1.amb.intent.pendingType === INTENT.COMPONENT_STATE);
+  ok("and naming a candidate RESUMES that question rather than restarting",
+     r1.picked.intent.type === INTENT.COMPONENT_STATE &&
+     r1.picked.intent.component === OTHER && r1.picked.grounded.facts > 0);
+  ok("the resumed answer is about the CHOSEN part only",
+     r1.picked.answer.includes(OTHER) && !r1.picked.answer.includes(COMP));
+
+  const r2 = await resume("Where is it?", COMP, asker);
+  ok("a different pending question resumes as itself, not as a state lookup",
+     r2.amb.intent.pendingType === INTENT.COMPONENT_HUB &&
+     r2.picked.intent.type === INTENT.COMPONENT_HUB && r2.picked.segments.length === 1);
+
+  // A question the TABLE recognises needs no model to be resumable.
+  const r3 = await resume("Who is responsible for it?", COMP, null);
+  ok("a table-recognised question is resumable with NO model at all",
+     r3.amb.intent.pendingType === INTENT.COMPONENT_WHO &&
+     r3.picked.intent.type === INTENT.COMPONENT_WHO && r3.picked.answer.includes("SOLC"));
+
+  // THE HONEST OFFLINE LIMIT, STATED RATHER THAN HIDDEN. An unrecognised AND ambiguous
+  // question cannot be resumed without a model — and produces no wrong answer.
+  const r4 = await resume("What is its status?", OTHER, null);
+  ok("offline, an unrecognised ambiguous question cannot be resumed — and does not guess",
+     r4.amb.intent.pendingType === null && r4.picked.grounded.facts === 0 &&
+     r4.picked.grounded.sound === true);
+
+  // THE CLARIFICATION PATH IS NOT A HOLE. A hostile interpreter consulted during an
+  // ambiguity may not smuggle an entity or a fact through it.
+  const r5 = await resume("What is its status?", OTHER,
+    async () => ({ intent: "component.state", entity: COMP, claims: [{ class: "CANON_FACT" }] }));
+  ok("an interpreter smuggling a claim during a clarification is refused",
+     r5.amb.intent.pendingType === null);
+  ok("and cannot name the subject — that came from the participant",
+     r5.picked.intent.component === OTHER && r5.picked.grounded.sound === true);
+  const r6 = await resume("What is its status?", OTHER,
+    async () => ({ intent: "component.approve", entity: null }));
+  ok("an interpreter proposing an unknown operation leaves no pending question",
+     r6.amb.intent.pendingType === null);
+  ok("validateOperation accepts no entity, so a clarification cannot resolve one",
+     validateOperation({ intent: "component.state", entity: OTHER }) === INTENT.COMPONENT_STATE &&
+     validateOperation({ intent: "component.approve" }) === null &&
+     validateOperation({ intent: "component.state", claims: [] }) === null &&
+     validateOperation(null) === null);
+
+  // ---- FINDING 3, DIAGNOSED NOT PATCHED: "Publish it." offline ----
+  //
+  // Offline this is NOT_UNDERSTOOD. It is SAFE — nothing is written — but the reason
+  // given is wrong, and refusing for the wrong reason teaches a participant that
+  // rephrasing would work. "publish this" is in the ACTION_REQUEST markers; "publish
+  // it" is not. §18 forbids the one-word fix, so the offline wording stays honest-but-
+  // generic and the understanding stage produces the real refusal. Both are asserted,
+  // including that neither writes.
+  const beforePub = JSON.stringify(view);
+  const pubOff = await askForge({ message: "Publish it.", view, log, preferredLanguage: "en",
+                                  conversation: seeded });
+  const pubOn = await askForge({ message: "Publish it.", view, log, preferredLanguage: "en",
+                                 conversation: seeded, interpreter: asker });
+  ok("offline, 'Publish it.' is refused — safely, but as a generic non-answer",
+     pubOff.segments.every((s) => s.kind === SEGMENT.NOT_UNDERSTOOD) &&
+     pubOff.grounded.facts === 0);
+  ok("with the understanding stage it reaches the real AUTHORITY boundary",
+     pubOn.segments.some((s) => s.kind === SEGMENT.AUTHORITY) &&
+     /authorised engineering identity/.test(pubOn.answer));
+  ok("and NEITHER path writes anything",
+     JSON.stringify(canon(log)) === beforePub && log.length === synthLog({ two: true }).length);
+  ok("no marker was added for 'publish it' (§18)",
+     !/publish it/i.test(src("../src/os/studio/intent.js")));
+
+  // ---- DEFECT 4: a cautious model was punished for declining to name an entity ----
+  //
+  // `entity: null` is the correct answer for a model that read the sentence but is not
+  // sure which part is meant — rule 5 of the interpret prompt asks for exactly that.
+  // It used to make `validateRequest` return NEEDS_SUBJECT and discard the whole
+  // proposal, so the SAFEST model behaviour produced the WORST outcome: no answer, even
+  // when Forge had already resolved the subject itself a step earlier.
+  const nullEntity = await askForge({ message: "search for CHS-014", view, log,
+    preferredLanguage: "en", interpreter: async () => ({ intent: "component.state", entity: null }) });
+  ok("a proposal with a null entity uses the subject FORGE resolved",
+     nullEntity.intent.component === COMP && nullEntity.grounded.facts > 0 &&
+     nullEntity.intent.understoodBy === UNDERSTOOD_BY.MODEL);
+  ok("and the fallback is only ever an id Forge itself verified",
+     nullEntity.sources.every((p) => p.startsWith(`components.${COMP}.`)));
+  // The fallback grants the model nothing: a proposed entity still wins, and is still
+  // resolved against the fold, so an invented one is still refused.
+  const stillRefused = await askForge({ message: "search for CHS-014", view, log,
+    preferredLanguage: "en", interpreter: async () => ({ intent: "component.state", entity: "HUB-999" }) });
+  ok("a model-proposed entity still overrides the fallback and is still validated",
+     stillRefused.intent.proposalRejected === REQUEST.UNRESOLVED_ENTITY);
+  ok("and Forge asserts nothing about the part the model invented",
+     !stillRefused.answer.includes("HUB-999") && stillRefused.grounded.sound === true);
+  // With no subject anywhere, a null-entity proposal still cannot manufacture one.
+  const noSubject = await askForge({ message: "search for something", view, log,
+    preferredLanguage: "en", interpreter: async () => ({ intent: "component.state", entity: null }) });
+  ok("with no subject resolved anywhere, a null-entity proposal is refused",
+     noSubject.intent.proposalRejected === REQUEST.NEEDS_SUBJECT &&
+     noSubject.grounded.facts === 0);
 }
 
 // ============================================================

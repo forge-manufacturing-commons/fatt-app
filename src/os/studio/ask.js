@@ -208,6 +208,15 @@ export async function askForge({
       // because a proposal being rejected often is how you find out the understanding
       // stage is misconfigured rather than merely unlucky.
       proposalRejected: intent.proposalRejected ?? null,
+      // THE QUESTION FORGE WAS ASKING WHEN IT ASKED "WHICH ONE?".
+      //
+      // This has to be on the RESULT, not merely inside `understand`, because the
+      // caller is what feeds `remember` — the room does
+      // `remember(c, { intent: result.intent })`. My first attempt set it deep in the
+      // pipeline and it never surfaced, so the clarification still could not be
+      // resumed and the probe showed `pending=-`. A field that exists but does not
+      // reach the only consumer that needs it is not a fix.
+      pendingType: intent.pendingType ?? null,
     }),
 
     // §7 — THE CANDIDATES FORGE IS ASKING BETWEEN. Empty on every ordinary turn. The

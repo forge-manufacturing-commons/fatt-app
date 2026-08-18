@@ -214,6 +214,46 @@ export function validateRequest(proposal, { view = {} } = {}) {
   });
 }
 
+/**
+ * Validate an OPERATION NAME only, with no entity. Fail-closed.
+ *
+ * For the one case where Forge needs to understand WHAT is being asked while
+ * deliberately refusing to decide WHAT IT IS ABOUT: an ambiguous reference.
+ *
+ * "What is its status?" with two parts in play is two separate questions — which
+ * operation, and which entity — and only the second is ambiguous. Answering the first
+ * is what lets Forge ask "which one?" and then, when told, actually produce the status
+ * rather than asking the participant to type the whole sentence again.
+ *
+ * It runs the SAME allowlist and the SAME smuggle check as `validateRequest`; the only
+ * difference is that it neither accepts nor returns an entity, so there is no path
+ * here by which a model could name a subject during a clarification.
+ */
+export function validateOperation(proposal) {
+  const checked = validateRequest(
+    { intent: proposal?.intent, ...smuggleOnly(proposal) },
+    { view: {} },
+  );
+  // NEEDS_SUBJECT is the EXPECTED outcome for a component operation with no entity,
+  // and it is the outcome that means the operation name itself was accepted. Any other
+  // failure — an unknown operation, a smuggled assertion, a malformed proposal — is a
+  // refusal, and the pending question stays unknown.
+  if (checked.status === REQUEST.OK) return checked.intentType;
+  if (checked.status === REQUEST.NEEDS_SUBJECT && checked.intentType) return checked.intentType;
+  return null;
+}
+
+/** Carry ONLY the keys `validateRequest` refuses, so its smuggle check still fires. */
+function smuggleOnly(proposal) {
+  const out = {};
+  if (typeof proposal !== "object" || proposal === null) return out;
+  for (const k of ["claims", "claim", "answer", "source", "sources", "state",
+                   "value", "fact", "facts", "verified"]) {
+    if (proposal[k] !== undefined) out[k] = proposal[k];
+  }
+  return out;
+}
+
 function fail(status, reason, extra = {}) {
   return Object.freeze({
     status, operation: null,
@@ -224,4 +264,4 @@ function fail(status, reason, extra = {}) {
   });
 }
 
-export default { SEMANTIC_INTENTS, PROPOSABLE, REQUEST, validateRequest };
+export default { SEMANTIC_INTENTS, PROPOSABLE, REQUEST, validateRequest, validateOperation };

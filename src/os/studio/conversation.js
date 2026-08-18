@@ -77,7 +77,17 @@ export function remember(conversation, { message, view = {}, intent = null } = {
     subjects: Object.freeze(subjects),
     // The INTENT TYPE only. Deliberately not the answer, not the claims, not the
     // sources — see the note at the top of this file about what memory may hold.
-    intentType: intent?.type ?? null,
+    //
+    // `pendingType` WINS WHEN PRESENT, and that is what makes a clarification
+    // answerable. When Forge asks "which one?", the turn's own `type` is UNKNOWN —
+    // correctly, because nothing was read — but the question it was about to ask is
+    // carried on `pendingType`. Recording that instead is the difference between
+    // answering "HUB-002" and getting the status, and answering "HUB-002" and being
+    // told Forge did not understand.
+    //
+    // It is still only an INTENT TYPE. No fact, no answer, no source: a pending
+    // question is a question, which is exactly the kind of thing memory may hold.
+    intentType: intent?.pendingType ?? intent?.type ?? null,
   });
   const turns = [...(conversation?.turns ?? []), turn].slice(-MAX_TURNS);
   return Object.freeze({ turns: Object.freeze(turns) });
