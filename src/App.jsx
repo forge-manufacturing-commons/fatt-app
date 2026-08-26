@@ -38,6 +38,7 @@ import Repositories from "./pages/Repositories.jsx";
 import { ForgeIdentityProvider, useIdentity } from "./os/ForgeIdentity.jsx";
 import Access from "./pages/Access.jsx";
 import Workspace from "./os/Workspace.jsx";
+import Election from "./pages/Election.jsx";
 
 const BUILT = {
   "arrival-dock":     ArrivalDock,
@@ -250,6 +251,11 @@ export default function App() {
             {/* Identity — Phase 1 */}
             <Route path="/access"         element={<Access />} />
             <Route path="/workspace"      element={<Workspace />} />
+            {/* Forge Election — Loop 27. Additive, outside the ROOMS/BUILT
+                kernel registry, mirroring /access and /workspace's own
+                pattern: a real identity-aware surface that is not a "room"
+                of the manufacturing OS. */}
+            <Route path="/election"       element={<Election />} />
           </Routes>
         </div>
         <footer>
